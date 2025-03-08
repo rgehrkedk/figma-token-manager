@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Token Export</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      font-size: 12px;
+      color: #333;
+    }
+    
+    h2 {
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    p {
+      margin-bottom: 16px;
+      color: #666;
+    }
+    
+    button {
+      background-color: #18a0fb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      margin-right: 8px;
+      margin-top: 16px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    button:hover {
+      background-color: #0d8ce0;
+    }
+    
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .collection-selection {
+      margin-top: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .checkbox-item label {
+      margin-left: 8px;
+      cursor: pointer;
+    }
+    
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 300px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    
+    #status {
+      margin-top: 16px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .info {
+      background-color: #e8f4fd;
+      color: #0366d6;
+    }
+    
+    .success {
+      background-color: #e6ffed;
+      color: #22863a;
+    }
+    
+    .error {
+      background-color: #ffeef0;
+      color: #d73a49;
+    }
+    
+    .loading {
+      display: flex;
+      align-items: center;
+      font-style: italic;
+      color: #666;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 8px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h2>Design Token Export</h2>
+  <p>Export your Figma design variables as structured design tokens.</p>
+  
+  <div id="content">
+    <div class="collection-selection">
+      <h3>Collections</h3>
+      <div id="collection-list">
+        <div class="loading">
+          <div class="spinner"></div>
+          Loading collections...
+        </div>
+      </div>
+    </div>
+    
+    <div id="preview-container">
+      <h3>Preview</h3>
+      <pre id="output">Loading data...</pre>
+    </div>
+    
+    <div>
+      <button id="extract-btn">Refresh Tokens</button>
+      <button id="download-btn" disabled>Download JSON</button>
+    </div>
+  </div>
+  
+  <div id="status" class="info">Waiting for data...</div>
+
+  <script>
+    // Store the extracted tokens
+    let tokenData = null;
+    let selectedCollections = [];
+    
+    // DOM elements
+    const outputEl = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    const downloadBtn = document.getElementById('download-btn');
+    const extractBtn = document.getElementById('extract-btn');
+    const collectionListEl = document.getElementById('collection-list');
+    
+    // Helper function to prettify JSON for display
+    function prettifyJson(json) {
+      return JSON.stringify(json, null, 2);
+    }
+    
+    // Helper function to filter tokens based on selected collections
+    function getFilteredTokens() {
+      if (!tokenData || selectedCollections.length === 0) return {};
+      
+      const result = {};
+      for (const collection of selectedCollections) {
+        if (tokenData[collection]) {
+          result[collection] = tokenData[collection];
+        }
+      }
+      
+      return result;
+    }
+    
+    // Function to update preview based on selections
+    function updatePreview() {
+      const filteredData = getFilteredTokens();
+      outputEl.textContent = prettifyJson(filteredData);
+      downloadBtn.disabled = Object.keys(filteredData).length === 0;
+    }
+    
+    // Function to build collection checkboxes
+    function buildCollectionList() {
+      if (!tokenData) return;
+      
+      collectionListEl.innerHTML = '';
+      const collections = Object.keys(tokenData);
+      
+      if (collections.length === 0) {
+        collectionListEl.innerHTML = '<div>No collections found</div>';
+        return;
+      }
+      
+      // Clear selected collections and add all by default
+      selectedCollections = [...collections];
+      
+      collections.forEach(collection => {
+        const checkboxDiv = document.createElement('div');
+        checkboxDiv.className = 'checkbox-item';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `collection-${collection}`;
+        checkbox.value = collection;
+        checkbox.checked = true;
+        
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            if (!selectedCollections.includes(collection)) {
+              selectedCollections.push(collection);
+            }
+          } else {
+            selectedCollections = selectedCollections.filter(c => c !== collection);
+          }
+          
+          updatePreview();
+        });
+        
+        const label = document.createElement('label');
+        label.htmlFor = `collection-${collection}`;
+        
+        // Count modes in this collection
+        const modesCount = Object.keys(tokenData[collection]).length;
+        label.textContent = `${collection} (${modesCount} modes)`;
+        
+        checkboxDiv.appendChild(checkbox);
+        checkboxDiv.appendChild(label);
+        collectionListEl.appendChild(checkboxDiv);
+      });
+    }
+    
+    // Helper function to download JSON file
+    function downloadJson(data, filename) {
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      
+      URL.revokeObjectURL(url);
+    }
+    
+    // Initialize UI
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log("UI loaded and initialized");
+      statusEl.textContent = "Extracting tokens...";
+      statusEl.className = "info";
+      
+      // Extract button handler
+      extractBtn.addEventListener('click', () => {
+        outputEl.textContent = "Loading data...";
+        statusEl.textContent = "Extracting tokens...";
+        statusEl.className = "info";
+        
+        collectionListEl.innerHTML = `
+          <div class="loading">
+            <div class="spinner"></div>
+            Loading collections...
+          </div>
+        `;
+        
+        downloadBtn.disabled = true;
+        
+        // Request token extraction
+        parent.postMessage({ pluginMessage: { type: 'extract-tokens' } }, '*');
+      });
+      
+      // Download button handler
+      downloadBtn.addEventListener('click', () => {
+        const filteredData = getFilteredTokens();
+        downloadJson(filteredData, 'design-tokens.json');
+        
+        statusEl.textContent = "Tokens downloaded successfully!";
+        statusEl.className = "success";
+      });
+    });
+    
+    // Handle messages from the plugin
+    window.onmessage = (event) => {
+      console.log("UI received message:", event.data);
+      
+      if (event.data.pluginMessage) {
+        const msg = event.data.pluginMessage;
+        
+        if (msg.type === 'tokens-data') {
+          console.log("UI received tokens data");
+          tokenData = msg.data;
+          
+          // Update collection list and preview
+          buildCollectionList();
+          updatePreview();
+          
+          statusEl.textContent = "Tokens extracted successfully!";
+          statusEl.className = "success";
+        } else if (msg.type === 'error') {
+          console.error("UI received error:", msg.message);
+          outputEl.textContent = "Error: " + msg.message;
+          statusEl.textContent = msg.message;
+          statusEl.className = "error";
+        }
+      }
+    };
+    
+    // Let the plugin know the UI is ready
+    console.log("UI sending ready message to plugin");
+    parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+  </script>
+</body>
+</html>

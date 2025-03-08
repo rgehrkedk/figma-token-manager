@@ -1,0 +1,183 @@
+/* Reset & Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  color: #333;
+  background-color: #f5f5f5;
+  line-height: 1.5;
+  padding: 20px;
+}
+
+/* Container */
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+/* Typography */
+h2 {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+h3 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+h4 {
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+p {
+  margin-bottom: 16px;
+  color: #666;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 24px;
+}
+
+.options {
+  margin-bottom: 20px;
+}
+
+/* Form Elements */
+.checkbox-list, .radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.checkbox-item, .radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  cursor: pointer;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.primary-button {
+  background-color: #18a0fb;
+  color: white;
+  font-weight: 500;
+}
+
+.primary-button:hover {
+  background-color: #0d8ce0;
+}
+
+.primary-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.small-button {
+  padding: 4px 8px;
+  font-size: 11px;
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.small-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Preview Section */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.preview-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  padding: 8px;
+  margin-bottom: 16px;
+  transition: max-height 0.3s;
+}
+
+.preview-container.collapsed {
+  max-height: 0;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.preview-content {
+  font-family: monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Status Messages */
+.status {
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+
+.info {
+  background-color: #e8f4fd;
+  color: #0366d6;
+}
+
+.success {
+  background-color: #e6ffed;
+  color: #22863a;
+}
+
+.error {
+  background-color: #ffeef0;
+  color: #d73a49;
+}
+
+.loading {
+  color: #666;
+  font-style: italic;
+}

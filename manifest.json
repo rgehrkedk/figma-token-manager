@@ -1,0 +1,19 @@
+{
+  "name": "Design Token Export",
+  "id": "figma-token-manager",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "menu": [
+    {
+      "name": "Export Design Tokens",
+      "command": "export-tokens"
+    }
+  ],
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
