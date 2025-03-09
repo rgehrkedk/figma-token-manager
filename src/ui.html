@@ -40,21 +40,11 @@
     </div>
     
     <div class="selection-group">
-      <h3>Collections <span class="select-all" id="toggle-all-collections">Select All</span></h3>
-      <div id="collection-list">
+      <h3>Collections & Modes <span class="select-all" id="toggle-all-collections">Select All</span></h3>
+      <div id="collection-modes-list">
         <div class="loading">
           <div class="spinner"></div>
-          Loading collections...
-        </div>
-      </div>
-    </div>
-    
-    <div class="selection-group">
-      <h3>Modes <span class="select-all" id="toggle-all-modes">Select All</span></h3>
-      <div id="mode-list">
-        <div class="loading">
-          <div class="spinner"></div>
-          Loading modes...
+          Loading collections and modes...
         </div>
       </div>
     </div>
@@ -68,7 +58,18 @@
     
     <div id="preview-container">
       <h3>Preview</h3>
-      <pre id="output">Loading data...</pre>
+      
+      <div class="preview-tabs" id="preview-tabs">
+        <!-- Tabs will be generated dynamically here -->
+        <button class="tab-button active" data-tab="combined">Combined</button>
+      </div>
+      
+      <div class="preview-content">
+        <div class="tab-content active" id="tab-combined">
+          <pre id="output">Loading data...</pre>
+        </div>
+        <!-- Additional tab contents will be generated dynamically -->
+      </div>
     </div>
     
     <div>

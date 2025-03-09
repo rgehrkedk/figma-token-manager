@@ -1,42 +1,35 @@
 import './styles.css';
 
-import './styles.css';
-
-// Import using path aliases
+// Import utilities
 import { 
   formatJson, 
   filterTokens, 
-  flattenTokens, 
-  getSeparateFiles 
-} from '@utilities/formatters';
+  getSeparateFiles,
+  downloadJson, 
+  downloadMultipleFiles 
+} from './utilities/formatters';
+
+// Import components
+import { 
+  buildCollectionModesList,
+  toggleAllCollectionsAndModes
+} from './components/collectionModes';
 
 import {
-  downloadJson,
-  downloadMultipleFiles
-} from '@utilities/export';
-
-import {
-  buildCollectionList,
-  toggleAllCollections
-} from '@components/collections';
-
-import {
-  buildModesList,
-  toggleAllModes
-} from '@components/modes';
+  setupPreviewTabs
+} from './components/previewTabs';
 
 import {
   validateReferences,
   showValidationResults
-} from '@components/validation';
+} from './components/validation';
 
 // Store the extracted tokens and UI state
 let tokenData: any = null;
 let selectedCollections: string[] = [];
-let selectedModes: string[] = [];
-let allModes: string[] = [];
-let areAllCollectionsSelected = true;
-let areAllModesSelected = true;
+let selectedModes: Map<string, string[]> = new Map();
+let allCollections: string[] = [];
+let areAllSelected: boolean = true;
 let referenceProblems: any[] = [];
 
 // Get DOM elements
@@ -45,10 +38,8 @@ const statusEl = document.getElementById('status') as HTMLDivElement;
 const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement;
 const extractBtn = document.getElementById('extract-btn') as HTMLButtonElement;
 const validateBtn = document.getElementById('validate-btn') as HTMLButtonElement;
-const collectionListEl = document.getElementById('collection-list') as HTMLDivElement;
-const modeListEl = document.getElementById('mode-list') as HTMLDivElement;
-const toggleAllCollectionsBtn = document.getElementById('toggle-all-collections') as HTMLSpanElement;
-const toggleAllModesBtn = document.getElementById('toggle-all-modes') as HTMLSpanElement;
+const collectionModesListEl = document.getElementById('collection-modes-list') as HTMLDivElement;
+const toggleAllBtn = document.getElementById('toggle-all-collections') as HTMLSpanElement;
 const validateReferencesCheckbox = document.getElementById('validate-references') as HTMLInputElement;
 const flatStructureCheckbox = document.getElementById('flat-structure') as HTMLInputElement;
 const separateFilesCheckbox = document.getElementById('separate-files') as HTMLInputElement;
@@ -56,17 +47,44 @@ const formatDTCGRadio = document.getElementById('format-dtcg') as HTMLInputEleme
 const formatLegacyRadio = document.getElementById('format-legacy') as HTMLInputElement;
 const referenceValidationResults = document.getElementById('reference-validation-results') as HTMLDivElement;
 const validationContent = document.getElementById('validation-content') as HTMLDivElement;
+const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivElement;
+const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
 
-// Function to update preview based on selections
-function updatePreview() {
+/**
+ * Updates the token preview based on current selections
+ */
+function updatePreview(): void {
+  // Convert Map to array for compatibility with existing functions
+  const flattenedSelectedModes: string[] = [];
+  selectedModes.forEach((modes, collection) => {
+    modes.forEach(mode => {
+      flattenedSelectedModes.push(mode);
+    });
+  });
+
+  // Generate filtered data based on selections
   const filteredData = filterTokens(
     tokenData, 
     selectedCollections, 
-    selectedModes, 
+    flattenedSelectedModes, 
     flatStructureCheckbox.checked
   );
   
+  // Update the main output display
   outputEl.textContent = formatJson(filteredData);
+  
+  // Update the tabbed preview
+  setupPreviewTabs(
+    tokenData,
+    selectedCollections,
+    selectedModes,
+    flatStructureCheckbox.checked,
+    separateFilesCheckbox.checked,
+    previewTabsContainer,
+    previewContentContainer
+  );
+  
+  // Enable/disable download button based on selection
   downloadBtn.disabled = Object.keys(filteredData).length === 0;
   
   // Validate references if enabled
@@ -75,49 +93,46 @@ function updatePreview() {
     if (referenceProblems.length > 0) {
       statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
       statusEl.className = "warning";
+    } else {
+      statusEl.textContent = "All references are valid.";
+      statusEl.className = "success";
     }
   }
 }
 
-// Initialize UI
+/**
+ * Initialize the UI
+ */
 document.addEventListener('DOMContentLoaded', () => {
   console.log("UI loaded and initialized");
   statusEl.textContent = "Extracting tokens...";
   statusEl.className = "info";
   
-  // Format option changes
+  // Add event listeners for format options
   formatDTCGRadio.addEventListener('change', updatePreview);
   formatLegacyRadio.addEventListener('change', updatePreview);
   validateReferencesCheckbox.addEventListener('change', updatePreview);
   flatStructureCheckbox.addEventListener('change', updatePreview);
-  separateFilesCheckbox.addEventListener('change', updatePreview);
   
-  // Toggle all collections button
-  toggleAllCollectionsBtn.addEventListener('click', () => {
-    const result = toggleAllCollections(
-      areAllCollectionsSelected,
-      collectionListEl,
-      tokenData
-    );
-    
-    areAllCollectionsSelected = result.areAllSelected;
-    selectedCollections = result.selectedCollections;
-    toggleAllCollectionsBtn.textContent = areAllCollectionsSelected ? 'Deselect All' : 'Select All';
-    
+  // Tab preview update when separate files option changes
+  separateFilesCheckbox.addEventListener('change', () => {
     updatePreview();
   });
   
-  // Toggle all modes button
-  toggleAllModesBtn.addEventListener('click', () => {
-    const result = toggleAllModes(
-      areAllModesSelected,
-      modeListEl,
-      allModes
+  // Toggle all collections and modes
+  toggleAllBtn.addEventListener('click', () => {
+    const result = toggleAllCollectionsAndModes(
+      !areAllSelected,
+      collectionModesListEl,
+      tokenData
     );
     
-    areAllModesSelected = result.areAllSelected;
+    selectedCollections = result.selectedCollections;
     selectedModes = result.selectedModes;
-    toggleAllModesBtn.textContent = areAllModesSelected ? 'Deselect All' : 'Select All';
+    allCollections = result.allCollections;
+    areAllSelected = !areAllSelected;
+    
+    toggleAllBtn.textContent = areAllSelected ? 'Deselect All' : 'Select All';
     
     updatePreview();
   });
@@ -134,17 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
     statusEl.textContent = "Extracting tokens...";
     statusEl.className = "info";
     
-    collectionListEl.innerHTML = `
+    collectionModesListEl.innerHTML = `
       <div class="loading">
         <div class="spinner"></div>
-        Loading collections...
-      </div>
-    `;
-    
-    modeListEl.innerHTML = `
-      <div class="loading">
-        <div class="spinner"></div>
-        Loading modes...
+        Loading collections and modes...
       </div>
     `;
     
@@ -156,12 +164,19 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Download button handler
   downloadBtn.addEventListener('click', () => {
+    const flattenedSelectedModes: string[] = [];
+    selectedModes.forEach((modes, collection) => {
+      modes.forEach(mode => {
+        flattenedSelectedModes.push(mode);
+      });
+    });
+    
     if (separateFilesCheckbox.checked) {
       // Generate separate files
       const files = getSeparateFiles(
         tokenData, 
         selectedCollections, 
-        selectedModes, 
+        flattenedSelectedModes, 
         flatStructureCheckbox.checked
       );
       
@@ -174,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const filteredData = filterTokens(
         tokenData, 
         selectedCollections, 
-        selectedModes, 
+        flattenedSelectedModes, 
         flatStructureCheckbox.checked
       );
       
@@ -189,7 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Handle messages from the plugin
+/**
+ * Handle messages from the plugin
+ */
 window.onmessage = (event) => {
   console.log("UI received message:", event.data);
   
@@ -200,20 +217,15 @@ window.onmessage = (event) => {
       console.log("UI received tokens data");
       tokenData = msg.data;
       
-      // Initialize collections
-      const result = buildCollectionList(tokenData, collectionListEl, updatePreview);
+      // Initialize collections and modes with hierarchical UI
+      const result = buildCollectionModesList(tokenData, collectionModesListEl, updatePreview);
       selectedCollections = result.selectedCollections;
-      areAllCollectionsSelected = result.areAllCollectionsSelected;
+      selectedModes = result.selectedModes;
+      allCollections = result.allCollections;
+      areAllSelected = true;
       
-      // Initialize modes
-      const modesResult = buildModesList(tokenData, modeListEl, updatePreview);
-      selectedModes = modesResult.selectedModes;
-      allModes = modesResult.allModes;
-      areAllModesSelected = modesResult.areAllModesSelected;
-      
-      // Set toggle buttons text
-      toggleAllCollectionsBtn.textContent = areAllCollectionsSelected ? 'Deselect All' : 'Select All';
-      toggleAllModesBtn.textContent = areAllModesSelected ? 'Deselect All' : 'Select All';
+      // Set toggle button text
+      toggleAllBtn.textContent = areAllSelected ? 'Deselect All' : 'Select All';
       
       // Update the preview
       updatePreview();
