@@ -1,6 +1,6 @@
 import './styles.css';
-import './styles-color-preview.css';
-import './tab-styles.css'; // Add tab style import
+import './tab-styles.css';
+import './token-preview.css'; // Add token preview styles
 
 // Import utilities
 import { 
@@ -28,10 +28,8 @@ import {
 } from './components/validation';
 
 import {
-  extractColorTokens,
-  generateColorPreviewPanel,
-  setupColorPreviewInteractions
-} from './components/colorPreview';
+  showVisualTokenPreview
+} from './components/tokenPreview';
 
 // Import color transforms
 import { 
@@ -48,7 +46,7 @@ let allCollections: string[] = [];
 let areAllSelected: boolean = true;
 let referenceProblems: any[] = [];
 let currentColorFormat: ColorFormat = 'hex'; // Default color format
-let colorPreviewEnabled: boolean = false; // Track if color preview is enabled
+let tokenPreviewEnabled: boolean = false; // Track if token preview is enabled
 
 // Get DOM elements
 const outputEl = document.getElementById('output') as HTMLPreElement;
@@ -67,7 +65,7 @@ const referenceValidationResults = document.getElementById('reference-validation
 const validationContent = document.getElementById('validation-content') as HTMLDivElement;
 const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivElement;
 const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
-const previewColorsCheckbox = document.getElementById('preview-colors') as HTMLInputElement;
+const previewTokensCheckbox = document.getElementById('preview-tokens') as HTMLInputElement;
 
 // Color format options
 const colorHexRadio = document.getElementById('color-hex') as HTMLInputElement;
@@ -75,10 +73,6 @@ const colorRgbRadio = document.getElementById('color-rgb') as HTMLInputElement;
 const colorRgbaRadio = document.getElementById('color-rgba') as HTMLInputElement;
 const colorHslRadio = document.getElementById('color-hsl') as HTMLInputElement;
 const colorHslaRadio = document.getElementById('color-hsla') as HTMLInputElement;
-
-// Create a color preview container
-const colorPreviewContainer = document.createElement('div');
-colorPreviewContainer.id = 'color-preview-container';
 
 /**
  * Updates the token preview based on current selections and formats
@@ -125,12 +119,12 @@ function updatePreview(): void {
     previewContentContainer
   );
   
-  // Handle color preview if enabled
-  if (colorPreviewEnabled) {
-    showColorPreview(filteredData);
+  // Handle token preview if enabled
+  if (tokenPreviewEnabled) {
+    showVisualTokenPreview(filteredData, previewContentContainer, currentColorFormat);
   } else {
-    // Remove color preview if present
-    const existingPreview = document.querySelector('.color-preview-container');
+    // Remove token preview if present
+    const existingPreview = document.querySelector('.token-preview-container');
     if (existingPreview) {
       existingPreview.remove();
     }
@@ -150,47 +144,6 @@ function updatePreview(): void {
       statusEl.className = "success";
     }
   }
-}
-
-/**
- * Shows color preview panel
- */
-function showColorPreview(filteredData: any): void {
-  // Extract color tokens
-  const colorTokens = extractColorTokens(filteredData);
-  
-  // Remove existing preview if present
-  const existingPreview = document.querySelector('.color-preview-container');
-  if (existingPreview) {
-    existingPreview.remove();
-  }
-  
-  // Generate and add preview panel
-  const previewHtml = generateColorPreviewPanel(colorTokens, currentColorFormat);
-  const previewContainer = document.createElement('div');
-  previewContainer.className = 'color-preview-wrapper';
-  previewContainer.innerHTML = previewHtml;
-  
-  // Add after the main preview
-  previewContentContainer.parentNode?.insertBefore(
-    previewContainer, 
-    previewContentContainer.nextSibling
-  );
-  
-  // Setup interactive features
-  setupColorPreviewInteractions(
-    previewContainer, 
-    currentColorFormat, 
-    (format: ColorFormat) => {
-      currentColorFormat = format;
-      
-      // Update radio buttons
-      updateColorFormatRadios();
-      
-      // Update the preview
-      updatePreview();
-    }
-  );
 }
 
 /**
@@ -293,9 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // Color preview toggle
-  previewColorsCheckbox.addEventListener('change', () => {
-    colorPreviewEnabled = previewColorsCheckbox.checked;
+  // Token preview toggle
+  previewTokensCheckbox.addEventListener('change', () => {
+    tokenPreviewEnabled = previewTokensCheckbox.checked;
     updatePreview();
   });
   
