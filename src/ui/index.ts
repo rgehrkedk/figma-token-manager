@@ -24,13 +24,20 @@ import {
   showValidationResults
 } from './components/validation';
 
-// Store the extracted tokens and UI state
-let tokenData: any = null;
-let selectedCollections: string[] = [];
-let selectedModes: Map<string, string[]> = new Map();
-let allCollections: string[] = [];
-let areAllSelected: boolean = true;
-let referenceProblems: any[] = [];
+import {
+  extractColorTokens,
+  generateColorPreviewPanel,
+  setupColorPreviewInteractions
+} from './components/colorPreview';
+
+// Import color transforms
+import { 
+  formatAllColors,
+  ColorFormat
+} from '../code/formatters/colorTransforms';
+
+// Import styles for color preview
+import './styles-color-preview.css';
 
 // Get DOM elements
 const outputEl = document.getElementById('output') as HTMLPreElement;
@@ -49,56 +56,18 @@ const referenceValidationResults = document.getElementById('reference-validation
 const validationContent = document.getElementById('validation-content') as HTMLDivElement;
 const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivElement;
 const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
+const previewColorsCheckbox = document.getElementById('preview-colors') as HTMLInputElement;
 
-/**
- * Updates the token preview based on current selections
- */
-function updatePreview(): void {
-  // Convert Map to array for compatibility with existing functions
-  const flattenedSelectedModes: string[] = [];
-  selectedModes.forEach((modes, collection) => {
-    modes.forEach(mode => {
-      flattenedSelectedModes.push(mode);
-    });
-  });
+// Color format options
+const colorHexRadio = document.getElementById('color-hex') as HTMLInputElement;
+const colorRgbRadio = document.getElementById('color-rgb') as HTMLInputElement;
+const colorRgbaRadio = document.getElementById('color-rgba') as HTMLInputElement;
+const colorHslRadio = document.getElementById('color-hsl') as HTMLInputElement;
+const colorHslaRadio = document.getElementById('color-hsla') as HTMLInputElement;
 
-  // Generate filtered data based on selections
-  const filteredData = filterTokens(
-    tokenData, 
-    selectedCollections, 
-    flattenedSelectedModes, 
-    flatStructureCheckbox.checked
-  );
-  
-  // Update the main output display
-  outputEl.textContent = formatJson(filteredData);
-  
-  // Update the tabbed preview
-  setupPreviewTabs(
-    tokenData,
-    selectedCollections,
-    selectedModes,
-    flatStructureCheckbox.checked,
-    separateFilesCheckbox.checked,
-    previewTabsContainer,
-    previewContentContainer
-  );
-  
-  // Enable/disable download button based on selection
-  downloadBtn.disabled = Object.keys(filteredData).length === 0;
-  
-  // Validate references if enabled
-  if (validateReferencesCheckbox.checked) {
-    referenceProblems = validateReferences(filteredData);
-    if (referenceProblems.length > 0) {
-      statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
-      statusEl.className = "warning";
-    } else {
-      statusEl.textContent = "All references are valid.";
-      statusEl.className = "success";
-    }
-  }
-}
+// Create a color preview container
+const colorPreviewContainer = document.createElement('div');
+colorPreviewContainer.id = 'color-preview-container';
 
 /**
  * Initialize the UI
@@ -116,6 +85,48 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Tab preview update when separate files option changes
   separateFilesCheckbox.addEventListener('change', () => {
+    updatePreview();
+  });
+  
+  // Color format listeners
+  colorHexRadio.addEventListener('change', () => {
+    if (colorHexRadio.checked) {
+      currentColorFormat = 'hex';
+      updatePreview();
+    }
+  });
+  
+  colorRgbRadio.addEventListener('change', () => {
+    if (colorRgbRadio.checked) {
+      currentColorFormat = 'rgb';
+      updatePreview();
+    }
+  });
+  
+  colorRgbaRadio.addEventListener('change', () => {
+    if (colorRgbaRadio.checked) {
+      currentColorFormat = 'rgba';
+      updatePreview();
+    }
+  });
+  
+  colorHslRadio.addEventListener('change', () => {
+    if (colorHslRadio.checked) {
+      currentColorFormat = 'hsl';
+      updatePreview();
+    }
+  });
+  
+  colorHslaRadio.addEventListener('change', () => {
+    if (colorHslaRadio.checked) {
+      currentColorFormat = 'hsla';
+      updatePreview();
+    }
+  });
+  
+  // Color preview toggle
+  previewColorsCheckbox.addEventListener('change', () => {
+    colorPreviewEnabled = previewColorsCheckbox.checked;
     updatePreview();
   });
   
@@ -215,6 +226,7 @@ window.onmessage = (event) => {
     
     if (msg.type === 'tokens-data') {
       console.log("UI received tokens data");
+      originalTokenData = JSON.parse(JSON.stringify(msg.data)); // Store original
       tokenData = msg.data;
       
       // Initialize collections and modes with hierarchical UI
@@ -244,3 +256,138 @@ window.onmessage = (event) => {
 // Let the plugin know the UI is ready
 console.log("UI sending ready message to plugin");
 parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+
+// Store the extracted tokens and UI state
+let tokenData: any = null;
+let originalTokenData: any = null; // Preserve original data before transformations
+let selectedCollections: string[] = [];
+let selectedModes: Map<string, string[]> = new Map();
+let allCollections: string[] = [];
+let areAllSelected: boolean = true;
+let referenceProblems: any[] = [];
+let currentColorFormat: ColorFormat = 'hex'; // Default color format
+let colorPreviewEnabled: boolean = false; // Track if color preview is enabled
+
+/**
+ * Updates the token preview based on current selections and formats
+ */
+function updatePreview(): void {
+  if (!tokenData || !originalTokenData) return;
+  
+  // Start with original data to avoid compounding transformations
+  let processedTokenData = JSON.parse(JSON.stringify(originalTokenData));
+  
+  // Apply color transformations if needed
+  processedTokenData = formatAllColors(processedTokenData, currentColorFormat);
+  
+  // Update the working copy of tokenData
+  tokenData = processedTokenData;
+  
+  // Convert Map to array for compatibility with existing functions
+  const flattenedSelectedModes: string[] = [];
+  selectedModes.forEach((modes, collection) => {
+    modes.forEach(mode => {
+      flattenedSelectedModes.push(mode);
+    });
+  });
+
+  // Generate filtered data based on selections
+  const filteredData = filterTokens(
+    tokenData, 
+    selectedCollections, 
+    flattenedSelectedModes, 
+    flatStructureCheckbox.checked
+  );
+  
+  // Update the main output display
+  outputEl.textContent = formatJson(filteredData);
+  
+  // Update the tabbed preview
+  setupPreviewTabs(
+    tokenData,
+    selectedCollections,
+    selectedModes,
+    flatStructureCheckbox.checked,
+    separateFilesCheckbox.checked,
+    previewTabsContainer,
+    previewContentContainer
+  );
+  
+  // Handle color preview if enabled
+  if (colorPreviewEnabled) {
+    showColorPreview(filteredData);
+  } else {
+    // Remove color preview if present
+    const existingPreview = document.querySelector('.color-preview-container');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+  }
+  
+  // Enable/disable download button based on selection
+  downloadBtn.disabled = Object.keys(filteredData).length === 0;
+  
+  // Validate references if enabled
+  if (validateReferencesCheckbox.checked) {
+    referenceProblems = validateReferences(filteredData);
+    if (referenceProblems.length > 0) {
+      statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
+      statusEl.className = "warning";
+    } else {
+      statusEl.textContent = "All references are valid.";
+      statusEl.className = "success";
+    }
+  }
+}
+
+/**
+ * Shows color preview panel
+ */
+function showColorPreview(filteredData: any): void {
+  // Extract color tokens
+  const colorTokens = extractColorTokens(filteredData);
+  
+  // Remove existing preview if present
+  const existingPreview = document.querySelector('.color-preview-container');
+  if (existingPreview) {
+    existingPreview.remove();
+  }
+  
+  // Generate and add preview panel
+  const previewHtml = generateColorPreviewPanel(colorTokens, currentColorFormat);
+  const previewContainer = document.createElement('div');
+  previewContainer.className = 'color-preview-wrapper';
+  previewContainer.innerHTML = previewHtml;
+  
+  // Add after the main preview
+  previewContentContainer.parentNode?.insertBefore(
+    previewContainer, 
+    previewContentContainer.nextSibling
+  );
+  
+  // Setup interactive features
+  setupColorPreviewInteractions(
+    previewContainer, 
+    currentColorFormat, 
+    (format: ColorFormat) => {
+      currentColorFormat = format;
+      
+      // Update radio buttons
+      updateColorFormatRadios();
+      
+      // Update the preview
+      updatePreview();
+    }
+  );
+}
+
+/**
+ * Updates color format radio buttons based on current selection
+ */
+function updateColorFormatRadios(): void {
+  colorHexRadio.checked = currentColorFormat === 'hex';
+  colorRgbRadio.checked = currentColorFormat === 'rgb';
+  colorRgbaRadio.checked = currentColorFormat === 'rgba';
+  colorHslRadio.checked = currentColorFormat === 'hsl';
+  colorHslaRadio.checked = currentColorFormat === 'hsla';
+}

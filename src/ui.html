@@ -22,6 +22,28 @@
         <label for="format-legacy">Legacy Format (Simple JSON)</label>
       </div>
       
+      <h3>Color Format</h3>
+      <div class="radio-item">
+        <input type="radio" id="color-hex" name="color-format" value="hex" checked>
+        <label for="color-hex">HEX (#ffffff)</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="color-rgb" name="color-format" value="rgb">
+        <label for="color-rgb">RGB (rgb(255, 255, 255))</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="color-rgba" name="color-format" value="rgba">
+        <label for="color-rgba">RGBA (rgba(255, 255, 255, 1))</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="color-hsl" name="color-format" value="hsl">
+        <label for="color-hsl">HSL (hsl(0deg, 0%, 100%))</label>
+      </div>
+      <div class="radio-item">
+        <input type="radio" id="color-hsla" name="color-format" value="hsla">
+        <label for="color-hsla">HSLA (hsla(0deg, 0%, 100%, 1))</label>
+      </div>
+      
       <h3>Export Options</h3>
       <div class="checkbox-item">
         <input type="checkbox" id="separate-files" checked>
@@ -36,6 +58,11 @@
       <div class="checkbox-item">
         <input type="checkbox" id="flat-structure">
         <label for="flat-structure">Generate flat structure (easier reference resolution)</label>
+      </div>
+      
+      <div class="checkbox-item">
+        <input type="checkbox" id="preview-colors">
+        <label for="preview-colors">Show color previews</label>
       </div>
     </div>
     

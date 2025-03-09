@@ -1,0 +1,158 @@
+/* Color preview styles */
+
+.color-preview-container {
+    margin-top: 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .color-preview-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .color-preview-item:last-child {
+    border-bottom: none;
+  }
+  
+  .color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    margin-right: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .color-info {
+    flex: 1;
+  }
+  
+  .color-path {
+    font-weight: 500;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  
+  .color-value {
+    font-family: monospace;
+    font-size: 10px;
+    color: #666;
+  }
+  
+  .color-preview-heading {
+    background-color: #f9f9f9;
+    padding: 8px 12px;
+    font-weight: 500;
+    font-size: 12px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  
+  .color-format-controls {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .color-format-button {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .color-format-button:hover {
+    background: #e5e5e5;
+  }
+  
+  .color-format-button.active {
+    background: #0366d6;
+    color: white;
+    border-color: #0366d6;
+  }
+  
+  /* Checkerboard background for transparent colors */
+  .color-swatch.transparent {
+    background-image: 
+      linear-gradient(45deg, #eee 25%, transparent 25%),
+      linear-gradient(-45deg, #eee 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #eee 75%),
+      linear-gradient(-45deg, transparent 75%, #eee 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+  }
+  
+  /* Color preview panel in token view */
+  .color-preview-panel {
+    position: absolute;
+    z-index: 10;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 12px;
+    min-width: 200px;
+    font-size: 12px;
+  }
+  
+  .preview-color-swatch {
+    width: 100%;
+    height: 40px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .color-format-list {
+    margin-top: 8px;
+  }
+  
+  .color-format-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+  
+  .color-format-label {
+    font-weight: 500;
+    margin-right: 8px;
+  }
+  
+  .color-format-value {
+    font-family: monospace;
+    color: #666;
+  }
+  
+  .copy-button {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 4px;
+  }
+  
+  .copy-button:hover {
+    background: #e5e5e5;
+  }
+  
+  .color-preview-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #999;
+  }
+  
+  .color-preview-close:hover {
+    color: #666;
+  }
