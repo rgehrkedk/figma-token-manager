@@ -1,6 +1,6 @@
 import './styles.css';
 import './tab-styles.css';
-import './token-preview.css'; // Add token preview styles
+import './token-preview.css';
 
 // Import utilities
 import { 
@@ -31,11 +31,10 @@ import {
   showVisualTokenPreview
 } from './components/tokenPreview';
 
+import { setupColorFormatHandlers } from './color-handlers';
+
 // Import color transforms
-import { 
-  formatAllColors,
-  ColorFormat
-} from '../code/formatters/colorTransforms';
+import { ColorFormat } from '../code/formatters/colorTransforms';
 
 // Store the extracted tokens and UI state
 let tokenData: any = null;
@@ -67,27 +66,11 @@ const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivE
 const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
 const previewTokensCheckbox = document.getElementById('preview-tokens') as HTMLInputElement;
 
-// Color format options
-const colorHexRadio = document.getElementById('color-hex') as HTMLInputElement;
-const colorRgbRadio = document.getElementById('color-rgb') as HTMLInputElement;
-const colorRgbaRadio = document.getElementById('color-rgba') as HTMLInputElement;
-const colorHslRadio = document.getElementById('color-hsl') as HTMLInputElement;
-const colorHslaRadio = document.getElementById('color-hsla') as HTMLInputElement;
-
 /**
  * Updates the token preview based on current selections and formats
  */
 function updatePreview(): void {
-  if (!tokenData || !originalTokenData) return;
-  
-  // Start with original data to avoid compounding transformations
-  let processedTokenData = JSON.parse(JSON.stringify(originalTokenData));
-  
-  // Apply color transformations if needed
-  processedTokenData = formatAllColors(processedTokenData, currentColorFormat);
-  
-  // Update the working copy of tokenData
-  tokenData = processedTokenData;
+  if (!tokenData) return;
   
   // Convert Map to array for compatibility with existing functions
   const flattenedSelectedModes: string[] = [];
@@ -108,7 +91,7 @@ function updatePreview(): void {
   // Update the main output display
   outputEl.textContent = formatJson(filteredData);
   
-  // Update the tabbed preview with our fixed function
+  // Update the tabbed preview
   setupPreviewTabs(
     tokenData,
     selectedCollections,
@@ -147,17 +130,6 @@ function updatePreview(): void {
 }
 
 /**
- * Updates color format radio buttons based on current selection
- */
-function updateColorFormatRadios(): void {
-  colorHexRadio.checked = currentColorFormat === 'hex';
-  colorRgbRadio.checked = currentColorFormat === 'rgb';
-  colorRgbaRadio.checked = currentColorFormat === 'rgba';
-  colorHslRadio.checked = currentColorFormat === 'hsl';
-  colorHslaRadio.checked = currentColorFormat === 'hsla';
-}
-
-/**
  * Initialize the UI
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -165,86 +137,18 @@ document.addEventListener('DOMContentLoaded', () => {
   statusEl.textContent = "Extracting tokens...";
   statusEl.className = "info";
   
-  // Ensure the "Combined" tab button exists and has the proper attributes
-  const combinedTabExists = previewTabsContainer.querySelector('.tab-button[data-tab="combined"]');
-  if (!combinedTabExists) {
-    const combinedTab = document.createElement('button');
-    combinedTab.className = 'tab-button active';
-    combinedTab.dataset.tab = 'combined';
-    combinedTab.textContent = 'Combined';
-    combinedTab.addEventListener('click', (e) => {
-      e.preventDefault();
-      setActiveTab('combined', previewTabsContainer, previewContentContainer);
-    });
-    previewTabsContainer.appendChild(combinedTab);
-  }
+  // Setup color format handlers
+  setupColorFormatHandlers();
   
-  // Make sure the combined tab content element exists
-  const combinedContentExists = document.getElementById('tab-combined');
-  if (!combinedContentExists) {
-    const combinedContent = document.createElement('div');
-    combinedContent.className = 'tab-content';
-    combinedContent.id = 'tab-combined';
-    combinedContent.style.display = 'block';
-    
-    if (!outputEl.parentNode) {
-      // If outputEl doesn't have a parent, it might not be in the DOM yet
-      combinedContent.appendChild(outputEl);
-    } else {
-      // Clone the output element to avoid moving it
-      const outputClone = outputEl.cloneNode(true);
-      combinedContent.appendChild(outputClone);
-    }
-    
-    previewContentContainer.appendChild(combinedContent);
-  }
+  // Ensure "Combined" tab exists
+  ensureCombinedTabExists();
   
   // Add event listeners for format options
   formatDTCGRadio.addEventListener('change', updatePreview);
   formatLegacyRadio.addEventListener('change', updatePreview);
   validateReferencesCheckbox.addEventListener('change', updatePreview);
   flatStructureCheckbox.addEventListener('change', updatePreview);
-  
-  // Tab preview update when separate files option changes
-  separateFilesCheckbox.addEventListener('change', () => {
-    updatePreview();
-  });
-  
-  // Color format listeners
-  colorHexRadio.addEventListener('change', () => {
-    if (colorHexRadio.checked) {
-      currentColorFormat = 'hex';
-      updatePreview();
-    }
-  });
-  
-  colorRgbRadio.addEventListener('change', () => {
-    if (colorRgbRadio.checked) {
-      currentColorFormat = 'rgb';
-      updatePreview();
-    }
-  });
-  
-  colorRgbaRadio.addEventListener('change', () => {
-    if (colorRgbaRadio.checked) {
-      currentColorFormat = 'rgba';
-      updatePreview();
-    }
-  });
-  
-  colorHslRadio.addEventListener('change', () => {
-    if (colorHslRadio.checked) {
-      currentColorFormat = 'hsl';
-      updatePreview();
-    }
-  });
-  
-  colorHslaRadio.addEventListener('change', () => {
-    if (colorHslaRadio.checked) {
-      currentColorFormat = 'hsla';
-      updatePreview();
-    }
-  });
+  separateFilesCheckbox.addEventListener('change', updatePreview);
   
   // Token preview toggle
   previewTokensCheckbox.addEventListener('change', () => {
@@ -336,6 +240,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+/**
+ * Ensure the Combined tab exists and has the proper event handler
+ */
+function ensureCombinedTabExists() {
+  const combinedTabExists = previewTabsContainer.querySelector('.tab-button[data-tab="combined"]');
+  if (!combinedTabExists) {
+    const combinedTab = document.createElement('button');
+    combinedTab.className = 'tab-button active';
+    combinedTab.dataset.tab = 'combined';
+    combinedTab.textContent = 'Combined';
+    combinedTab.addEventListener('click', (e) => {
+      e.preventDefault();
+      setActiveTab('combined', previewTabsContainer, previewContentContainer);
+    });
+    previewTabsContainer.appendChild(combinedTab);
+  }
+  
+  // Make sure the combined tab content element exists
+  const combinedContentExists = document.getElementById('tab-combined');
+  if (!combinedContentExists) {
+    const combinedContent = document.createElement('div');
+    combinedContent.className = 'tab-content';
+    combinedContent.id = 'tab-combined';
+    combinedContent.style.display = 'block';
+    
+    if (!outputEl.parentNode) {
+      // If outputEl doesn't have a parent, it might not be in the DOM yet
+      combinedContent.appendChild(outputEl);
+    } else {
+      // Clone the output element to avoid moving it
+      const outputClone = outputEl.cloneNode(true);
+      combinedContent.appendChild(outputClone);
+    }
+    
+    previewContentContainer.appendChild(combinedContent);
+  }
+}
 
 /**
  * Handle messages from the plugin

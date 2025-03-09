@@ -1,6 +1,5 @@
-import { UIMessage, ColorFormat } from './types';
 import { extractDTCGVariables } from './extractors/dtcgVariables';
-import { formatAllColors } from './formatters/colorTransforms';
+import { formatAllColors, ColorFormat } from './formatters/colorTransforms';
 
 // Flag to track if we should extract on startup
 let shouldExtractOnStartup = true;
@@ -8,12 +7,15 @@ let shouldExtractOnStartup = true;
 // Store current color format
 let currentColorFormat: ColorFormat = 'hex';
 
+// Store original extracted tokens for transformations
+let originalTokenData: any = null;
+
 // Show UI with larger size to see more info
 figma.showUI(__html__, { width: 600, height: 700 });
 console.log("Plugin UI shown");
 
 // Listen for messages from the UI
-figma.ui.onmessage = async (msg: UIMessage) => {
+figma.ui.onmessage = async (msg) => {
   console.log("Plugin received message from UI:", msg.type);
   
   if (msg.type === 'ui-ready') {
@@ -23,7 +25,10 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       shouldExtractOnStartup = false;
       
       try {
+        // Extract and store original tokens
         const tokens = await extractDTCGVariables();
+        originalTokenData = JSON.parse(JSON.stringify(tokens)); // Deep clone
+        
         console.log("Extracted DTCG-compliant tokens, sending to UI");
         figma.ui.postMessage({
           type: 'tokens-data',
@@ -39,7 +44,10 @@ figma.ui.onmessage = async (msg: UIMessage) => {
     }
   } else if (msg.type === 'extract-tokens') {
     try {
+      // Extract fresh tokens when requested
       const tokens = await extractDTCGVariables();
+      originalTokenData = JSON.parse(JSON.stringify(tokens)); // Store original data
+      
       console.log("Extracted tokens on demand, sending to UI");
       figma.ui.postMessage({
         type: 'tokens-data',
@@ -59,13 +67,21 @@ figma.ui.onmessage = async (msg: UIMessage) => {
       console.log(`Color format set to: ${currentColorFormat}`);
       
       try {
-        // Re-extract with the new format
-        const tokens = await extractDTCGVariables();
-        const formattedTokens = formatAllColors(tokens, currentColorFormat);
+        if (!originalTokenData) {
+          // If we don't have original data, extract it first
+          originalTokenData = await extractDTCGVariables();
+        }
         
+        // Apply color transformation to a copy of the original data
+        const transformedTokens = formatAllColors(
+          JSON.parse(JSON.stringify(originalTokenData)), 
+          currentColorFormat
+        );
+        
+        // Send transformed tokens back to UI
         figma.ui.postMessage({
           type: 'tokens-data',
-          data: formattedTokens
+          data: transformedTokens
         });
       } catch (error: unknown) {
         console.error("Error applying color format:", error);
