@@ -3,11 +3,22 @@
     "target": "es6",
     "lib": ["es6", "dom"],
     "moduleResolution": "node",
+    "baseUrl": "src",
+    "paths": {
+      "@ui/*": ["ui/*"],
+      "@code/*": ["code/*"],
+      "@components/*": ["ui/components/*"],
+      "@utilities/*": ["ui/utilities/*"]
+    },
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules/@figma"
     ],
     "strict": true,
-    "outDir": "dist"
-  }
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"]
 }
