@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 
 module.exports = (env, argv) => {
+  const isDevelopment = argv.mode !== 'production';
+  
   // Custom plugin to inline the UI JavaScript and remove ui.js file
   class InlineUIScriptPlugin {
     apply(compiler) {
@@ -28,8 +30,28 @@ module.exports = (env, argv) => {
     }
   }
   
+  // Custom plugin to copy debug helper to the output directory (development only)
+  class CopyDebugHelperPlugin {
+    apply(compiler) {
+      compiler.hooks.done.tap('CopyDebugHelperPlugin', stats => {
+        // Only copy debug helper in development mode
+        if (isDevelopment) {
+          const outputPath = stats.compilation.outputOptions.path;
+          const debugHelperFile = path.join(__dirname, 'src/ui/debug-helpers.js');
+          const outputFile = path.join(outputPath, 'debug-helpers.js');
+          
+          if (fs.existsSync(debugHelperFile)) {
+            const debugHelperContent = fs.readFileSync(debugHelperFile, 'utf8');
+            fs.writeFileSync(outputFile, debugHelperContent);
+            console.log('Debug helper copied to output directory (development only)');
+          }
+        }
+      });
+    }
+  }
+  
   return {
-    mode: argv.mode === 'production' ? 'production' : 'development',
+    mode: isDevelopment ? 'development' : 'production',
     
     // Entry points for plugin code and UI
     entry: {
@@ -90,12 +112,14 @@ module.exports = (env, argv) => {
         filename: 'ui.html',
         chunks: ['ui'],
         inject: 'body',
+        mode: isDevelopment ? 'development' : 'production'
       }),
-      new InlineUIScriptPlugin()
+      new InlineUIScriptPlugin(),
+      new CopyDebugHelperPlugin() // Will only copy in development mode
     ],
     
     // Development settings
-    ...(argv.mode === 'development' && {
+    ...(isDevelopment && {
       devtool: 'inline-source-map',
     })
   };

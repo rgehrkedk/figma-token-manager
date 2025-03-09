@@ -3,7 +3,6 @@
  */
 
 import { formatJson } from '../utilities/formatters';
-import { getSeparateFiles } from '../utilities/formatters';
 
 interface TabDefinition {
   id: string;
@@ -23,7 +22,7 @@ export function setupPreviewTabs(
   tabsContainer: HTMLElement,
   contentContainer: HTMLElement
 ): void {
-  // Clear existing tabs
+  // Clear existing tabs except combined
   const existingTabs = tabsContainer.querySelectorAll('.tab-button:not([data-tab="combined"])');
   existingTabs.forEach(tab => tab.remove());
   
@@ -31,23 +30,22 @@ export function setupPreviewTabs(
   const existingContents = contentContainer.querySelectorAll('.tab-content:not(#tab-combined)');
   existingContents.forEach(content => content.remove());
   
-  if (!isSeparateFiles) {
-    // If not using separate files, just show the combined tab
-    setActiveTab('combined');
-    return;
-  }
-  
-  // Get all separate files
+  // Get all separate files/tabs 
   const files = getPreviewFiles(tokenData, selectedCollections, selectedModes, flatStructure);
   
   // Create tabs for each file
-  files.forEach((file, index) => {
+  files.forEach((file) => {
     // Create tab button
     const tabButton = document.createElement('button');
     tabButton.className = 'tab-button';
     tabButton.dataset.tab = file.id;
     tabButton.textContent = file.name;
-    tabButton.addEventListener('click', () => setActiveTab(file.id));
+    
+    // Add click event listener
+    tabButton.addEventListener('click', (e) => {
+      e.preventDefault(); // Prevent default button behavior
+      setActiveTab(file.id, tabsContainer, contentContainer);
+    });
     
     tabsContainer.appendChild(tabButton);
     
@@ -55,6 +53,7 @@ export function setupPreviewTabs(
     const tabContent = document.createElement('div');
     tabContent.className = 'tab-content';
     tabContent.id = `tab-${file.id}`;
+    tabContent.style.display = 'none'; // Hide by default
     
     const preElement = document.createElement('pre');
     preElement.textContent = formatJson(file.data);
@@ -63,32 +62,55 @@ export function setupPreviewTabs(
     contentContainer.appendChild(tabContent);
   });
   
-  // Set the combined tab as active
-  setActiveTab('combined');
+  // Add event listener to the combined tab if it doesn't have one
+  const combinedTab = tabsContainer.querySelector('.tab-button[data-tab="combined"]');
+  if (combinedTab) {
+    // Remove existing listeners first to avoid duplicates
+    const newCombinedTab = combinedTab.cloneNode(true);
+    combinedTab.parentNode?.replaceChild(newCombinedTab, combinedTab);
+    
+    newCombinedTab.addEventListener('click', (e) => {
+      e.preventDefault();
+      setActiveTab('combined', tabsContainer, contentContainer);
+    });
+  }
+  
+  // Set the combined tab as active by default
+  setActiveTab('combined', tabsContainer, contentContainer);
 }
 
 /**
  * Set the active tab
  */
-function setActiveTab(tabId: string): void {
+export function setActiveTab(tabId: string, tabsContainer: HTMLElement, contentContainer: HTMLElement): void {
+  console.log(`Setting active tab: ${tabId}`); // Debug log
+  
   // Get all tab buttons and contents
-  const tabButtons = document.querySelectorAll('.tab-button');
-  const tabContents = document.querySelectorAll('.tab-content');
+  const tabButtons = tabsContainer.querySelectorAll('.tab-button');
+  const tabContents = contentContainer.querySelectorAll('.tab-content');
   
   // Remove active class from all tabs
   tabButtons.forEach(tab => tab.classList.remove('active'));
-  tabContents.forEach(content => content.classList.remove('active'));
+  
+  // Hide all tab contents
+  tabContents.forEach(content => {
+    (content as HTMLElement).style.display = 'none';
+  });
   
   // Add active class to selected tab
-  const selectedButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-  const selectedContent = document.getElementById(`tab-${tabId}`);
-  
+  const selectedButton = tabsContainer.querySelector(`.tab-button[data-tab="${tabId}"]`);
   if (selectedButton) {
     selectedButton.classList.add('active');
+  } else {
+    console.error(`Tab button not found: ${tabId}`);
   }
   
+  // Show selected content
+  const selectedContent = document.getElementById(`tab-${tabId}`);
   if (selectedContent) {
-    selectedContent.classList.add('active');
+    selectedContent.style.display = 'block';
+  } else {
+    console.error(`Tab content not found: tab-${tabId}`);
   }
 }
 
@@ -103,43 +125,23 @@ function getPreviewFiles(
 ): TabDefinition[] {
   const tabs: TabDefinition[] = [];
   
-  // Filter the token data based on selections
-  const filteredData: any = {};
-  
+  // Process each selected collection
   for (const collection of selectedCollections) {
     if (tokenData[collection]) {
-      filteredData[collection] = {};
-      
       const modesForCollection = selectedModes.get(collection) || [];
       
       for (const mode of modesForCollection) {
         if (tokenData[collection][mode]) {
-          filteredData[collection][mode] = tokenData[collection][mode];
+          const fileData = flatStructure
+            ? flattenTokenObject(`${collection}.${mode}`, tokenData[collection][mode])
+            : { [collection]: { [mode]: tokenData[collection][mode] } };
+          
+          tabs.push({
+            id: `${collection}-${mode}`,
+            name: `${collection}/${mode}`,
+            data: fileData
+          });
         }
-      }
-      
-      // Remove collection if it has no modes after filtering
-      if (Object.keys(filteredData[collection]).length === 0) {
-        delete filteredData[collection];
-      }
-    }
-  }
-  
-  // Generate tabs for separate files
-  for (const collection of selectedCollections) {
-    const modesForCollection = selectedModes.get(collection) || [];
-    
-    for (const mode of modesForCollection) {
-      if (filteredData[collection] && filteredData[collection][mode]) {
-        const fileData = flatStructure
-          ? flattenTokenObject(`${collection}.${mode}`, filteredData[collection][mode])
-          : { [collection]: { [mode]: filteredData[collection][mode] } };
-        
-        tabs.push({
-          id: `${collection}-${mode}`,
-          name: `${collection}/${mode}`,
-          data: fileData
-        });
       }
     }
   }

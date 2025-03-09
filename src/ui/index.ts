@@ -1,4 +1,6 @@
 import './styles.css';
+import './styles-color-preview.css';
+import './tab-styles.css'; // Add tab style import
 
 // Import utilities
 import { 
@@ -16,7 +18,8 @@ import {
 } from './components/collectionModes';
 
 import {
-  setupPreviewTabs
+  setupPreviewTabs,
+  setActiveTab
 } from './components/previewTabs';
 
 import {
@@ -36,8 +39,16 @@ import {
   ColorFormat
 } from '../code/formatters/colorTransforms';
 
-// Import styles for color preview
-import './styles-color-preview.css';
+// Store the extracted tokens and UI state
+let tokenData: any = null;
+let originalTokenData: any = null; // Preserve original data before transformations
+let selectedCollections: string[] = [];
+let selectedModes: Map<string, string[]> = new Map();
+let allCollections: string[] = [];
+let areAllSelected: boolean = true;
+let referenceProblems: any[] = [];
+let currentColorFormat: ColorFormat = 'hex'; // Default color format
+let colorPreviewEnabled: boolean = false; // Track if color preview is enabled
 
 // Get DOM elements
 const outputEl = document.getElementById('output') as HTMLPreElement;
@@ -70,12 +81,170 @@ const colorPreviewContainer = document.createElement('div');
 colorPreviewContainer.id = 'color-preview-container';
 
 /**
+ * Updates the token preview based on current selections and formats
+ */
+function updatePreview(): void {
+  if (!tokenData || !originalTokenData) return;
+  
+  // Start with original data to avoid compounding transformations
+  let processedTokenData = JSON.parse(JSON.stringify(originalTokenData));
+  
+  // Apply color transformations if needed
+  processedTokenData = formatAllColors(processedTokenData, currentColorFormat);
+  
+  // Update the working copy of tokenData
+  tokenData = processedTokenData;
+  
+  // Convert Map to array for compatibility with existing functions
+  const flattenedSelectedModes: string[] = [];
+  selectedModes.forEach((modes, collection) => {
+    modes.forEach(mode => {
+      flattenedSelectedModes.push(mode);
+    });
+  });
+
+  // Generate filtered data based on selections
+  const filteredData = filterTokens(
+    tokenData, 
+    selectedCollections, 
+    flattenedSelectedModes, 
+    flatStructureCheckbox.checked
+  );
+  
+  // Update the main output display
+  outputEl.textContent = formatJson(filteredData);
+  
+  // Update the tabbed preview with our fixed function
+  setupPreviewTabs(
+    tokenData,
+    selectedCollections,
+    selectedModes,
+    flatStructureCheckbox.checked,
+    separateFilesCheckbox.checked,
+    previewTabsContainer,
+    previewContentContainer
+  );
+  
+  // Handle color preview if enabled
+  if (colorPreviewEnabled) {
+    showColorPreview(filteredData);
+  } else {
+    // Remove color preview if present
+    const existingPreview = document.querySelector('.color-preview-container');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+  }
+  
+  // Enable/disable download button based on selection
+  downloadBtn.disabled = Object.keys(filteredData).length === 0;
+  
+  // Validate references if enabled
+  if (validateReferencesCheckbox.checked) {
+    referenceProblems = validateReferences(filteredData);
+    if (referenceProblems.length > 0) {
+      statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
+      statusEl.className = "warning";
+    } else {
+      statusEl.textContent = "All references are valid.";
+      statusEl.className = "success";
+    }
+  }
+}
+
+/**
+ * Shows color preview panel
+ */
+function showColorPreview(filteredData: any): void {
+  // Extract color tokens
+  const colorTokens = extractColorTokens(filteredData);
+  
+  // Remove existing preview if present
+  const existingPreview = document.querySelector('.color-preview-container');
+  if (existingPreview) {
+    existingPreview.remove();
+  }
+  
+  // Generate and add preview panel
+  const previewHtml = generateColorPreviewPanel(colorTokens, currentColorFormat);
+  const previewContainer = document.createElement('div');
+  previewContainer.className = 'color-preview-wrapper';
+  previewContainer.innerHTML = previewHtml;
+  
+  // Add after the main preview
+  previewContentContainer.parentNode?.insertBefore(
+    previewContainer, 
+    previewContentContainer.nextSibling
+  );
+  
+  // Setup interactive features
+  setupColorPreviewInteractions(
+    previewContainer, 
+    currentColorFormat, 
+    (format: ColorFormat) => {
+      currentColorFormat = format;
+      
+      // Update radio buttons
+      updateColorFormatRadios();
+      
+      // Update the preview
+      updatePreview();
+    }
+  );
+}
+
+/**
+ * Updates color format radio buttons based on current selection
+ */
+function updateColorFormatRadios(): void {
+  colorHexRadio.checked = currentColorFormat === 'hex';
+  colorRgbRadio.checked = currentColorFormat === 'rgb';
+  colorRgbaRadio.checked = currentColorFormat === 'rgba';
+  colorHslRadio.checked = currentColorFormat === 'hsl';
+  colorHslaRadio.checked = currentColorFormat === 'hsla';
+}
+
+/**
  * Initialize the UI
  */
 document.addEventListener('DOMContentLoaded', () => {
   console.log("UI loaded and initialized");
   statusEl.textContent = "Extracting tokens...";
   statusEl.className = "info";
+  
+  // Ensure the "Combined" tab button exists and has the proper attributes
+  const combinedTabExists = previewTabsContainer.querySelector('.tab-button[data-tab="combined"]');
+  if (!combinedTabExists) {
+    const combinedTab = document.createElement('button');
+    combinedTab.className = 'tab-button active';
+    combinedTab.dataset.tab = 'combined';
+    combinedTab.textContent = 'Combined';
+    combinedTab.addEventListener('click', (e) => {
+      e.preventDefault();
+      setActiveTab('combined', previewTabsContainer, previewContentContainer);
+    });
+    previewTabsContainer.appendChild(combinedTab);
+  }
+  
+  // Make sure the combined tab content element exists
+  const combinedContentExists = document.getElementById('tab-combined');
+  if (!combinedContentExists) {
+    const combinedContent = document.createElement('div');
+    combinedContent.className = 'tab-content';
+    combinedContent.id = 'tab-combined';
+    combinedContent.style.display = 'block';
+    
+    if (!outputEl.parentNode) {
+      // If outputEl doesn't have a parent, it might not be in the DOM yet
+      combinedContent.appendChild(outputEl);
+    } else {
+      // Clone the output element to avoid moving it
+      const outputClone = outputEl.cloneNode(true);
+      combinedContent.appendChild(outputClone);
+    }
+    
+    previewContentContainer.appendChild(combinedContent);
+  }
   
   // Add event listeners for format options
   formatDTCGRadio.addEventListener('change', updatePreview);
@@ -256,138 +425,3 @@ window.onmessage = (event) => {
 // Let the plugin know the UI is ready
 console.log("UI sending ready message to plugin");
 parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
-
-// Store the extracted tokens and UI state
-let tokenData: any = null;
-let originalTokenData: any = null; // Preserve original data before transformations
-let selectedCollections: string[] = [];
-let selectedModes: Map<string, string[]> = new Map();
-let allCollections: string[] = [];
-let areAllSelected: boolean = true;
-let referenceProblems: any[] = [];
-let currentColorFormat: ColorFormat = 'hex'; // Default color format
-let colorPreviewEnabled: boolean = false; // Track if color preview is enabled
-
-/**
- * Updates the token preview based on current selections and formats
- */
-function updatePreview(): void {
-  if (!tokenData || !originalTokenData) return;
-  
-  // Start with original data to avoid compounding transformations
-  let processedTokenData = JSON.parse(JSON.stringify(originalTokenData));
-  
-  // Apply color transformations if needed
-  processedTokenData = formatAllColors(processedTokenData, currentColorFormat);
-  
-  // Update the working copy of tokenData
-  tokenData = processedTokenData;
-  
-  // Convert Map to array for compatibility with existing functions
-  const flattenedSelectedModes: string[] = [];
-  selectedModes.forEach((modes, collection) => {
-    modes.forEach(mode => {
-      flattenedSelectedModes.push(mode);
-    });
-  });
-
-  // Generate filtered data based on selections
-  const filteredData = filterTokens(
-    tokenData, 
-    selectedCollections, 
-    flattenedSelectedModes, 
-    flatStructureCheckbox.checked
-  );
-  
-  // Update the main output display
-  outputEl.textContent = formatJson(filteredData);
-  
-  // Update the tabbed preview
-  setupPreviewTabs(
-    tokenData,
-    selectedCollections,
-    selectedModes,
-    flatStructureCheckbox.checked,
-    separateFilesCheckbox.checked,
-    previewTabsContainer,
-    previewContentContainer
-  );
-  
-  // Handle color preview if enabled
-  if (colorPreviewEnabled) {
-    showColorPreview(filteredData);
-  } else {
-    // Remove color preview if present
-    const existingPreview = document.querySelector('.color-preview-container');
-    if (existingPreview) {
-      existingPreview.remove();
-    }
-  }
-  
-  // Enable/disable download button based on selection
-  downloadBtn.disabled = Object.keys(filteredData).length === 0;
-  
-  // Validate references if enabled
-  if (validateReferencesCheckbox.checked) {
-    referenceProblems = validateReferences(filteredData);
-    if (referenceProblems.length > 0) {
-      statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
-      statusEl.className = "warning";
-    } else {
-      statusEl.textContent = "All references are valid.";
-      statusEl.className = "success";
-    }
-  }
-}
-
-/**
- * Shows color preview panel
- */
-function showColorPreview(filteredData: any): void {
-  // Extract color tokens
-  const colorTokens = extractColorTokens(filteredData);
-  
-  // Remove existing preview if present
-  const existingPreview = document.querySelector('.color-preview-container');
-  if (existingPreview) {
-    existingPreview.remove();
-  }
-  
-  // Generate and add preview panel
-  const previewHtml = generateColorPreviewPanel(colorTokens, currentColorFormat);
-  const previewContainer = document.createElement('div');
-  previewContainer.className = 'color-preview-wrapper';
-  previewContainer.innerHTML = previewHtml;
-  
-  // Add after the main preview
-  previewContentContainer.parentNode?.insertBefore(
-    previewContainer, 
-    previewContentContainer.nextSibling
-  );
-  
-  // Setup interactive features
-  setupColorPreviewInteractions(
-    previewContainer, 
-    currentColorFormat, 
-    (format: ColorFormat) => {
-      currentColorFormat = format;
-      
-      // Update radio buttons
-      updateColorFormatRadios();
-      
-      // Update the preview
-      updatePreview();
-    }
-  );
-}
-
-/**
- * Updates color format radio buttons based on current selection
- */
-function updateColorFormatRadios(): void {
-  colorHexRadio.checked = currentColorFormat === 'hex';
-  colorRgbRadio.checked = currentColorFormat === 'rgb';
-  colorRgbaRadio.checked = currentColorFormat === 'rgba';
-  colorHslRadio.checked = currentColorFormat === 'hsl';
-  colorHslaRadio.checked = currentColorFormat === 'hsla';
-}

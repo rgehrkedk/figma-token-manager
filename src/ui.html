@@ -61,8 +61,8 @@
       </div>
       
       <div class="checkbox-item">
-        <input type="checkbox" id="preview-colors">
-        <label for="preview-colors">Show color previews</label>
+        <input type="checkbox" id="preview-tokens">
+        <label for="preview-tokens">Show visual token preview</label>
       </div>
     </div>
     
@@ -92,7 +92,7 @@
       </div>
       
       <div class="preview-content">
-        <div class="tab-content active" id="tab-combined">
+        <div class="tab-content" id="tab-combined" style="display: block;">
           <pre id="output">Loading data...</pre>
         </div>
         <!-- Additional tab contents will be generated dynamically -->
@@ -108,6 +108,11 @@
   
   <div id="status" class="info">Waiting for data...</div>
 
+  <% if (htmlWebpackPlugin.options.mode === 'development') { %>
+  <!-- Debug helper script (development only) -->
+  <script src="debug-helpers.js"></script>
+  <% } %>
+  
   <!-- UI JavaScript will be inlined here by webpack -->
 </body>
 </html>
