@@ -60,10 +60,6 @@
         <label for="flat-structure">Generate flat structure (easier reference resolution)</label>
       </div>
       
-      <div class="checkbox-item">
-        <input type="checkbox" id="preview-tokens">
-        <label for="preview-tokens">Show visual token preview</label>
-      </div>
     </div>
     
     <div class="selection-group">
@@ -84,18 +80,32 @@
     </div>
     
     <div id="preview-container">
-      <h3>Preview</h3>
-      
-      <div class="preview-tabs" id="preview-tabs">
-        <!-- Tabs will be generated dynamically here -->
-        <button class="tab-button active" data-tab="combined">Combined</button>
+      <div class="preview-toggle-container">
+        <h3>Preview</h3>
+        <div class="segmented-toggle" id="preview-mode-toggle">
+          <div class="segmented-toggle-option active" data-mode="json">JSON</div>
+          <div class="segmented-toggle-option" data-mode="visual">Visual</div>
+        </div>
       </div>
       
-      <div class="preview-content">
-        <div class="tab-content" id="tab-combined" style="display: block;">
-          <pre id="output">Loading data...</pre>
+      <!-- JSON Preview Content -->
+      <div class="preview-content-json active">
+        <div class="preview-tabs" id="preview-tabs">
+          <!-- Tabs will be generated dynamically here -->
+          <button class="tab-button active" data-tab="combined">Combined</button>
         </div>
-        <!-- Additional tab contents will be generated dynamically -->
+        
+        <div class="preview-content">
+          <div class="tab-content" id="tab-combined" style="display: block;">
+            <pre id="output">Loading data...</pre>
+          </div>
+          <!-- Additional tab contents will be generated dynamically -->
+        </div>
+      </div>
+      
+      <!-- Visual Preview Content (will be populated by visual token preview) -->
+      <div class="preview-content-visual" id="visual-preview-container">
+        <!-- Visual token preview will be inserted here -->
       </div>
     </div>
     

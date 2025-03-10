@@ -53,6 +53,11 @@ export function setupPreviewTabs(
     tabButton.addEventListener('click', (e) => {
       e.preventDefault(); // Prevent default button behavior
       setActiveTab(file.id, tabsContainer, contentContainer, file.data, updateVisualPreview);
+      
+      // Update visual preview directly if we have a function to do so
+      if (updateVisualPreview) {
+        updateVisualPreview(file.data);
+      }
     });
     
     tabsContainer.appendChild(tabButton);

@@ -1,7 +1,7 @@
 import './styles.css';
 import './tab-styles.css';
 import './token-preview.css';
-
+import './segmented-toggle.css';
 
 // Import utilities
 import { 
@@ -34,6 +34,8 @@ import {
 
 import { setupColorFormatHandlers } from './color-handlers';
 
+import { setupPreviewToggle } from './components/previewToggle';
+
 // Import color transforms
 import { ColorFormat } from '../code/formatters/colorTransforms';
 
@@ -46,7 +48,7 @@ let allCollections: string[] = [];
 let areAllSelected: boolean = true;
 let referenceProblems: any[] = [];
 let currentColorFormat: ColorFormat = 'hex'; // Default color format
-let tokenPreviewEnabled: boolean = false; // Track if token preview is enabled
+let previewToggleInterface: { setMode: (mode: 'json' | 'visual') => void; getCurrentMode: () => 'json' | 'visual' };
 
 // Get DOM elements
 const outputEl = document.getElementById('output') as HTMLPreElement;
@@ -65,7 +67,37 @@ const referenceValidationResults = document.getElementById('reference-validation
 const validationContent = document.getElementById('validation-content') as HTMLDivElement;
 const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivElement;
 const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
-const previewTokensCheckbox = document.getElementById('preview-tokens') as HTMLInputElement;
+const visualPreviewContainer = document.getElementById('visual-preview-container') as HTMLDivElement;
+
+/**
+ * Helper function to get data for a specific tab
+ */
+function getCurrentTabData(tabId: string): any {
+  // If it's the combined tab, return all selected data
+  if (tabId === 'combined') {
+    const flattenedSelectedModes: string[] = [];
+    selectedModes.forEach((modes, collection) => {
+      modes.forEach(mode => {
+        flattenedSelectedModes.push(mode);
+      });
+    });
+    
+    return filterTokens(
+      tokenData, 
+      selectedCollections, 
+      flattenedSelectedModes, 
+      flatStructureCheckbox.checked
+    );
+  }
+  
+  // Otherwise, extract the collection and mode from the tab ID
+  const [collection, mode] = tabId.split('-');
+  if (collection && mode && tokenData[collection] && tokenData[collection][mode]) {
+    return { [collection]: { [mode]: tokenData[collection][mode] } };
+  }
+  
+  return {};
+}
 
 /**
  * Updates the token preview based on current selections and formats
@@ -94,23 +126,14 @@ function updatePreview(): void {
   
   // Define a function to update the visual preview for a specific tab's data
   const updateVisualPreview = (tabData: any) => {
-    if (tokenPreviewEnabled) {
-      // Remove any existing preview before creating a new one
-      const existingPreview = document.querySelector('.token-preview-wrapper');
-      if (existingPreview) {
-        existingPreview.remove();
-      }
-      
-      // Use the enhanced token preview with reference resolution
-      // Now using tabData instead of filteredData to match the selected tab
-      showVisualTokenPreview(tabData, previewContentContainer, currentColorFormat);
-    } else {
-      // Remove token preview if present
-      const existingPreview = document.querySelector('.token-preview-wrapper');
-      if (existingPreview) {
-        existingPreview.remove();
-      }
+    // Remove any existing preview before creating a new one
+    const existingPreview = visualPreviewContainer.querySelector('.token-preview-wrapper');
+    if (existingPreview) {
+      existingPreview.remove();
     }
+    
+    // Create new visual preview
+    showVisualTokenPreview(tabData, visualPreviewContainer, currentColorFormat);
   };
   
   // Update the tabbed preview with the function to update visual preview
@@ -125,6 +148,11 @@ function updatePreview(): void {
     updateVisualPreview // Pass the update function
   );
   
+  // Also update the visual preview for the current tab's data
+  const currentTabId = document.querySelector('.tab-button.active')?.getAttribute('data-tab') || 'combined';
+  const currentTabData = currentTabId === 'combined' ? filteredData : getCurrentTabData(currentTabId);
+  updateVisualPreview(currentTabData);
+
   // Enable/disable download button based on selection
   downloadBtn.disabled = Object.keys(filteredData).length === 0;
   
@@ -142,6 +170,54 @@ function updatePreview(): void {
 }
 
 /**
+ * Ensure the Combined tab exists and has the proper event handler
+ */
+function ensureCombinedTabExists() {
+  const combinedTabExists = previewTabsContainer.querySelector('.tab-button[data-tab="combined"]');
+  if (!combinedTabExists) {
+    const combinedTab = document.createElement('button');
+    combinedTab.className = 'tab-button active';
+    combinedTab.dataset.tab = 'combined';
+    combinedTab.textContent = 'Combined';
+    combinedTab.addEventListener('click', (e) => {
+      e.preventDefault();
+      setActiveTab('combined', previewTabsContainer, previewContentContainer);
+      
+      // Also update visual preview
+      if (previewToggleInterface.getCurrentMode() === 'visual') {
+        const currentTabData = getCurrentTabData('combined');
+        const existingPreview = visualPreviewContainer.querySelector('.token-preview-wrapper');
+        if (existingPreview) {
+          existingPreview.remove();
+        }
+        showVisualTokenPreview(currentTabData, visualPreviewContainer, currentColorFormat);
+      }
+    });
+    previewTabsContainer.appendChild(combinedTab);
+  }
+  
+  // Make sure the combined tab content element exists
+  const combinedContentExists = document.getElementById('tab-combined');
+  if (!combinedContentExists) {
+    const combinedContent = document.createElement('div');
+    combinedContent.className = 'tab-content';
+    combinedContent.id = 'tab-combined';
+    combinedContent.style.display = 'block';
+    
+    if (!outputEl.parentNode) {
+      // If outputEl doesn't have a parent, it might not be in the DOM yet
+      combinedContent.appendChild(outputEl);
+    } else {
+      // Clone the output element to avoid moving it
+      const outputClone = outputEl.cloneNode(true);
+      combinedContent.appendChild(outputClone);
+    }
+    
+    previewContentContainer.appendChild(combinedContent);
+  }
+}
+
+/**
  * Initialize the UI
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -152,6 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup color format handlers
   setupColorFormatHandlers();
   
+  // Setup preview toggle
+  previewToggleInterface = setupPreviewToggle();
+
   // Ensure "Combined" tab exists
   ensureCombinedTabExists();
   
@@ -161,12 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
   validateReferencesCheckbox.addEventListener('change', updatePreview);
   flatStructureCheckbox.addEventListener('change', updatePreview);
   separateFilesCheckbox.addEventListener('change', updatePreview);
-  
-  // Token preview toggle
-  previewTokensCheckbox.addEventListener('change', () => {
-    tokenPreviewEnabled = previewTokensCheckbox.checked;
-    updatePreview();
-  });
   
   // Toggle all collections and modes
   toggleAllBtn.addEventListener('click', () => {
@@ -252,44 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
-/**
- * Ensure the Combined tab exists and has the proper event handler
- */
-function ensureCombinedTabExists() {
-  const combinedTabExists = previewTabsContainer.querySelector('.tab-button[data-tab="combined"]');
-  if (!combinedTabExists) {
-    const combinedTab = document.createElement('button');
-    combinedTab.className = 'tab-button active';
-    combinedTab.dataset.tab = 'combined';
-    combinedTab.textContent = 'Combined';
-    combinedTab.addEventListener('click', (e) => {
-      e.preventDefault();
-      setActiveTab('combined', previewTabsContainer, previewContentContainer);
-    });
-    previewTabsContainer.appendChild(combinedTab);
-  }
-  
-  // Make sure the combined tab content element exists
-  const combinedContentExists = document.getElementById('tab-combined');
-  if (!combinedContentExists) {
-    const combinedContent = document.createElement('div');
-    combinedContent.className = 'tab-content';
-    combinedContent.id = 'tab-combined';
-    combinedContent.style.display = 'block';
-    
-    if (!outputEl.parentNode) {
-      // If outputEl doesn't have a parent, it might not be in the DOM yet
-      combinedContent.appendChild(outputEl);
-    } else {
-      // Clone the output element to avoid moving it
-      const outputClone = outputEl.cloneNode(true);
-      combinedContent.appendChild(outputClone);
-    }
-    
-    previewContentContainer.appendChild(combinedContent);
-  }
-}
 
 /**
  * Handle messages from the plugin
