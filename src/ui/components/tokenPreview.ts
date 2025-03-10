@@ -1,5 +1,6 @@
 /**
- * Component for managing visual token preview functionality
+ * Enhanced component for managing visual token preview functionality
+ * With improved reference resolution
  */
 
 import { ColorFormat } from '../../code/formatters/colorTransforms';
@@ -10,6 +11,15 @@ export interface VisualToken {
   type: string;
   value: any;
   originalValue?: any;
+  referencedValue?: any; // Store the resolved reference value
+}
+
+// Interface for token reference mapping
+interface TokenReferenceMap {
+  [path: string]: {
+    value: any;
+    type: string;
+  }
 }
 
 /**
@@ -20,8 +30,11 @@ export function showVisualTokenPreview(
   containerElement: HTMLElement,
   colorFormat: ColorFormat
 ): void {
-  // Extract all visual tokens
-  const visualTokens = extractVisualTokens(tokenData);
+  // Extract all visual tokens with resolved references
+  const { visualTokens, referenceMap } = extractVisualTokensWithReferences(tokenData);
+  
+  // Resolve references for all tokens
+  resolveReferences(visualTokens, referenceMap);
   
   // Remove existing preview if present
   const existingPreview = document.querySelector('.token-preview-container');
@@ -42,26 +55,38 @@ export function showVisualTokenPreview(
   );
   
   // Setup interactive features
-  setupTokenPreviewInteractions(previewContainer);
+  setupTokenPreviewInteractions(previewContainer, referenceMap);
 }
 
 /**
- * Extracts all types of tokens from token data
+ * Extracts all types of tokens from token data, building a reference map
  */
-function extractVisualTokens(tokenData: any): VisualToken[] {
+function extractVisualTokensWithReferences(tokenData: any): { 
+  visualTokens: VisualToken[],
+  referenceMap: TokenReferenceMap
+} {
   const visualTokens: VisualToken[] = [];
+  const referenceMap: TokenReferenceMap = {};
   
   function processTokens(obj: any, path: string = '') {
     if (!obj || typeof obj !== 'object') return;
     
     // Process DTCG format tokens
     if (obj.$value !== undefined && obj.$type !== undefined) {
+      // Add to reference map for lookup
+      referenceMap[path] = {
+        value: obj.$value,
+        type: obj.$type
+      };
+      
+      // Add to visual tokens list
       visualTokens.push({
         path: path,
         type: obj.$type,
         value: obj.$value,
         originalValue: obj.$value
       });
+      
       return;
     }
     
@@ -76,6 +101,13 @@ function extractVisualTokens(tokenData: any): VisualToken[] {
         // Try to infer type for non-DTCG tokens
         const inferredType = inferTokenType(value);
         if (inferredType) {
+          // Add to reference map
+          referenceMap[newPath] = {
+            value: value,
+            type: inferredType
+          };
+          
+          // Add to visual tokens list
           visualTokens.push({
             path: newPath,
             type: inferredType,
@@ -94,7 +126,88 @@ function extractVisualTokens(tokenData: any): VisualToken[] {
     }
   }
   
-  return visualTokens;
+  return { visualTokens, referenceMap };
+}
+
+/**
+ * Resolve references for all tokens
+ */
+function resolveReferences(tokens: VisualToken[], referenceMap: TokenReferenceMap): void {
+  // Helper function to resolve a single reference
+  function resolveReference(refPath: string, visitedPaths: Set<string> = new Set()): any {
+    // Check for circular references
+    if (visitedPaths.has(refPath)) {
+      console.warn(`Circular reference detected: ${refPath}`);
+      return null;
+    }
+    
+    // Add current path to visited set
+    visitedPaths.add(refPath);
+    
+    // Try to find an exact match
+    if (referenceMap[refPath]) {
+      const refValue = referenceMap[refPath].value;
+      
+      // If this is also a reference, resolve it recursively
+      if (typeof refValue === 'string' && 
+          refValue.startsWith('{') && 
+          refValue.endsWith('}')) {
+        const nestedRefPath = refValue.substring(1, refValue.length - 1);
+        return resolveReference(nestedRefPath, visitedPaths);
+      }
+      
+      return {
+        value: refValue,
+        type: referenceMap[refPath].type
+      };
+    }
+    
+    // Try to find a match by the end of the path
+    for (const path in referenceMap) {
+      if (path.endsWith(`/${refPath}`)) {
+        const refValue = referenceMap[path].value;
+        
+        // If this is also a reference, resolve it recursively
+        if (typeof refValue === 'string' && 
+            refValue.startsWith('{') && 
+            refValue.endsWith('}')) {
+          const nestedRefPath = refValue.substring(1, refValue.length - 1);
+          return resolveReference(nestedRefPath, visitedPaths);
+        }
+        
+        return {
+          value: refValue,
+          type: referenceMap[path].type
+        };
+      }
+    }
+    
+    // Reference not found
+    console.warn(`Reference not found: ${refPath}`);
+    return null;
+  }
+  
+  // Resolve references for all tokens
+  for (const token of tokens) {
+    const value = token.value;
+    
+    // Check if this is a reference
+    if (typeof value === 'string' && 
+        value.startsWith('{') && 
+        value.endsWith('}')) {
+      
+      const refPath = value.substring(1, value.length - 1);
+      const resolved = resolveReference(refPath);
+      
+      if (resolved) {
+        token.referencedValue = resolved.value;
+        // If the referenced token has a different type, update this token's type
+        if (token.type === 'reference' && resolved.type) {
+          token.type = resolved.type;
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -102,8 +215,12 @@ function extractVisualTokens(tokenData: any): VisualToken[] {
  */
 function inferTokenType(value: any): string | null {
   if (typeof value === 'string') {
+    // Reference check
+    if (value.startsWith('{') && value.endsWith('}')) {
+      return 'reference';
+    }
     // Color check
-    if (value.startsWith('#') || value.startsWith('rgb') || value.startsWith('hsl')) {
+    else if (value.startsWith('#') || value.startsWith('rgb') || value.startsWith('hsl')) {
       return 'color';
     }
     // Dimension check
@@ -262,11 +379,20 @@ function generateColorTokensPreview(tokens: VisualToken[]): string {
       
       let displayColor: string;
       let additionalClasses = '';
+      let referenceValue = '';
       
       if (isReference) {
-        // For reference tokens, add reference indicator class and set a fallback color
-        displayColor = '#cccccc'; // Fallback color for references
-        additionalClasses = 'reference-token';
+        // For reference tokens, check if we have a resolved value
+        if (token.referencedValue !== undefined) {
+          // Use resolved reference value for the color display
+          displayColor = token.referencedValue;
+          additionalClasses = 'reference-token resolved-reference';
+          referenceValue = token.value;
+        } else {
+          // No resolved reference, use fallback
+          displayColor = '#cccccc';
+          additionalClasses = 'reference-token unresolved-reference';
+        }
       } else {
         // For regular colors
         displayColor = token.value;
@@ -285,7 +411,11 @@ function generateColorTokensPreview(tokens: VisualToken[]): string {
       const displayPath = token.path.split('/').slice(2).join('/');
       
       html += `
-        <div class="token-preview-item color-preview-item" data-token-path="${token.path}" data-token-value="${token.value}" data-token-type="${token.type}">
+        <div class="token-preview-item color-preview-item" 
+             data-token-path="${token.path}" 
+             data-token-value="${token.value}" 
+             data-token-type="${token.type}"
+             ${token.referencedValue ? `data-referenced-value="${token.referencedValue}"` : ''}>
           <div class="color-swatch ${additionalClasses}" style="background-color: ${displayColor}">
             ${isReference ? '<div class="reference-icon">↗</div>' : ''}
           </div>
@@ -294,6 +424,7 @@ function generateColorTokensPreview(tokens: VisualToken[]): string {
             <div class="token-value">
               ${token.value}
               ${isReference ? '<span class="reference-label">Reference</span>' : ''}
+              ${isReference && token.referencedValue ? `<span class="resolved-value">${token.referencedValue}</span>` : ''}
             </div>
           </div>
         </div>
@@ -331,22 +462,41 @@ function generateDimensionTokensPreview(tokens: VisualToken[]): string {
     html += `<div class="token-preview-subheading">${collection}</div>`;
     
     tokensByCollection[collection].forEach(token => {
+      // Check if this is a reference
+      const isReference = typeof token.value === 'string' && 
+                         token.value.startsWith('{') && 
+                         token.value.endsWith('}');
+      
+      // Determine the value to display and use
+      const displayValue = isReference && token.referencedValue !== undefined 
+                          ? token.referencedValue 
+                          : token.value;
+      
       // Extract path without collection/mode
       const displayPath = token.path.split('/').slice(2).join('/');
       
       // Try to represent dimension visually as a bar
-      const size = String(token.value).replace(/[^0-9.]/g, '');
+      const size = String(displayValue).replace(/[^0-9.]/g, '');
       // Cap at 200px for visualization purposes
-      const visualSize = Math.min(parseFloat(size), 200);
+      const visualSize = Math.min(parseFloat(size) || 0, 200);
       
       html += `
-        <div class="token-preview-item dimension-preview-item" data-token-path="${token.path}" data-token-value="${token.value}" data-token-type="${token.type}">
+        <div class="token-preview-item dimension-preview-item" 
+             data-token-path="${token.path}" 
+             data-token-value="${token.value}" 
+             data-token-type="${token.type}"
+             ${token.referencedValue ? `data-referenced-value="${token.referencedValue}"` : ''}>
           <div class="dimension-swatch">
             <div class="dimension-bar" style="width: ${visualSize}px"></div>
+            ${isReference ? '<div class="reference-icon-small">↗</div>' : ''}
           </div>
           <div class="token-info">
             <div class="token-path">${displayPath}</div>
-            <div class="token-value">${token.value}</div>
+            <div class="token-value">
+              ${token.value}
+              ${isReference ? '<span class="reference-label">Reference</span>' : ''}
+              ${isReference && token.referencedValue ? `<span class="resolved-value">${token.referencedValue}</span>` : ''}
+            </div>
           </div>
         </div>
       `;
@@ -363,6 +513,16 @@ function generateTypographyTokensPreview(tokens: VisualToken[], typographyType: 
   let html = `<div class="token-preview-subheading">${formatTypeName(typographyType)}</div>`;
   
   tokens.forEach(token => {
+    // Check if this is a reference
+    const isReference = typeof token.value === 'string' && 
+                       token.value.startsWith('{') && 
+                       token.value.endsWith('}');
+    
+    // Determine the value to display and use
+    const displayValue = isReference && token.referencedValue !== undefined 
+                        ? token.referencedValue 
+                        : token.value;
+    
     // Extract path without collection/mode
     const pathParts = token.path.split('/');
     const displayPath = pathParts.slice(2).join('/');
@@ -372,14 +532,14 @@ function generateTypographyTokensPreview(tokens: VisualToken[], typographyType: 
     
     switch(typographyType) {
       case 'fontFamily':
-        visualElement = `<div class="font-family-sample" style="font-family: ${token.value}">Aa</div>`;
+        visualElement = `<div class="font-family-sample" style="font-family: ${displayValue}">Aa</div>`;
         break;
       case 'fontWeight':
-        visualElement = `<div class="font-weight-sample" style="font-weight: ${token.value}">Aa</div>`;
+        visualElement = `<div class="font-weight-sample" style="font-weight: ${displayValue}">Aa</div>`;
         break;
       case 'fontSize':
         // Scale down very large font sizes for preview
-        const fontSize = String(token.value);
+        const fontSize = String(displayValue);
         const sizeValue = parseFloat(fontSize);
         const unit = fontSize.replace(/[0-9.]/g, '');
         const displaySize = sizeValue > 32 ? `${Math.min(32, sizeValue)}${unit}` : fontSize;
@@ -389,23 +549,32 @@ function generateTypographyTokensPreview(tokens: VisualToken[], typographyType: 
       case 'lineHeight':
         visualElement = `
           <div class="line-height-sample">
-            <div style="line-height: ${token.value}">Line 1<br>Line 2<br>Line 3</div>
+            <div style="line-height: ${displayValue}">Line 1<br>Line 2<br>Line 3</div>
           </div>
         `;
         break;
       case 'letterSpacing':
-        visualElement = `<div class="letter-spacing-sample" style="letter-spacing: ${token.value}">Spacing</div>`;
+        visualElement = `<div class="letter-spacing-sample" style="letter-spacing: ${displayValue}">Spacing</div>`;
         break;
       default:
-        visualElement = `<div class="typography-sample">${token.value}</div>`;
+        visualElement = `<div class="typography-sample">${displayValue}</div>`;
     }
     
     html += `
-      <div class="token-preview-item typography-preview-item" data-token-path="${token.path}" data-token-value="${token.value}" data-token-type="${token.type}">
+      <div class="token-preview-item typography-preview-item" 
+           data-token-path="${token.path}" 
+           data-token-value="${token.value}" 
+           data-token-type="${token.type}"
+           ${token.referencedValue ? `data-referenced-value="${token.referencedValue}"` : ''}>
         ${visualElement}
+        ${isReference ? '<div class="reference-icon-small">↗</div>' : ''}
         <div class="token-info">
           <div class="token-path">${displayPath}</div>
-          <div class="token-value">${token.value}</div>
+          <div class="token-value">
+            ${token.value}
+            ${isReference ? '<span class="reference-label">Reference</span>' : ''}
+            ${isReference && token.referencedValue ? `<span class="resolved-value">${token.referencedValue}</span>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -421,13 +590,23 @@ function generateDurationTokensPreview(tokens: VisualToken[]): string {
   let html = '<div class="token-preview-heading">Duration Tokens</div>';
   
   tokens.forEach(token => {
+    // Check if this is a reference
+    const isReference = typeof token.value === 'string' && 
+                        token.value.startsWith('{') && 
+                        token.value.endsWith('}');
+    
+    // Determine the value to display and use
+    const displayValue = isReference && token.referencedValue !== undefined 
+                         ? token.referencedValue 
+                         : token.value;
+    
     // Extract path without collection/mode
     const pathParts = token.path.split('/');
     const displayPath = pathParts.slice(2).join('/');
     
     // Convert duration to milliseconds for animation
     let durationMs = 1000; // Default 1s
-    const durationValue = String(token.value);
+    const durationValue = String(displayValue);
     
     if (durationValue.includes('ms')) {
       durationMs = parseFloat(durationValue);
@@ -439,13 +618,22 @@ function generateDurationTokensPreview(tokens: VisualToken[]): string {
     const animationDuration = Math.min(durationMs / 1000, 5);
     
     html += `
-      <div class="token-preview-item duration-preview-item" data-token-path="${token.path}" data-token-value="${token.value}" data-token-type="${token.type}">
+      <div class="token-preview-item duration-preview-item" 
+           data-token-path="${token.path}" 
+           data-token-value="${token.value}" 
+           data-token-type="${token.type}"
+           ${token.referencedValue ? `data-referenced-value="${token.referencedValue}"` : ''}>
         <div class="duration-swatch">
           <div class="duration-bar" style="animation-duration: ${animationDuration}s"></div>
+          ${isReference ? '<div class="reference-icon-small">↗</div>' : ''}
         </div>
         <div class="token-info">
           <div class="token-path">${displayPath}</div>
-          <div class="token-value">${token.value}</div>
+          <div class="token-value">
+            ${token.value}
+            ${isReference ? '<span class="reference-label">Reference</span>' : ''}
+            ${isReference && token.referencedValue ? `<span class="resolved-value">${token.referencedValue}</span>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -461,18 +649,37 @@ function generateShadowTokensPreview(tokens: VisualToken[]): string {
   let html = '<div class="token-preview-heading">Shadow Tokens</div>';
   
   tokens.forEach(token => {
+    // Check if this is a reference
+    const isReference = typeof token.value === 'string' && 
+                        token.value.startsWith('{') && 
+                        token.value.endsWith('}');
+    
+    // Determine the value to display and use
+    const displayValue = isReference && token.referencedValue !== undefined 
+                         ? token.referencedValue 
+                         : token.value;
+    
     // Extract path without collection/mode
     const pathParts = token.path.split('/');
     const displayPath = pathParts.slice(2).join('/');
     
     html += `
-      <div class="token-preview-item shadow-preview-item" data-token-path="${token.path}" data-token-value="${token.value}" data-token-type="${token.type}">
+      <div class="token-preview-item shadow-preview-item" 
+           data-token-path="${token.path}" 
+           data-token-value="${token.value}" 
+           data-token-type="${token.type}"
+           ${token.referencedValue ? `data-referenced-value="${token.referencedValue}"` : ''}>
         <div class="shadow-swatch">
-          <div class="shadow-box" style="box-shadow: ${token.value}"></div>
+          <div class="shadow-box" style="box-shadow: ${displayValue}"></div>
+          ${isReference ? '<div class="reference-icon-small">↗</div>' : ''}
         </div>
         <div class="token-info">
           <div class="token-path">${displayPath}</div>
-          <div class="token-value">${token.value}</div>
+          <div class="token-value">
+            ${token.value}
+            ${isReference ? '<span class="reference-label">Reference</span>' : ''}
+            ${isReference && token.referencedValue ? `<span class="resolved-value">${token.referencedValue}</span>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -488,18 +695,37 @@ function generateGenericTokensPreview(tokens: VisualToken[], type: string): stri
   let html = `<div class="token-preview-subheading">${formatTypeName(type)} Tokens</div>`;
   
   tokens.forEach(token => {
+    // Check if this is a reference
+    const isReference = typeof token.value === 'string' && 
+                        token.value.startsWith('{') && 
+                        token.value.endsWith('}');
+    
+    // Determine the value to display and use
+    const displayValue = isReference && token.referencedValue !== undefined 
+                         ? token.referencedValue 
+                         : token.value;
+    
     // Extract path without collection/mode
     const pathParts = token.path.split('/');
     const displayPath = pathParts.slice(2).join('/');
     
     html += `
-      <div class="token-preview-item generic-preview-item" data-token-path="${token.path}" data-token-value="${token.value}" data-token-type="${token.type}">
+      <div class="token-preview-item generic-preview-item" 
+           data-token-path="${token.path}" 
+           data-token-value="${token.value}" 
+           data-token-type="${token.type}"
+           ${token.referencedValue ? `data-referenced-value="${token.referencedValue}"` : ''}>
         <div class="generic-swatch">
           <div class="generic-indicator">${type.charAt(0).toUpperCase()}</div>
+          ${isReference ? '<div class="reference-icon-small">↗</div>' : ''}
         </div>
         <div class="token-info">
           <div class="token-path">${displayPath}</div>
-          <div class="token-value">${token.value}</div>
+          <div class="token-value">
+            ${token.value}
+            ${isReference ? '<span class="reference-label">Reference</span>' : ''}
+            ${isReference && token.referencedValue ? `<span class="resolved-value">${token.referencedValue}</span>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -524,7 +750,10 @@ function formatTypeName(type: string): string {
 /**
  * Setup interactions for token preview (click handling)
  */
-function setupTokenPreviewInteractions(previewContainer: HTMLElement): void {
+function setupTokenPreviewInteractions(
+  previewContainer: HTMLElement,
+  referenceMap: TokenReferenceMap
+): void {
   // Add click handler for token preview items
   previewContainer.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -534,8 +763,9 @@ function setupTokenPreviewInteractions(previewContainer: HTMLElement): void {
       const tokenPath = tokenItem.dataset.tokenPath || '';
       const tokenValue = tokenItem.dataset.tokenValue || '';
       const tokenType = tokenItem.dataset.tokenType || '';
+      const referencedValue = tokenItem.dataset.referencedValue || '';
       
-      showTokenDetailPanel(tokenItem, tokenPath, tokenValue, tokenType);
+      showTokenDetailPanel(tokenItem, tokenPath, tokenValue, tokenType, referencedValue, referenceMap);
     }
   });
 }
@@ -547,7 +777,9 @@ function showTokenDetailPanel(
   anchorElement: HTMLElement, 
   tokenPath: string, 
   tokenValue: string, 
-  tokenType: string
+  tokenType: string,
+  referencedValue: string = '',
+  referenceMap: TokenReferenceMap
 ): void {
   // Remove any existing panels
   document.querySelectorAll('.token-detail-panel').forEach(panel => {
@@ -576,6 +808,9 @@ function showTokenDetailPanel(
   // Format the token path into CSS variable name
   const cssVariable = `--${tokenPath.split('/').slice(2).join('-').toLowerCase()}`;
   
+  // Determine the display value (use referenced value if available)
+  const displayValue = referencedValue || tokenValue;
+  
   // Generate CSS usage example
   const cssUsage = getCssUsageExample(tokenType, cssVariable);
   
@@ -583,16 +818,25 @@ function showTokenDetailPanel(
   const scssVariable = `${tokenPath.split('/').slice(2).join('-').toLowerCase()}`;
   
   // Generate appropriate visualization
-  let visualization;
+  let visualization = '';
+  
   if (isReference) {
+    // Reference visualization showing source and target
     visualization = `
       <div class="reference-visualization">
+        <div class="reference-token-wrapper">
+          <div>${tokenValue}</div>
+        </div>
         <div class="reference-arrow">⟶</div>
-        <div class="reference-target">${referencePath}</div>
+        <div class="reference-target-wrapper">
+          <div>${referencedValue || 'Not resolved'}</div>
+          ${referencedValue ? `<div class="reference-preview" style="${tokenType === 'color' ? `background-color: ${referencedValue};` : ''}"></div>` : ''}
+        </div>
       </div>
     `;
   } else {
-    visualization = getTokenVisualization(tokenType, tokenValue);
+    // Regular visualization based on token type
+    visualization = getTokenVisualization(tokenType, displayValue);
   }
   
   // Create the main content section
@@ -629,6 +873,27 @@ function showTokenDetailPanel(
         <div class="token-detail-value">${referencePath}</div>
       </div>
     `;
+    
+    if (referencedValue) {
+      content += `
+      <div class="token-detail-row">
+        <div class="token-detail-label">Resolved Value:</div>
+        <div class="token-detail-value">
+          ${referencedValue}
+          <button class="token-copy-button" data-copy-value="${referencedValue}">Copy</button>
+        </div>
+      </div>
+      `;
+    } else {
+      content += `
+      <div class="token-detail-row">
+        <div class="token-detail-label">Resolved Value:</div>
+        <div class="token-detail-value">
+          <span style="color: #d32f2f;">Unresolved reference</span>
+        </div>
+      </div>
+      `;
+    }
   }
   
   content += `
@@ -724,17 +989,6 @@ function formatTokenTitle(path: string): string {
  * Generate token visualization based on type
  */
 function getTokenVisualization(type: string, value: string): string {
-  // Check if this is a reference
-  if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
-    const referencePath = value.substring(1, value.length - 1);
-    return `
-      <div class="reference-visualization">
-        <div class="reference-arrow">⟶</div>
-        <div class="reference-target">${referencePath}</div>
-      </div>
-    `;
-  }
-
   // Handle regular token types
   switch(type) {
     case 'color':

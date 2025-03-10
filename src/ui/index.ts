@@ -2,6 +2,7 @@ import './styles.css';
 import './tab-styles.css';
 import './token-preview.css';
 
+
 // Import utilities
 import { 
   formatJson, 
@@ -104,6 +105,7 @@ function updatePreview(): void {
   
   // Handle token preview if enabled
   if (tokenPreviewEnabled) {
+    // Use the enhanced token preview with reference resolution
     showVisualTokenPreview(filteredData, previewContentContainer, currentColorFormat);
   } else {
     // Remove token preview if present
