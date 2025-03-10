@@ -92,7 +92,28 @@ function updatePreview(): void {
   // Update the main output display
   outputEl.textContent = formatJson(filteredData);
   
-  // Update the tabbed preview
+  // Define a function to update the visual preview for a specific tab's data
+  const updateVisualPreview = (tabData: any) => {
+    if (tokenPreviewEnabled) {
+      // Remove any existing preview before creating a new one
+      const existingPreview = document.querySelector('.token-preview-wrapper');
+      if (existingPreview) {
+        existingPreview.remove();
+      }
+      
+      // Use the enhanced token preview with reference resolution
+      // Now using tabData instead of filteredData to match the selected tab
+      showVisualTokenPreview(tabData, previewContentContainer, currentColorFormat);
+    } else {
+      // Remove token preview if present
+      const existingPreview = document.querySelector('.token-preview-wrapper');
+      if (existingPreview) {
+        existingPreview.remove();
+      }
+    }
+  };
+  
+  // Update the tabbed preview with the function to update visual preview
   setupPreviewTabs(
     tokenData,
     selectedCollections,
@@ -100,20 +121,9 @@ function updatePreview(): void {
     flatStructureCheckbox.checked,
     separateFilesCheckbox.checked,
     previewTabsContainer,
-    previewContentContainer
+    previewContentContainer,
+    updateVisualPreview // Pass the update function
   );
-  
-  // Handle token preview if enabled
-  if (tokenPreviewEnabled) {
-    // Use the enhanced token preview with reference resolution
-    showVisualTokenPreview(filteredData, previewContentContainer, currentColorFormat);
-  } else {
-    // Remove token preview if present
-    const existingPreview = document.querySelector('.token-preview-container');
-    if (existingPreview) {
-      existingPreview.remove();
-    }
-  }
   
   // Enable/disable download button based on selection
   downloadBtn.disabled = Object.keys(filteredData).length === 0;

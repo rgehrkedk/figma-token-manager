@@ -10,6 +10,13 @@ interface TabDefinition {
   data: any;
 }
 
+// Token data structure type
+interface TokenDataStructure {
+  [collection: string]: {
+    [mode: string]: any;
+  };
+}
+
 /**
  * Setup the preview tabs based on selected tokens
  */
@@ -20,7 +27,8 @@ export function setupPreviewTabs(
   flatStructure: boolean,
   isSeparateFiles: boolean,
   tabsContainer: HTMLElement,
-  contentContainer: HTMLElement
+  contentContainer: HTMLElement,
+  updateVisualPreview?: (data: any) => void // New parameter to update visual preview
 ): void {
   // Clear existing tabs except combined
   const existingTabs = tabsContainer.querySelectorAll('.tab-button:not([data-tab="combined"])');
@@ -41,10 +49,10 @@ export function setupPreviewTabs(
     tabButton.dataset.tab = file.id;
     tabButton.textContent = file.name;
     
-    // Add click event listener
+    // Add click event listener with visual preview update
     tabButton.addEventListener('click', (e) => {
       e.preventDefault(); // Prevent default button behavior
-      setActiveTab(file.id, tabsContainer, contentContainer);
+      setActiveTab(file.id, tabsContainer, contentContainer, file.data, updateVisualPreview);
     });
     
     tabsContainer.appendChild(tabButton);
@@ -69,21 +77,57 @@ export function setupPreviewTabs(
     const newCombinedTab = combinedTab.cloneNode(true);
     combinedTab.parentNode?.replaceChild(newCombinedTab, combinedTab);
     
+    // Create combined data for when combined tab is clicked
     newCombinedTab.addEventListener('click', (e) => {
       e.preventDefault();
-      setActiveTab('combined', tabsContainer, contentContainer);
+      
+      // Get combined data (all selected collections and modes)
+      const combinedData: TokenDataStructure = {};
+      for (const collection of selectedCollections) {
+        if (tokenData[collection]) {
+          combinedData[collection] = {};
+          const modesForCollection = selectedModes.get(collection) || [];
+          for (const mode of modesForCollection) {
+            if (tokenData[collection][mode]) {
+              combinedData[collection][mode] = tokenData[collection][mode];
+            }
+          }
+        }
+      }
+      
+      setActiveTab('combined', tabsContainer, contentContainer, combinedData, updateVisualPreview);
     });
   }
   
   // Set the combined tab as active by default
-  setActiveTab('combined', tabsContainer, contentContainer);
+  // Create combined data for initial view
+  const combinedData: TokenDataStructure = {};
+  for (const collection of selectedCollections) {
+    if (tokenData[collection]) {
+      combinedData[collection] = {};
+      const modesForCollection = selectedModes.get(collection) || [];
+      for (const mode of modesForCollection) {
+        if (tokenData[collection][mode]) {
+          combinedData[collection][mode] = tokenData[collection][mode];
+        }
+      }
+    }
+  }
+  
+  setActiveTab('combined', tabsContainer, contentContainer, combinedData, updateVisualPreview);
 }
 
 /**
  * Set the active tab
  */
-export function setActiveTab(tabId: string, tabsContainer: HTMLElement, contentContainer: HTMLElement): void {
-  console.log(`Setting active tab: ${tabId}`); // Debug log
+export function setActiveTab(
+  tabId: string, 
+  tabsContainer: HTMLElement, 
+  contentContainer: HTMLElement,
+  tabData?: any, // New parameter for tab-specific data
+  updateVisualPreview?: (data: any) => void // New parameter to update visual preview
+): void {
+  console.log(`Setting active tab: ${tabId}`);
   
   // Get all tab buttons and contents
   const tabButtons = tabsContainer.querySelectorAll('.tab-button');
@@ -111,6 +155,11 @@ export function setActiveTab(tabId: string, tabsContainer: HTMLElement, contentC
     selectedContent.style.display = 'block';
   } else {
     console.error(`Tab content not found: tab-${tabId}`);
+  }
+  
+  // Update visual token preview with the data for this tab
+  if (tabData && updateVisualPreview) {
+    updateVisualPreview(tabData);
   }
 }
 

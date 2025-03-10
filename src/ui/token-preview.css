@@ -1,11 +1,19 @@
 /* Token Preview Styles */
 
-.token-preview-container {
+.token-preview-wrapper {
   margin-top: 16px;
+}
+
+.token-preview-container {
   border: 1px solid #e5e5e5;
   border-radius: 4px;
   overflow: hidden;
   background: white;
+}
+
+/* Position the token preview inside the tab content */
+.tab-content .token-preview-wrapper {
+  margin-top: 16px;
 }
 
 .token-preview-heading {
@@ -16,47 +24,6 @@
   border-bottom: 1px solid #e5e5e5;
 }
 
-.token-preview-subheading {
-  background-color: #f9f9f9;
-  padding: 6px 12px;
-  font-weight: 500;
-  font-size: 11px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.token-preview-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.15s ease;
-}
-
-.token-preview-item:last-child {
-  border-bottom: none;
-}
-
-.token-preview-item:hover {
-  background-color: #f5f5f5;
-  cursor: pointer;
-}
-
-.token-info {
-  flex: 1;
-}
-
-.token-path {
-  font-weight: 500;
-  font-size: 11px;
-  margin-bottom: 2px;
-}
-
-.token-value {
-  font-family: monospace;
-  font-size: 10px;
-  color: #666;
-  word-break: break-all;
-}
 
 /* Color tokens */
 .color-swatch {
