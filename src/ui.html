@@ -5,6 +5,340 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Design Token Export</title>
   <!-- Styles will be injected here by webpack -->
+   <!-- 
+This snippet can be added to the head of the existing UI.html file
+It injects our enhanced styles and script without changing the core functionality
+-->
+
+<!-- Add this to the HEAD section of ui.html -->
+<style>
+  /* Enhanced Color Token Preview Styles */
+  
+  /* Color tokens enhancement */
+  .color-preview-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+  }
+  
+  .color-preview-item:hover {
+    background-color: #f9f9f9;
+  }
+  
+  .color-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    margin-right: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .color-swatch.transparent {
+    background-image: 
+      linear-gradient(45deg, #eee 25%, transparent 25%),
+      linear-gradient(-45deg, #eee 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #eee 75%),
+      linear-gradient(-45deg, transparent 75%, #eee 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+  }
+  
+  /* Reference tokens */
+  .color-swatch.reference-token {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .reference-source,
+  .reference-target {
+    flex: 1;
+    width: 100%;
+    position: relative;
+  }
+  
+  .reference-source {
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
+  }
+  
+  .reference-divider {
+    position: absolute;
+    width: calc(100% - 4px);
+    height: 1px;
+    background-color: rgba(0, 0, 0, 0.15);
+    top: 50%;
+    left: 2px;
+    z-index: 1;
+  }
+  
+  .reference-icon {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 14px;
+    height: 14px;
+    background: #0366d6;
+    color: white;
+    font-size: 9px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+  }
+  
+  .reference-label {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 5px;
+    background: #e8f0fe;
+    color: #0366d6;
+    font-size: 9px;
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+  
+  .resolved-value {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 5px;
+    background: #e6ffed;
+    color: #22863a;
+    font-size: 9px;
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+  
+  /* Token info structure */
+  .token-info {
+    flex: 1;
+    margin-left: 6px;
+    overflow: hidden;
+  }
+  
+  .token-path {
+    font-weight: 500;
+    font-size: 12px;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  
+  .token-value {
+    font-family: monospace;
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Color value chip */
+  .color-value-chip {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    vertical-align: middle;
+  }
+  
+  /* Split swatch for reference */
+  .split-swatch {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .split-swatch .top,
+  .split-swatch .bottom {
+    position: absolute;
+    width: 100%;
+    height: 50%;
+    left: 0;
+  }
+  
+  .split-swatch .top {
+    top: 0;
+    background-color: #f0f0f0;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.15);
+  }
+  
+  .split-swatch .bottom {
+    bottom: 0;
+  }
+  </style>
+  
+  <!-- Add this just before the closing BODY tag of ui.html -->
+  <script>
+  /**
+   * Color Token Enhancer - Can be added to the existing UI
+   */
+  const ColorTokenEnhancer = {
+    // Main function to enhance color token displays
+    enhance: function() {
+      // Find all elements that look like color tokens
+      this.findAndEnhanceColorTokens();
+      
+      // Set up a mutation observer to handle dynamically added content
+      this.setupObserver();
+      
+      console.log('Color token enhancer initialized');
+    },
+    
+    // Find and enhance color tokens in the current DOM
+    findAndEnhanceColorTokens: function() {
+      // Find potential color values in the UI
+      const colorElements = document.querySelectorAll('pre, .token-value');
+      
+      colorElements.forEach(element => {
+        const text = element.textContent || '';
+        
+        // Look for color values - hex, rgb, hsl
+        const hexMatches = text.match(/#[0-9a-fA-F]{3,8}\b/g);
+        const rgbMatches = text.match(/rgb\(.*?\)/g) || text.match(/rgba\(.*?\)/g);
+        const hslMatches = text.match(/hsl\(.*?\)/g) || text.match(/hsla\(.*?\)/g);
+        
+        // Find reference values like {colors.primary}
+        const refMatches = text.match(/\{[^}]+\}/g);
+        
+        if (hexMatches || rgbMatches || hslMatches) {
+          // It's a color value!
+          this.enhanceColorElement(element, hexMatches || rgbMatches || hslMatches);
+        } else if (refMatches) {
+          // It's a reference!
+          this.enhanceReferenceElement(element, refMatches[0]);
+        }
+      });
+    },
+    
+    // Enhance a color element with a color chip
+    enhanceColorElement: function(element, colorValues) {
+      if (!colorValues || !colorValues.length) return;
+      
+      // Get the first color value
+      const colorValue = colorValues[0];
+      
+      // Don't modify if it's already been enhanced
+      if (element.querySelector('.color-value-chip')) return;
+      
+      // Create a color chip
+      const colorChip = document.createElement('span');
+      colorChip.className = 'color-value-chip';
+      colorChip.style.backgroundColor = colorValue;
+      
+      // Add it before the text
+      element.insertBefore(colorChip, element.firstChild);
+    },
+    
+    // Enhance a reference element
+    enhanceReferenceElement: function(element, refValue) {
+      // Don't modify if it's already been enhanced
+      if (element.querySelector('.reference-label')) return;
+      
+      // Add a reference label
+      const refLabel = document.createElement('span');
+      refLabel.className = 'reference-label';
+      refLabel.textContent = 'Ref';
+      
+      // Add it after the text
+      element.appendChild(refLabel);
+      
+      // Try to get the parent container (to add the split swatch)
+      const container = this.findParentContainer(element);
+      if (container) {
+        this.addSplitSwatch(container, refValue);
+      }
+    },
+    
+    // Find a suitable parent container
+    findParentContainer: function(element) {
+      // Try to find a container element that we can add a swatch to
+      let current = element.parentElement;
+      while (current && !current.classList.contains('token-preview-item') && !current.classList.contains('color-preview-item')) {
+        current = current.parentElement;
+      }
+      return current;
+    },
+    
+    // Add a split swatch showing both reference and value
+    addSplitSwatch: function(container, refValue) {
+      // Don't add if there's already a swatch
+      if (container.querySelector('.split-swatch')) return;
+      
+      // Try to find the resolved value in the DOM
+      const resolvedValueEl = container.querySelector('.resolved-value');
+      const resolvedColor = resolvedValueEl ? resolvedValueEl.textContent.trim() : '#cccccc';
+      
+      // Create the split swatch
+      const splitSwatch = document.createElement('div');
+      splitSwatch.className = 'split-swatch';
+      
+      const top = document.createElement('div');
+      top.className = 'top';
+      
+      const bottom = document.createElement('div');
+      bottom.className = 'bottom';
+      bottom.style.backgroundColor = resolvedColor;
+      
+      const refIcon = document.createElement('div');
+      refIcon.className = 'reference-icon';
+      refIcon.textContent = '↗';
+      
+      splitSwatch.appendChild(top);
+      splitSwatch.appendChild(bottom);
+      splitSwatch.appendChild(refIcon);
+      
+      // Add it to the container
+      container.insertBefore(splitSwatch, container.firstChild);
+    },
+    
+    // Setup mutation observer to enhance dynamically added elements
+    setupObserver: function() {
+      const observer = new MutationObserver(mutations => {
+        let shouldEnhance = false;
+        
+        mutations.forEach(mutation => {
+          if (mutation.type === 'childList' && mutation.addedNodes.length) {
+            shouldEnhance = true;
+          }
+        });
+        
+        if (shouldEnhance) {
+          this.findAndEnhanceColorTokens();
+        }
+      });
+      
+      observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+      });
+    }
+  };
+  
+  // Initialize when the DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to make sure the UI is fully loaded
+    setTimeout(() => {
+      ColorTokenEnhancer.enhance();
+    }, 1000);
+  });
+  
+  // Also run it now in case the DOM is already loaded
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(() => {
+      ColorTokenEnhancer.enhance();
+    }, 1000);
+  }
+  </script>
 </head>
 <body>
   <h2>Design Token Export</h2>
@@ -124,5 +458,169 @@
   <% } %>
   
   <!-- UI JavaScript will be inlined here by webpack -->
+  /**
+  * Color Token Enhancer - Can be added to the existing UI
+  * 
+  * This is a standalone script that enhances color token visualization
+  * It can be included in the existing UI without changing the core functionality
+  */
+ 
+ // Minimal reference to avoid conflicts
+ const ColorTokenEnhancer = {
+   // Main function to enhance color token displays
+   enhance: function() {
+     // Find all elements that look like color tokens
+     this.findAndEnhanceColorTokens();
+     
+     // Set up a mutation observer to handle dynamically added content
+     this.setupObserver();
+     
+     console.log('Color token enhancer initialized');
+   },
+   
+   // Find and enhance color tokens in the current DOM
+   findAndEnhanceColorTokens: function() {
+     // Find potential color values in the UI
+     const colorElements = document.querySelectorAll('pre, .token-value');
+     
+     colorElements.forEach(element => {
+       const text = element.textContent || '';
+       
+       // Look for color values - hex, rgb, hsl
+       const hexMatches = text.match(/#[0-9a-fA-F]{3,8}\b/g);
+       const rgbMatches = text.match(/rgb\(.*?\)/g) || text.match(/rgba\(.*?\)/g);
+       const hslMatches = text.match(/hsl\(.*?\)/g) || text.match(/hsla\(.*?\)/g);
+       
+       // Find reference values like {colors.primary}
+       const refMatches = text.match(/\{[^}]+\}/g);
+       
+       if (hexMatches || rgbMatches || hslMatches) {
+         // It's a color value!
+         this.enhanceColorElement(element, hexMatches || rgbMatches || hslMatches);
+       } else if (refMatches) {
+         // It's a reference!
+         this.enhanceReferenceElement(element, refMatches[0]);
+       }
+     });
+   },
+   
+   // Enhance a color element with a color chip
+   enhanceColorElement: function(element, colorValues) {
+     if (!colorValues || !colorValues.length) return;
+     
+     // Get the first color value
+     const colorValue = colorValues[0];
+     
+     // Don't modify if it's already been enhanced
+     if (element.querySelector('.color-value-chip')) return;
+     
+     // Create a color chip
+     const colorChip = document.createElement('span');
+     colorChip.className = 'color-value-chip';
+     colorChip.style.backgroundColor = colorValue;
+     
+     // Add it before the text
+     element.insertBefore(colorChip, element.firstChild);
+   },
+   
+   // Enhance a reference element
+   enhanceReferenceElement: function(element, refValue) {
+     // Don't modify if it's already been enhanced
+     if (element.querySelector('.reference-label')) return;
+     
+     // Add a reference label
+     const refLabel = document.createElement('span');
+     refLabel.className = 'reference-label';
+     refLabel.textContent = 'Ref';
+     
+     // Add it after the text
+     element.appendChild(refLabel);
+     
+     // Try to get the parent container (to add the split swatch)
+     const container = this.findParentContainer(element);
+     if (container) {
+       this.addSplitSwatch(container, refValue);
+     }
+   },
+   
+   // Find a suitable parent container
+   findParentContainer: function(element) {
+     // Try to find a container element that we can add a swatch to
+     let current = element.parentElement;
+     while (current && !current.classList.contains('token-preview-item') && !current.classList.contains('color-preview-item')) {
+       current = current.parentElement;
+     }
+     return current;
+   },
+   
+   // Add a split swatch showing both reference and value
+   addSplitSwatch: function(container, refValue) {
+     // Don't add if there's already a swatch
+     if (container.querySelector('.split-swatch')) return;
+     
+     // Try to find the resolved value in the DOM
+     const resolvedValueEl = container.querySelector('.resolved-value');
+     const resolvedColor = resolvedValueEl ? resolvedValueEl.textContent.trim() : '#cccccc';
+     
+     // Create the split swatch
+     const splitSwatch = document.createElement('div');
+     splitSwatch.className = 'split-swatch';
+     
+     const top = document.createElement('div');
+     top.className = 'top';
+     
+     const bottom = document.createElement('div');
+     bottom.className = 'bottom';
+     bottom.style.backgroundColor = resolvedColor;
+     
+     const refIcon = document.createElement('div');
+     refIcon.className = 'reference-icon';
+     refIcon.textContent = '↗';
+     
+     splitSwatch.appendChild(top);
+     splitSwatch.appendChild(bottom);
+     splitSwatch.appendChild(refIcon);
+     
+     // Add it to the container
+     container.insertBefore(splitSwatch, container.firstChild);
+   },
+   
+   // Setup mutation observer to enhance dynamically added elements
+   setupObserver: function() {
+     const observer = new MutationObserver(mutations => {
+       let shouldEnhance = false;
+       
+       mutations.forEach(mutation => {
+         if (mutation.type === 'childList' && mutation.addedNodes.length) {
+           shouldEnhance = true;
+         }
+       });
+       
+       if (shouldEnhance) {
+         this.findAndEnhanceColorTokens();
+       }
+     });
+     
+     observer.observe(document.body, { 
+       childList: true, 
+       subtree: true 
+     });
+   }
+ };
+ 
+ // Initialize when the DOM is ready
+ document.addEventListener('DOMContentLoaded', function() {
+   // Wait a bit to make sure the UI is fully loaded
+   setTimeout(() => {
+     ColorTokenEnhancer.enhance();
+   }, 1000);
+ });
+ 
+ // Also run it now in case the DOM is already loaded
+ if (document.readyState === 'complete' || document.readyState === 'interactive') {
+   setTimeout(() => {
+     ColorTokenEnhancer.enhance();
+   }, 1000);
+ }
 </body>
 </html>
