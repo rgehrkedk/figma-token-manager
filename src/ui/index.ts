@@ -28,12 +28,18 @@ import {
   showValidationResults
 } from './components/validation';
 
+// Import enhanced components
 import {
-  showVisualTokenPreview
+  showEnhancedVisualTokenPreview
 } from './components/tokenPreview';
 
-import { setupColorFormatHandlers } from './color-handlers';
+import {
+  analyzeReferenceIssues,
+  setupReferenceDiagnosisListeners,
+  getReferenceDiagnoserStyles
+} from './components/referenceDiagnoser';
 
+import { setupColorFormatHandlers } from './color-handlers';
 import { setupPreviewToggle } from './components/previewToggle';
 
 // Import color transforms
@@ -49,6 +55,7 @@ let areAllSelected: boolean = true;
 let referenceProblems: any[] = [];
 let currentColorFormat: ColorFormat = 'hex'; // Default color format
 let previewToggleInterface: { setMode: (mode: 'json' | 'visual') => void; getCurrentMode: () => 'json' | 'visual' };
+let referenceDiagnosticsData = { resolved: 0, unresolved: 0 };
 
 // Get DOM elements
 const outputEl = document.getElementById('output') as HTMLPreElement;
@@ -68,6 +75,11 @@ const validationContent = document.getElementById('validation-content') as HTMLD
 const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivElement;
 const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
 const visualPreviewContainer = document.getElementById('visual-preview-container') as HTMLDivElement;
+
+// Add reference diagnoser styles
+const styleElement = document.createElement('style');
+styleElement.textContent = getReferenceDiagnoserStyles();
+document.head.appendChild(styleElement);
 
 /**
  * Helper function to get data for a specific tab
@@ -132,8 +144,28 @@ function updatePreview(): void {
       existingPreview.remove();
     }
     
-    // Create new visual preview
-    showVisualTokenPreview(tabData, visualPreviewContainer, currentColorFormat);
+    // Create new visual preview with reference resolution diagnostics
+    showEnhancedVisualTokenPreview(
+      tabData, 
+      visualPreviewContainer, 
+      currentColorFormat,
+      (numResolved, numUnresolved) => {
+        // Store diagnostics data for possible use
+        referenceDiagnosticsData = {
+          resolved: numResolved,
+          unresolved: numUnresolved
+        };
+        
+        // Update status with reference information
+        if (numUnresolved > 0) {
+          statusEl.textContent = `Found ${numResolved} resolved and ${numUnresolved} unresolved references. Click "Reference Diagnoser" for details.`;
+          statusEl.className = "warning";
+        } else if (numResolved > 0) {
+          statusEl.textContent = `All ${numResolved} references resolved successfully.`;
+          statusEl.className = "success";
+        }
+      }
+    );
   };
   
   // Update the tabbed preview with the function to update visual preview
@@ -190,7 +222,7 @@ function ensureCombinedTabExists() {
         if (existingPreview) {
           existingPreview.remove();
         }
-        showVisualTokenPreview(currentTabData, visualPreviewContainer, currentColorFormat);
+        showEnhancedVisualTokenPreview(currentTabData, visualPreviewContainer, currentColorFormat);
       }
     });
     previewTabsContainer.appendChild(combinedTab);
@@ -259,9 +291,65 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePreview();
   });
   
-  // Validate references button
+  // Enhance validate button to add reference diagnostics
   validateBtn.addEventListener('click', () => {
+    // First show standard validation results
     showValidationResults(referenceProblems, validationContent, referenceValidationResults);
+    
+    // Then augment with detailed reference diagnostics
+    if (tokenData) {
+      // Get the current tab data
+      const currentTabId = document.querySelector('.tab-button.active')?.getAttribute('data-tab') || 'combined';
+      const currentTabData = currentTabId === 'combined' ? 
+        filterTokens(
+          tokenData, 
+          selectedCollections, 
+          Array.from(selectedModes.values()).flat(), 
+          flatStructureCheckbox.checked
+        ) : 
+        getCurrentTabData(currentTabId);
+      
+      // Add reference diagnosis section
+      const diagnosisElement = document.createElement('div');
+      diagnosisElement.id = 'reference-diagnosis-container';
+      validationContent.appendChild(diagnosisElement);
+      
+      // Analyze and display reference issues
+      const diagnosis = analyzeReferenceIssues(currentTabData, diagnosisElement);
+      
+      // Setup listeners for the diagnosis UI components
+      setupReferenceDiagnosisListeners(diagnosisElement, currentTabData, (fixedTokenData) => {
+        // Apply fixes to the main token data
+        // This is a simplified approach - in a real app, you'd need to merge
+        // the fixed tokens back into the complete structure
+        if (currentTabId === 'combined') {
+          tokenData = fixedTokenData;
+        } else {
+          const [collection, mode] = currentTabId.split('-');
+          if (collection && mode && fixedTokenData[collection]?.[mode]) {
+            tokenData[collection][mode] = fixedTokenData[collection][mode];
+          }
+        }
+        
+        // Update the display
+        updatePreview();
+        
+        // Show success message
+        statusEl.textContent = "References fixed successfully!";
+        statusEl.className = "success";
+        
+        // Re-analyze to show progress
+        analyzeReferenceIssues(
+          filterTokens(
+            tokenData, 
+            selectedCollections, 
+            Array.from(selectedModes.values()).flat(), 
+            flatStructureCheckbox.checked
+          ), 
+          diagnosisElement
+        );
+      });
+    }
   });
   
   // Extract button handler
@@ -324,6 +412,69 @@ document.addEventListener('DOMContentLoaded', () => {
       statusEl.className = "success";
     }
   });
+  
+  // Add a "Reference Diagnoser" button next to Validate References
+  const referenceBtn = document.createElement('button');
+  referenceBtn.id = 'diagnose-references-btn';
+  referenceBtn.textContent = 'Reference Diagnoser';
+  referenceBtn.addEventListener('click', () => {
+    // Show validation panel
+    referenceValidationResults.style.display = 'block';
+    
+    // Set content and title
+    validationContent.innerHTML = '<h3>Reference Diagnosis</h3>';
+    const diagnosisContainer = document.createElement('div');
+    diagnosisContainer.id = 'reference-diagnosis-container';
+    validationContent.appendChild(diagnosisContainer);
+    
+    // Get the current tab data
+    const currentTabId = document.querySelector('.tab-button.active')?.getAttribute('data-tab') || 'combined';
+    const currentTabData = currentTabId === 'combined' ? 
+      filterTokens(
+        tokenData, 
+        selectedCollections, 
+        Array.from(selectedModes.values()).flat(), 
+        flatStructureCheckbox.checked
+      ) : 
+      getCurrentTabData(currentTabId);
+      
+    // Analyze and display reference issues
+    const diagnosis = analyzeReferenceIssues(currentTabData, diagnosisContainer);
+    
+    // Setup listeners for fixes
+    setupReferenceDiagnosisListeners(diagnosisContainer, currentTabData, (fixedTokenData) => {
+      // Apply fixes to the main token data
+      if (currentTabId === 'combined') {
+        tokenData = fixedTokenData;
+      } else {
+        const [collection, mode] = currentTabId.split('-');
+        if (collection && mode && fixedTokenData[collection]?.[mode]) {
+          tokenData[collection][mode] = fixedTokenData[collection][mode];
+        }
+      }
+      
+      // Update the display
+      updatePreview();
+      
+      // Show success message
+      statusEl.textContent = "References fixed successfully!";
+      statusEl.className = "success";
+      
+      // Re-analyze to show progress
+      analyzeReferenceIssues(
+        filterTokens(
+          tokenData, 
+          selectedCollections, 
+          Array.from(selectedModes.values()).flat(), 
+          flatStructureCheckbox.checked
+        ), 
+        diagnosisContainer
+      );
+    });
+  });
+  
+  // Add the button after the validate button
+  validateBtn.parentNode?.insertBefore(referenceBtn, validateBtn.nextSibling);
 });
 
 /**
