@@ -4,6 +4,9 @@ body {
   padding: 20px;
   font-size: 12px;
   color: #333;
+  overflow-y: auto;
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 h2 {
@@ -85,102 +88,9 @@ button:disabled {
   cursor: pointer;
 }
 
-/* Collection and Mode Hierarchy */
-.collection-item {
-  margin-bottom: 12px;
-  border-left: 3px solid #e0e0e0;
-  padding-left: 6px;
-}
-
-.collection-header {
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-  margin-bottom: 6px;
-  padding: 4px;
-  border-radius: 4px;
-  background-color: #f0f0f0;
-}
-
-.collection-header:hover {
-  background-color: #e5e5e5;
-}
-
 .mode-container {
-  margin-left: 20px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
-.mode-item {
-  display: flex;
-  align-items: center;
-  padding: 3px 0;
-}
-
-.mode-item label {
-  margin-left: 8px;
-  cursor: pointer;
-}
-
-.collection-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 10px;
-  padding: 0 4px;
-  margin: 0 4px 0 0;
-  color: #666;
-}
-
-/* Preview Tabs */
-.preview-tabs {
-  display: flex;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 10px;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-.tab-button {
-  padding: 6px 12px;
-  margin: 0 2px 0 0;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 500;
-  color: #555;
-}
-
-.tab-button:hover {
-  background-color: #e5e5e5;
-}
-
-.tab-button.active {
-  background-color: white;
-  border-bottom: 1px solid white;
-  margin-bottom: -1px;
-  color: #18a0fb;
-}
-
-.preview-content {
-  position: relative;
-  border: 1px solid #ddd;
-  border-top: none;
-  padding: 10px;
-  border-radius: 0 0 4px 4px;
-  background-color: white;
-}
-
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
+  margin-left: 24px;
+  padding-top: 4px;
 }
 
 pre {
@@ -188,10 +98,8 @@ pre {
   padding: 10px;
   border-radius: 4px;
   overflow: auto;
-  max-height: 300px;
   font-family: monospace;
   font-size: 11px;
-  margin: 0;
 }
 
 .reference-validation {
@@ -295,32 +203,4 @@ pre {
   border: 1px solid #ccc;
   background-color: white;
   font-size: 12px;
-}
-
-/* Indicators */
-.token-count {
-  font-size: 10px;
-  color: #666;
-  margin-left: 6px;
-}
-
-.collection-badge {
-  display: inline-block;
-  padding: 1px 6px;
-  margin-left: 6px;
-  border-radius: 10px;
-  font-size: 9px;
-  color: white;
-  background-color: #0366d6;
-}
-
-.expander-icon::before {
-  content: "▶";
-  display: inline-block;
-  font-size: 8px;
-  margin-right: 4px;
-}
-
-.expander-icon.expanded::before {
-  content: "▼";
 }

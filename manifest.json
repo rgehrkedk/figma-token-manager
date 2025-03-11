@@ -15,5 +15,6 @@
   ],
   "networkAccess": {
     "allowedDomains": ["none"]
-  }
+  },
+  "permissions": ["currentuser"]
 }

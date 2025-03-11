@@ -1,0 +1,103 @@
+/* Two-panel layout styles */
+.two-panel-layout {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .left-panel {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .right-panel {
+    flex: 1;
+    min-width: 0; /* Ensures the panel doesn't overflow its container */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Make the preview container take the full available height */
+  #preview-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+  }
+  
+  /* Ensure the preview content expands to fill available space */
+  .preview-content {
+    flex: 1;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .preview-content pre {
+    flex: 1;
+    margin: 0;
+    min-height: 200px;
+  }
+  
+  /* Scrollable areas for collections and modes */
+  #collection-modes-list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  
+  /* Improved styling for collection/mode lists */
+  .collection-item {
+    margin-bottom: 10px;
+    border-left: 3px solid #e0e0e0;
+    padding-left: 8px;
+  }
+  
+  .collection-header {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    margin-bottom: 4px;
+    padding: 4px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+  }
+  
+  .collection-header:hover {
+    background-color: #e5e5e5;
+  }
+  
+  .mode-container {
+    margin-left: 20px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  
+  .mode-item {
+    display: flex;
+    align-items: center;
+    padding: 3px 0;
+  }
+  
+  .mode-item label {
+    margin-left: 8px;
+    cursor: pointer;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 700px) {
+    .two-panel-layout {
+      flex-direction: column;
+    }
+    
+    .left-panel {
+      flex: none;
+      width: 100%;
+    }
+    
+    .right-panel {
+      width: 100%;
+    }
+  }

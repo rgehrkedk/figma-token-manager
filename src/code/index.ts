@@ -10,9 +10,9 @@ let currentColorFormat: ColorFormat = 'hex';
 // Store original extracted tokens for transformations
 let originalTokenData: any = null;
 
-// Show UI with larger size to see more info
-figma.showUI(__html__, { width: 600, height: 700 });
-console.log("Plugin UI shown");
+// Show UI with larger size to accommodate two-panel layout
+figma.showUI(__html__, { width: 750, height: 700 });
+console.log("Plugin UI shown with updated dimensions");
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
