@@ -296,6 +296,9 @@ function generateVisualTokenPreview(tokens: VisualToken[], colorFormat: ColorFor
   return html;
 }
 
+// This is a partial update to the tokenPreview.ts file
+// focusing on the color token generation part
+
 /**
  * Generate HTML for color tokens
  */
@@ -321,6 +324,7 @@ function generateColorTokensPreview(tokens: VisualToken[]): string {
   // Generate preview for each collection
   for (const collection in tokensByCollection) {
     html += `<div class="token-preview-subheading">${collection}</div>`;
+    html += `<div class="token-preview-items-grid">`; // Start grid container
     
     tokensByCollection[collection].forEach(token => {
       // Check if this is a reference token (value starts with { and ends with })
@@ -385,6 +389,8 @@ function generateColorTokensPreview(tokens: VisualToken[]): string {
         </div>
       `;
     });
+    
+    html += `</div>`; // End grid container
   }
   
   return html;
@@ -415,6 +421,7 @@ function generateDimensionTokensPreview(tokens: VisualToken[]): string {
   // Generate preview for each collection
   for (const collection in tokensByCollection) {
     html += `<div class="token-preview-subheading">${collection}</div>`;
+    html += `<div class="token-preview-items-grid">`; // Start grid container
     
     tokensByCollection[collection].forEach(token => {
       // Check if this is a reference
@@ -461,6 +468,8 @@ function generateDimensionTokensPreview(tokens: VisualToken[]): string {
         </div>
       `;
     });
+    
+    html += `</div>`; // End grid container
   }
   
   return html;
@@ -471,6 +480,7 @@ function generateDimensionTokensPreview(tokens: VisualToken[]): string {
  */
 function generateTypographyTokensPreview(tokens: VisualToken[], typographyType: string): string {
   let html = `<div class="token-preview-subheading">${formatTypeName(typographyType)}</div>`;
+  html += `<div class="token-preview-items-grid">`; // Start grid container
   
   tokens.forEach(token => {
     // Check if this is a reference
@@ -545,6 +555,7 @@ function generateTypographyTokensPreview(tokens: VisualToken[], typographyType: 
     `;
   });
   
+  html += `</div>`; // End grid container
   return html;
 }
 
@@ -553,6 +564,7 @@ function generateTypographyTokensPreview(tokens: VisualToken[], typographyType: 
  */
 function generateDurationTokensPreview(tokens: VisualToken[]): string {
   let html = '<div class="token-preview-heading">Duration Tokens</div>';
+  html += `<div class="token-preview-items-grid">`; // Start grid container
   
   tokens.forEach(token => {
     // Check if this is a reference
@@ -609,6 +621,7 @@ function generateDurationTokensPreview(tokens: VisualToken[]): string {
     `;
   });
   
+  html += `</div>`; // End grid container
   return html;
 }
 
@@ -617,6 +630,7 @@ function generateDurationTokensPreview(tokens: VisualToken[]): string {
  */
 function generateShadowTokensPreview(tokens: VisualToken[]): string {
   let html = '<div class="token-preview-heading">Shadow Tokens</div>';
+  html += `<div class="token-preview-items-grid">`; // Start grid container
   
   tokens.forEach(token => {
     // Check if this is a reference
@@ -660,6 +674,7 @@ function generateShadowTokensPreview(tokens: VisualToken[]): string {
     `;
   });
   
+  html += `</div>`; // End grid container
   return html;
 }
 
@@ -668,6 +683,7 @@ function generateShadowTokensPreview(tokens: VisualToken[]): string {
  */
 function generateGenericTokensPreview(tokens: VisualToken[], type: string): string {
   let html = `<div class="token-preview-subheading">${formatTypeName(type)} Tokens</div>`;
+  html += `<div class="token-preview-items-grid">`; // Start grid container
   
   tokens.forEach(token => {
     // Check if this is a reference
@@ -711,6 +727,7 @@ function generateGenericTokensPreview(tokens: VisualToken[], type: string): stri
     `;
   });
   
+  html += `</div>`; // End grid container
   return html;
 }
 

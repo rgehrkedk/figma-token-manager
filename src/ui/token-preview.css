@@ -1,5 +1,4 @@
 /* Token Preview Styles */
-
 .token-preview-wrapper {
   margin-top: 16px;
 }
@@ -11,11 +10,6 @@
   background: white;
 }
 
-/* Position the token preview inside the tab content */
-.tab-content .token-preview-wrapper {
-  margin-top: 16px;
-}
-
 .token-preview-heading {
   background-color: #f0f0f0;
   padding: 8px 12px;
@@ -24,16 +18,52 @@
   border-bottom: 1px solid #e5e5e5;
 }
 
+.token-preview-subheading {
+  padding: 6px 12px;
+  font-weight: 500;
+  font-size: 11px;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Grid layout for token items */
+.token-preview-items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  background-color: #f0f0f0;
+}
+
+.token-preview-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: white;
+  transition: all 0.2s ease;
+  flex: 1 0 calc(50% - 2px);
+  max-width: calc(50% - 2px);
+  min-width: 200px;
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+
+.token-preview-item:hover {
+  background-color: #f9f9f9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
 
 /* Color tokens */
 .color-swatch {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   margin-right: 12px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: relative;
+  flex-shrink: 0;
 }
 
 .color-swatch.transparent {
@@ -47,7 +77,8 @@
 }
 
 /* Reference tokens */
-.color-swatch.reference-token {
+/* Kun anvend mønsterbaggrund til uløste referencer */
+.color-swatch.reference-token.unresolved-reference {
   background-image: 
     linear-gradient(45deg, #f0f0f0 25%, #cccccc 25%),
     linear-gradient(-45deg, #f0f0f0 25%, #cccccc 25%),
@@ -57,19 +88,26 @@
   border: 1px dashed #999;
 }
 
+/* Løste reference tokens – vis den faktiske farve */
+.color-swatch.reference-token.resolved-reference {
+  /* Ingen background-image, så baggrundsfarven træder frem */
+}
+
+/* Tilføj en referenceindikator i hjørnet */
 .reference-icon {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: -1px;
+  right: -1px;
   width: 12px;
   height: 12px;
-  background: #0366d6;
-  color: white;
+  color: #0366d6;
   font-size: 9px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .reference-label {
@@ -83,13 +121,53 @@
   vertical-align: middle;
 }
 
+.resolved-value {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 4px;
+  background: #e6ffed;
+  color: #22863a;
+  font-size: 8px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+/* Token info struktur */
+.token-info {
+  flex: 1;
+  margin-left: 6px;
+  overflow: hidden;
+}
+
+.token-path {
+  font-weight: 500;
+  font-size: 12px;
+  color: #333;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-value {
+  font-family: monospace;
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Dimension tokens */
 .dimension-swatch {
   height: 16px;
   display: flex;
   align-items: center;
   margin-right: 12px;
-  min-width: 200px;
+  min-width: 90px;
+  max-width: 120px;
+  position: relative;
+  flex-shrink: 0;
 }
 
 .dimension-bar {
@@ -100,18 +178,7 @@
 }
 
 /* Typography tokens */
-.font-family-sample {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  font-size: 18px;
-}
-
+.font-family-sample,
 .font-weight-sample {
   width: 40px;
   height: 40px;
@@ -216,12 +283,74 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .generic-indicator {
   font-size: 12px;
   font-weight: bold;
   color: #666;
+}
+
+/* Mindre referenceikon for ikke-farvetokens */
+.reference-icon-small {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: #0366d6;
+  color: white;
+  font-size: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* Reference visualisering i token-detalje-panelet */
+.reference-visualization {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.reference-token-wrapper,
+.reference-target-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.reference-token-wrapper {
+  color: #0366d6;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.reference-target-wrapper {
+  color: #22863a;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.reference-preview {
+  margin-top: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.reference-arrow {
+  font-size: 18px;
+  color: #0366d6;
+  margin: 0 8px;
 }
 
 /* Token detail panel */
@@ -308,37 +437,7 @@
   overflow: hidden;
 }
 
-/* Reference visualization */
-.reference-visualization {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-}
-
-.reference-arrow {
-  font-size: 18px;
-  color: #0366d6;
-  margin: 0 8px;
-}
-
-.reference-target {
-  padding: 4px 8px;
-  background: #e8f0fe;
-  color: #0366d6;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 12px;
-}
-/* Additional styles for reference tokens */
-
-/* Resolved reference tokens should have a distinct appearance */
-.color-swatch.reference-token.resolved-reference {
-  position: relative;
-  border: 1px dashed #0366d6;
-  overflow: hidden;
-}
-
+/* Visuel indikator for løst reference */
 .color-swatch.reference-token.resolved-reference::after {
   content: '';
   position: absolute;
@@ -348,87 +447,13 @@
   height: 0;
   border-style: solid;
   border-width: 0 8px 8px 0;
-  border-color: transparent #0366d6 transparent transparent;
+  border-color: transparent #ffffff transparent transparent;
 }
 
-.color-swatch.reference-token.unresolved-reference {
-  background-image: 
-    linear-gradient(45deg, #f0f0f0 25%, #cccccc 25%),
-    linear-gradient(-45deg, #f0f0f0 25%, #cccccc 25%),
-    linear-gradient(45deg, #cccccc 75%, #f0f0f0 75%),
-    linear-gradient(-45deg, #cccccc 75%, #f0f0f0 75%);
-  background-size: 8px 8px;
-  border: 1px dashed #999;
-}
-
-/* Smaller reference icon for non-color tokens */
-.reference-icon-small {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 10px;
-  height: 10px;
-  background: #0366d6;
-  color: white;
-  font-size: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Display for resolved token values */
-.resolved-value {
-  display: inline-block;
-  margin-left: 4px;
-  padding: 1px 4px;
-  background: #e6ffed;
-  color: #22863a;
-  font-size: 8px;
-  border-radius: 2px;
-  vertical-align: middle;
-}
-
-/* Enhanced reference visualization in token details */
-.reference-visualization {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 4px;
-}
-
-.reference-token-wrapper,
-.reference-target-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 100px;
-}
-
-.reference-token-wrapper {
-  color: #0366d6;
-  font-family: monospace;
-  font-size: 11px;
-}
-
-.reference-target-wrapper {
-  color: #22863a;
-  font-family: monospace;
-  font-size: 11px;
-}
-
-.reference-preview {
-  margin-top: 4px;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.reference-arrow {
-  font-size: 18px;
-  color: #0366d6;
-  margin: 0 8px;
+/* Responsive justeringer */
+@media (max-width: 600px) {
+  .token-preview-item {
+    flex: 1 0 100%;
+    max-width: 100%;
+  }
 }

@@ -99,7 +99,7 @@ export async function extractDTCGVariables(): Promise<TokenData> {
           // Skip if no value for this mode
           if (valueForMode === undefined) continue;
           
-          // Get variable path from name
+          // Get variable path from name (convert to dots instead of slashes)
           const pathParts = variable.name.split('/').filter(part => part.trim().length > 0);
           
           // Use 'base' as default if no path

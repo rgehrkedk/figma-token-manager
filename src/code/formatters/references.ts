@@ -2,6 +2,7 @@ import { VariableLookup } from '../types';
 
 /**
  * Resolves variable references with path validation
+ * Uses dot notation for token paths (colors.red.500) instead of slash notation
  */
 export function resolveVariableReference(
   reference: any, 
@@ -17,7 +18,8 @@ export function resolveVariableReference(
     const referencedVar = variables.find(v => v.id === reference.id);
     if (referencedVar) {
       // Return a reference string format with the full path
-      const referencePath = referencedVar.name;
+      // Convert slashes to dots in the reference path
+      const referencePath = referencedVar.name.replace(/\//g, '.');
       
       // Cache this reference for later validation
       if (reference.id && referencePath) {
@@ -59,12 +61,13 @@ export function validateAndFixReferences(tokens: any, referenceMap: VariableLook
         // Extract the reference path
         const refPath = value.substring(1, value.length - 1);
         
-        // Check if this reference path exists in our token set
+        // Check if this reference path exists in our token set (using dot notation)
         if (!pathExistsInTokens(validatedTokens, refPath)) {
           console.warn(`Reference not found: ${refPath}`);
           
           // Try to find an alternative reference from our map
           for (const [id, path] of referenceMap.entries()) {
+            // Compare using dot notation
             if (path.endsWith(refPath) || refPath.endsWith(path)) {
               const newRef = `{${path}}`;
               console.log(`Replacing ${value} with ${newRef}`);
@@ -86,8 +89,9 @@ export function validateAndFixReferences(tokens: any, referenceMap: VariableLook
   }
   
   // Helper to check if a path exists in the token structure
+  // This function handles dot notation paths (colors.red.500)
   function pathExistsInTokens(tokens: any, path: string): boolean {
-    const parts = path.split('/');
+    const parts = path.split('.');
     let current = tokens;
     
     for (const part of parts) {
