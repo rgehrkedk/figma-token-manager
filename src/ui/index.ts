@@ -10,7 +10,7 @@ import {
 } from './utilities/formatters';
 import { createModesMap } from './utilities/helpers';
 
-// Import components
+// Import existing components
 import { 
   buildCollectionModesList,
   toggleAllCollectionsAndModes
@@ -31,16 +31,49 @@ import {
   showEnhancedVisualTokenPreview
 } from './components/tokenPreview';
 
-// Import a fix for the reference diagnoser
+// Import reference diagnoser components
 import {
   analyzeReferenceIssues,
-  analyzeReferenceIssuesWithMap, // Add this
+  analyzeReferenceIssuesWithMap,
   setupReferenceDiagnosisListeners,
   getReferenceDiagnoserStyles
 } from './components/referenceDiagnoser';
 
+// Import color handlers
 import { setupColorFormatHandlers } from './color-handlers';
-import { setupPreviewToggle } from './components/previewToggle';
+
+// Import NEW components that need to be integrated
+import { 
+  setupPreviewToggle 
+} from './components/previewToggle';
+
+import {
+  setupSegmentedToggle
+} from './components/segmentedToggle';
+
+import {
+  updateStatus,
+  StatusType,
+  showExtractionStatus,
+  showExtractionSuccess,
+  showDownloadSuccess
+} from './components/statusIndicator';
+
+import {
+  renderCollectionList,
+  showCollectionLoading,
+  showCollectionError
+} from './components/collectionList';
+
+import {
+  prettifyJson,
+  updateJsonPreview,
+  toggleJsonPreview
+} from './components/jsonPreview';
+
+import {
+  setupVisualTokenPreview
+} from './components/visualTokenPreview';
 
 // Import color transforms
 import { ColorFormat } from '../code/formatters/colorTransforms';
@@ -54,7 +87,14 @@ let allCollections: string[] = [];
 let areAllSelected: boolean = true;
 let referenceProblems: any[] = [];
 let currentColorFormat: ColorFormat = 'hex'; // Default color format
-let previewToggleInterface: { setMode: (mode: 'json' | 'visual') => void; getCurrentMode: () => 'json' | 'visual' };
+let previewToggleInterface: { 
+  setMode: (mode: 'json' | 'visual') => void; 
+  getCurrentMode: () => 'json' | 'visual' 
+};
+let visualTokenPreviewInterface: {
+  update: (data: any) => void;
+  clear: () => void;
+};
 let referenceDiagnosticsData = { resolved: 0, unresolved: 0 };
 
 // Get DOM elements
@@ -75,6 +115,8 @@ const validationContent = document.getElementById('validation-content') as HTMLD
 const previewTabsContainer = document.getElementById('preview-tabs') as HTMLDivElement;
 const previewContentContainer = document.querySelector('.preview-content') as HTMLDivElement;
 const visualPreviewContainer = document.getElementById('visual-preview-container') as HTMLDivElement;
+const previewModeToggleContainer = document.getElementById('preview-mode-toggle') as HTMLDivElement;
+const previewContentJsonContainer = document.querySelector('.preview-content-json') as HTMLElement;
 
 // Add reference diagnoser styles
 const styleElement = document.createElement('style');
@@ -117,14 +159,6 @@ function flattenModesMap(modesMap: Map<string, string[]>): string[] {
 function updatePreview(): void {
   if (!tokenData) return;
   
-  // Convert Map to array for compatibility with existing functions
-  const flattenedSelectedModes: string[] = [];
-  selectedModes.forEach((modes, collection) => {
-    modes.forEach(mode => {
-      flattenedSelectedModes.push(mode);
-    });
-  });
-
   // Generate filtered data based on selections
   const filteredData = filterTokens(
     tokenData, 
@@ -133,39 +167,51 @@ function updatePreview(): void {
     flatStructureCheckbox.checked
   );
   
-  // Update the main output display
-  outputEl.textContent = formatJson(filteredData);
+  // Update the main output display using the jsonPreview component
+  updateJsonPreview(outputEl, filteredData);
   
   // Define a function to update the visual preview for a specific tab's data
   const updateVisualPreview = (tabData: any) => {
-    // Remove any existing preview before creating a new one
-    const existingPreview = visualPreviewContainer.querySelector('.token-preview-wrapper');
-    if (existingPreview) {
-      existingPreview.remove();
-    }
-    
-    // Create new visual preview with reference resolution diagnostics
-    showEnhancedVisualTokenPreview(
-      tabData, 
-      visualPreviewContainer, 
-      currentColorFormat,
-      (numResolved, numUnresolved) => {
-        // Store diagnostics data for possible use
-        referenceDiagnosticsData = {
-          resolved: numResolved,
-          unresolved: numUnresolved
-        };
-        
-        // Update status with reference information
-        if (numUnresolved > 0) {
-          statusEl.textContent = `Found ${numResolved} resolved and ${numUnresolved} unresolved references. Click "Reference Diagnoser" for details.`;
-          statusEl.className = "warning";
-        } else if (numResolved > 0) {
-          statusEl.textContent = `All ${numResolved} references resolved successfully.`;
-          statusEl.className = "success";
-        }
+    // Update the visual preview with the integrated component
+    if (visualTokenPreviewInterface) {
+      visualTokenPreviewInterface.update(tabData);
+    } else {
+      // Fallback to the legacy implementation
+      // Remove any existing preview before creating a new one
+      const existingPreview = visualPreviewContainer.querySelector('.token-preview-wrapper');
+      if (existingPreview) {
+        existingPreview.remove();
       }
-    );
+      
+      // Create new visual preview with reference resolution diagnostics
+      showEnhancedVisualTokenPreview(
+        tabData, 
+        visualPreviewContainer, 
+        currentColorFormat,
+        (numResolved, numUnresolved) => {
+          // Store diagnostics data for possible use
+          referenceDiagnosticsData = {
+            resolved: numResolved,
+            unresolved: numUnresolved
+          };
+          
+          // Update status with reference information
+          if (numUnresolved > 0) {
+            updateStatus(
+              statusEl, 
+              `Found ${numResolved} resolved and ${numUnresolved} unresolved references. Click "Reference Diagnoser" for details.`,
+              StatusType.WARNING
+            );
+          } else if (numResolved > 0) {
+            updateStatus(
+              statusEl, 
+              `All ${numResolved} references resolved successfully.`,
+              StatusType.SUCCESS
+            );
+          }
+        }
+      );
+    }
   };
   
   // Update the tabbed preview with the function to update visual preview
@@ -194,11 +240,17 @@ function updatePreview(): void {
     const allModes = flattenModesMap(selectedModes);
     referenceProblems = validateReferences(filteredData);
     if (referenceProblems.length > 0) {
-      statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
-      statusEl.className = "warning";
+      updateStatus(
+        statusEl,
+        `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`,
+        StatusType.WARNING
+      );
     } else {
-      statusEl.textContent = "All references are valid.";
-      statusEl.className = "success";
+      updateStatus(
+        statusEl,
+        "All references are valid.",
+        StatusType.SUCCESS
+      );
     }
   }
 }
@@ -218,13 +270,9 @@ function ensureCombinedTabExists() {
       setActiveTab('combined', previewTabsContainer, previewContentContainer);
       
       // Also update visual preview
-      if (previewToggleInterface.getCurrentMode() === 'visual') {
+      if (previewToggleInterface && previewToggleInterface.getCurrentMode() === 'visual') {
         const currentTabData = getCurrentTabData('combined');
-        const existingPreview = visualPreviewContainer.querySelector('.token-preview-wrapper');
-        if (existingPreview) {
-          existingPreview.remove();
-        }
-        showEnhancedVisualTokenPreview(currentTabData, visualPreviewContainer, currentColorFormat);
+        updateVisualPreview(currentTabData);
       }
     });
     previewTabsContainer.appendChild(combinedTab);
@@ -239,10 +287,8 @@ function ensureCombinedTabExists() {
     combinedContent.style.display = 'block';
     
     if (!outputEl.parentNode) {
-      // If outputEl doesn't have a parent, it might not be in the DOM yet
       combinedContent.appendChild(outputEl);
     } else {
-      // Clone the output element to avoid moving it
       const outputClone = outputEl.cloneNode(true);
       combinedContent.appendChild(outputClone);
     }
@@ -252,19 +298,70 @@ function ensureCombinedTabExists() {
 }
 
 /**
+ * Helper function to update visual preview
+ */
+function updateVisualPreview(data: any): void {
+  if (visualTokenPreviewInterface) {
+    visualTokenPreviewInterface.update(data);
+  } else {
+    // Fallback to legacy implementation
+    const existingPreview = visualPreviewContainer.querySelector('.token-preview-wrapper');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+    
+    showEnhancedVisualTokenPreview(data, visualPreviewContainer, currentColorFormat);
+  }
+}
+
+/**
  * Initialize the UI
  */
 document.addEventListener('DOMContentLoaded', () => {
   console.log("UI loaded and initialized");
-  statusEl.textContent = "Extracting tokens...";
-  statusEl.className = "info";
+  updateStatus(statusEl, "Extracting tokens...", StatusType.INFO);
   
   // Setup color format handlers
   setupColorFormatHandlers();
   
-  // Setup preview toggle
+  // Setup preview toggle using the dedicated component
   previewToggleInterface = setupPreviewToggle();
 
+  // Setup visual token preview using the component
+  visualTokenPreviewInterface = setupVisualTokenPreview({
+    containerId: 'visual-preview-container',
+    onTokenClick: (tokenPath, tokenValue) => {
+      console.log(`Token clicked: ${tokenPath}`, tokenValue);
+      // You can implement a detail panel to show when a token is clicked
+    }
+  });
+
+  // Setup segmented toggle for preview mode if not already handled by previewToggle
+  if (previewModeToggleContainer && !previewToggleInterface) {
+    setupSegmentedToggle({
+      containerId: 'preview-mode-toggle',
+      options: [
+        { id: 'json', label: 'JSON' },
+        { id: 'visual', label: 'Visual' }
+      ],
+      initialSelection: 'json',
+      onChange: (selectedId) => {
+        if (selectedId === 'json') {
+          previewContentJsonContainer.classList.add('active');
+          visualPreviewContainer.classList.remove('active');
+        } else {
+          previewContentJsonContainer.classList.remove('active');
+          visualPreviewContainer.classList.add('active');
+          
+          // Update visual preview with current tab data
+          const currentTabId = document.querySelector('.tab-button.active')?.getAttribute('data-tab') || 'combined';
+          const currentTabData = getCurrentTabData(currentTabId);
+          updateVisualPreview(currentTabData);
+        }
+      }
+    });
+  }
+  
   // Ensure "Combined" tab exists
   ensureCombinedTabExists();
   
@@ -316,14 +413,12 @@ document.addEventListener('DOMContentLoaded', () => {
       diagnosisElement.id = 'reference-diagnosis-container';
       validationContent.appendChild(diagnosisElement);
       
-      // Analyze and display reference issues
-      const diagnosis = analyzeReferenceIssuesWithMap(currentTabData, diagnosisElement);
+      // Analyze and display reference issues using the improved component function
+      const diagnosis = analyzeReferenceIssuesWithMap(currentTabData, diagnosisElement, selectedModes);
       
       // Setup listeners for the diagnosis UI components
       setupReferenceDiagnosisListeners(diagnosisElement, currentTabData, (fixedTokenData) => {
         // Apply fixes to the main token data
-        // This is a simplified approach - in a real app, you'd need to merge
-        // the fixed tokens back into the complete structure
         if (currentTabId === 'combined') {
           tokenData = fixedTokenData;
         } else {
@@ -337,13 +432,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePreview();
         
         // Show success message
-        statusEl.textContent = "References fixed successfully!";
-        statusEl.className = "success";
+        updateStatus(statusEl, "References fixed successfully!", StatusType.SUCCESS);
         
         // Re-analyze to show progress
         analyzeReferenceIssuesWithMap(
           currentTabData, 
-          diagnosisElement
+          diagnosisElement,
+          selectedModes
         );
       });
     }
@@ -353,15 +448,12 @@ document.addEventListener('DOMContentLoaded', () => {
   extractBtn.addEventListener('click', () => {
     referenceValidationResults.style.display = 'none';
     outputEl.textContent = "Loading data...";
-    statusEl.textContent = "Extracting tokens...";
-    statusEl.className = "info";
     
-    collectionModesListEl.innerHTML = `
-      <div class="loading">
-        <div class="spinner"></div>
-        Loading collections and modes...
-      </div>
-    `;
+    // Use the statusIndicator component 
+    showExtractionStatus(statusEl);
+    
+    // Use the collectionList component to show loading state
+    showCollectionLoading(collectionModesListEl);
     
     downloadBtn.disabled = true;
     
@@ -371,13 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Download button handler
   downloadBtn.addEventListener('click', () => {
-    const flattenedSelectedModes: string[] = [];
-    selectedModes.forEach((modes, collection) => {
-      modes.forEach(mode => {
-        flattenedSelectedModes.push(mode);
-      });
-    });
-    
     if (separateFilesCheckbox.checked) {
       // Generate separate files
       const files = getSeparateFiles(
@@ -389,8 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       downloadMultipleFiles(files, validationContent, referenceValidationResults);
       
-      statusEl.textContent = "Files ready for download. Click the links above to download each file.";
-      statusEl.className = "success";
+      updateStatus(
+        statusEl, 
+        "Files ready for download. Click the links above to download each file.", 
+        StatusType.SUCCESS
+      );
     } else {
       // Single file download
       const filteredData = filterTokens(
@@ -405,8 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       downloadJson(filteredData, fileName);
       
-      statusEl.textContent = "Tokens downloaded successfully!";
-      statusEl.className = "success";
+      // Use the statusIndicator component
+      showDownloadSuccess(statusEl);
     }
   });
   
@@ -436,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
       getCurrentTabData(currentTabId);
       
     // Analyze and display reference issues
-    const diagnosis = analyzeReferenceIssuesWithMap(currentTabData, diagnosisContainer);
+    const diagnosis = analyzeReferenceIssuesWithMap(currentTabData, diagnosisContainer, selectedModes);
     
     // Setup listeners for fixes
     setupReferenceDiagnosisListeners(diagnosisContainer, currentTabData, (fixedTokenData) => {
@@ -454,13 +542,13 @@ document.addEventListener('DOMContentLoaded', () => {
       updatePreview();
       
       // Show success message
-      statusEl.textContent = "References fixed successfully!";
-      statusEl.className = "success";
+      updateStatus(statusEl, "References fixed successfully!", StatusType.SUCCESS);
       
       // Re-analyze to show progress
       analyzeReferenceIssuesWithMap(
         currentTabData, 
-        diagnosisContainer
+        diagnosisContainer,
+        selectedModes
       );
     });
   });
@@ -496,13 +584,17 @@ window.onmessage = (event) => {
       // Update the preview
       updatePreview();
       
-      statusEl.textContent = "Tokens extracted successfully!";
-      statusEl.className = "success";
+      // Use statusIndicator component to show success
+      showExtractionSuccess(statusEl, Object.keys(tokenData).length);
     } else if (msg.type === 'error') {
       console.error("UI received error:", msg.message);
       outputEl.textContent = "Error: " + msg.message;
-      statusEl.textContent = msg.message;
-      statusEl.className = "error";
+      
+      // Use statusIndicator component to show error
+      updateStatus(statusEl, msg.message, StatusType.ERROR);
+      
+      // Use collectionList component to show error state
+      showCollectionError(collectionModesListEl);
     }
   }
 };

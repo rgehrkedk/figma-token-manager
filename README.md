@@ -1,21 +1,30 @@
 # Figma Token Manager
 
-A lightweight Figma plugin for exporting design variables as standardized design tokens, optimized for performance and Figma's plugin environment.
+A powerful Figma plugin for exporting design variables as standardized design tokens, featuring advanced reference resolution and visual previews.
 
 ## Overview
 
-Figma Token Manager extracts variables from your Figma document and exports them as structured design tokens, compatible with the Design Tokens Community Group (DTCG) format specification. The plugin is designed to maintain a small footprint while providing a modern, intuitive interface for managing token exports.
+Figma Token Manager extracts variables from your Figma document and exports them as structured design tokens, compatible with the Design Tokens Community Group (DTCG) format specification. The plugin provides robust reference resolution inspired by Style Dictionary, visual token previews, and comprehensive diagnostic tools.
 
 ## Features
 
-- **Dual-Mode Token Preview**: Toggle between visual representation and JSON code view
+### Core Functionality
+- **DTCG-Compliant Format**: Export tokens that follow the Design Token Community Group specification
+- **Enhanced Reference Resolution**: Powerful reference handling with dot and slash notation support
+- **Visual Token Preview**: See your tokens visually categorized by type (colors, dimensions, typography, etc.)
 - **Collection & Mode Management**: Hierarchical organization of tokens by collection and mode
-- **Multiple Export Options**:
-  - DTCG-compliant format with proper type definitions
-  - Legacy format for simpler integration needs
-  - Export as single file or multiple files (one per collection/mode)
-- **Reference Resolution**: Proper handling of variable references and aliases
-- **Visual Token Inspection**: Preview colors, dimensions, and other token types before export
+- **Reference Diagnostics**: Identify and fix broken token references
+
+### Export Options
+- **Multiple Color Formats**: Export colors in HEX, RGB, RGBA, HSL, or HSLA formats
+- **Export Flexibility**: Generate a combined file or separate files by collection/mode
+- **Flat Structure Option**: Generate simplified token structures for easier integration
+
+### User Interface
+- **Dual-Mode Preview**: Toggle between visual representation and JSON code view
+- **Tabbed Interface**: Navigate between collections and modes easily
+- **Interactive Token Details**: Click on tokens to see detailed information and usage examples
+- **Copy to Clipboard**: One-click copying of token values in various formats
 
 ## Project Structure
 
