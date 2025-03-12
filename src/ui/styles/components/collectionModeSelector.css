@@ -1,0 +1,66 @@
+/**
+ * Collection Mode Selector styles
+ */
+
+.collection-group {
+  margin-bottom: var(--space-3);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.collection-header {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-gray-100);
+  border-bottom: 1px solid var(--color-gray-300);
+}
+
+.collection-label {
+  font-weight: var(--font-weight-medium);
+  margin-left: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.modes-container {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1) 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.mode-item {
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-4);
+}
+
+.mode-item:hover {
+  background-color: var(--color-gray-100);
+}
+
+.mode-label {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-700);
+}
+
+.mode-checkbox, .collection-checkbox {
+  accent-color: var(--color-primary);
+}
+
+.select-all-toggle {
+  text-align: right;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-all-toggle:hover {
+  text-decoration: underline;
+}

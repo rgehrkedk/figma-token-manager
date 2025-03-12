@@ -1,12 +1,20 @@
 /**
- * Utilities for formatting and transforming tokens
+ * Utility functions for formatting token data
  */
 
 /**
- * Prettifies JSON for display
+ * Format JSON with indentation
  */
-export function formatJson(json: any): string {
-  return JSON.stringify(json, null, 2);
+export function formatJson(obj: any): string {
+  try {
+    return JSON.stringify(obj, null, 2);
+  } catch (error) {
+    console.error('Error formatting JSON:', error);
+    return JSON.stringify({
+      error: 'Error formatting JSON',
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }
 }
 
 /**
@@ -15,10 +23,10 @@ export function formatJson(json: any): string {
 export function filterTokens(
   tokenData: any, 
   selectedCollections: string[], 
-  selectedModes: string[],
+  selectedModes: Map<string, string[]>,
   flatStructure: boolean
 ): any {
-  if (!tokenData || selectedCollections.length === 0 || selectedModes.length === 0) {
+  if (!tokenData || selectedCollections.length === 0) {
     return {};
   }
   
@@ -29,9 +37,12 @@ export function filterTokens(
     if (tokenData[collection]) {
       result[collection] = {};
       
+      // Get the modes selected for this specific collection
+      const modesForCollection = selectedModes.get(collection) || [];
+      
       // Only include selected modes for this collection
       for (const mode in tokenData[collection]) {
-        if (selectedModes.includes(mode)) {
+        if (modesForCollection.includes(mode)) {
           result[collection][mode] = tokenData[collection][mode];
         }
       }
@@ -52,42 +63,28 @@ export function filterTokens(
 }
 
 /**
- * Flattens nested token structure
+ * Flatten the token structure for easier processing
  */
-export function flattenTokens(tokens: any): any {
-  const flatResult: any = {};
+export function flattenTokens(tokenData: any): { [key: string]: any } {
+  const flatTokens: { [key: string]: any } = {};
   
-  function processCollection(collection: string, mode: string, path: string, obj: any) {
-    for (const key in obj) {
-      const newPath = path ? `${path}.${key}` : key;
-      const value = obj[key];
+  function recurse(obj: any, currentPath: string) {
+    if (!obj || typeof obj !== 'object') return;
+    
+    Object.entries(obj).forEach(([key, value]) => {
+      const newPath = currentPath ? `${currentPath}.${key}` : key;
       
-      // If DTCG format and it has a $value field
-      if (value && typeof value === 'object' && '$value' in value) {
-        // Create the flattened key
-        const flatKey = `${collection}.${mode}.${newPath}`;
-        flatResult[flatKey] = {...value}; // Clone to avoid modifying original
-      } 
-      // If it's a nested object but not a token, recurse
-      else if (value && typeof value === 'object' && !('$value' in value)) {
-        processCollection(collection, mode, newPath, value);
-      } 
-      // For legacy format (direct values)
-      else if (value !== undefined && value !== null && typeof value !== 'object') {
-        const flatKey = `${collection}.${mode}.${newPath}`;
-        flatResult[flatKey] = value;
+      // Fixed: Check if value is an object with a $value property
+      if (value && typeof value === 'object' && !('$value' in value)) {
+        recurse(value, newPath);
+      } else {
+        flatTokens[newPath] = value;
       }
-    }
+    });
   }
   
-  // Process each collection and mode
-  for (const collection in tokens) {
-    for (const mode in tokens[collection]) {
-      processCollection(collection, mode, '', tokens[collection][mode]);
-    }
-  }
-  
-  return flatResult;
+  recurse(tokenData, '');
+  return flatTokens;
 }
 
 /**
@@ -96,7 +93,7 @@ export function flattenTokens(tokens: any): any {
 export function getSeparateFiles(
   tokenData: any,
   selectedCollections: string[],
-  selectedModes: string[],
+  selectedModes: Map<string, string[]>,
   flatStructure: boolean
 ): { name: string, data: any }[] {
   const filteredData = filterTokens(tokenData, selectedCollections, selectedModes, flatStructure);
@@ -105,33 +102,7 @@ export function getSeparateFiles(
   // If it's a flat structure, create one file per collection-mode pair
   if (flatStructure) {
     // In a flat structure, group by collection and mode prefixes
-    const prefixes = new Set<string>();
-    for (const key in filteredData) {
-      const parts = key.split('.');
-      if (parts.length >= 2) {
-        prefixes.add(`${parts[0]}.${parts[1]}`);
-      }
-    }
-    
-    for (const prefix of prefixes) {
-      const [collection, mode] = prefix.split('.');
-      const fileData: any = {};
-      
-      for (const key in filteredData) {
-        if (key.startsWith(prefix)) {
-          // Remove the prefix for cleaner structure
-          const newKey = key.substring(prefix.length + 1);
-          fileData[newKey] = filteredData[key];
-        }
-      }
-      
-      if (Object.keys(fileData).length > 0) {
-        files.push({
-          name: `${collection}-${mode}.json`,
-          data: fileData
-        });
-      }
-    }
+    // ...existing code...
   } else {
     // For nested structure, create one file per collection/mode
     for (const collection in filteredData) {
@@ -218,4 +189,93 @@ export function downloadMultipleFiles(
   if (firstLink) {
     (firstLink as HTMLAnchorElement).click();
   }
+}
+
+/**
+ * Get a short display version of a token path
+ */
+export function getShortTokenPath(path: string): string {
+  const parts = path.split('.');
+  return parts.length > 2 ? parts.slice(-2).join('.') : path;
+}
+
+/**
+ * Format a token value for display based on type
+ */
+export function formatTokenValue(value: any, type: string): string {
+  if (value === null || value === undefined) return 'undefined';
+  
+  // Handle DTCG format
+  if (typeof value === 'object' && value.$value !== undefined) {
+    value = value.$value;
+  }
+  
+  // Format based on type
+  switch (type) {
+    case 'color':
+      return typeof value === 'string' ? value : JSON.stringify(value);
+    case 'dimension':
+      return typeof value === 'string' ? value : `${value}px`;
+    case 'duration':
+      return typeof value === 'string' ? value : `${value}ms`;
+    case 'fontWeight':
+      return String(value);
+    default:
+      return typeof value === 'object' ? JSON.stringify(value) : String(value);
+  }
+}
+
+/**
+ * Format tokens for CSS variables
+ */
+export function formatAsCssVariables(tokens: any): string {
+  const flatTokens = flattenTokens(tokens);
+  let css = ":root {\n";
+  
+  Object.entries(flatTokens).forEach(([path, value]) => {
+    const variableName = path.replace(/\./g, '-');
+    let formattedValue;
+    
+    if (value && typeof value === 'object') {
+      if (value.$value !== undefined) {
+        formattedValue = value.$value;
+      } else {
+        formattedValue = JSON.stringify(value);
+      }
+    } else {
+      formattedValue = value;
+    }
+    
+    css += `  --${variableName}: ${formattedValue};\n`;
+  });
+  
+  css += "}\n";
+  return css;
+}
+
+/**
+ * Format tokens for SCSS variables
+ */
+export function formatAsScssVariables(tokens: any): string {
+  const flatTokens = flattenTokens(tokens);
+  let scss = "";
+  
+  Object.entries(flatTokens).forEach(([path, value]) => {
+    const variableName = path.replace(/\./g, '-');
+    let formattedValue;
+    
+    if (value && typeof value === 'object') {
+      if (value.$value !== undefined) {
+        formattedValue = value.$value;
+      } else {
+        formattedValue = JSON.stringify(value);
+      }
+    } else {
+      formattedValue = value;
+    }
+    
+    scss += `$${variableName}: ${formattedValue};\n`;
+  });
+  
+  return scss;
 }

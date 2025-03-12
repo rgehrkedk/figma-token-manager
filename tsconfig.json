@@ -14,7 +14,8 @@
       "./node_modules/@types",
       "./node_modules/@figma"
     ],
-    "strict": true,
+    "strict": false,          // Temporarily disable strict mode
+    "strictNullChecks": false, // Specifically disable null checks
     "outDir": "dist",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

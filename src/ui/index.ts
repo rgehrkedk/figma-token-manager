@@ -8,6 +8,7 @@ import {
   downloadJson, 
   downloadMultipleFiles 
 } from './utilities/formatters';
+import { createModesMap } from './utilities/helpers';
 
 // Import components
 import { 
@@ -30,8 +31,10 @@ import {
   showEnhancedVisualTokenPreview
 } from './components/tokenPreview';
 
+// Import a fix for the reference diagnoser
 import {
   analyzeReferenceIssues,
+  analyzeReferenceIssuesWithMap, // Add this
   setupReferenceDiagnosisListeners,
   getReferenceDiagnoserStyles
 } from './components/referenceDiagnoser';
@@ -84,17 +87,10 @@ document.head.appendChild(styleElement);
 function getCurrentTabData(tabId: string): any {
   // If it's the combined tab, return all selected data
   if (tabId === 'combined') {
-    const flattenedSelectedModes: string[] = [];
-    selectedModes.forEach((modes, collection) => {
-      modes.forEach(mode => {
-        flattenedSelectedModes.push(mode);
-      });
-    });
-    
     return filterTokens(
       tokenData, 
       selectedCollections, 
-      flattenedSelectedModes, 
+      selectedModes, // Use the Map directly
       flatStructureCheckbox.checked
     );
   }
@@ -106,6 +102,13 @@ function getCurrentTabData(tabId: string): any {
   }
   
   return {};
+}
+
+/**
+ * Converts a Map<string, string[]> to a flat string array of all modes
+ */
+function flattenModesMap(modesMap: Map<string, string[]>): string[] {
+  return Array.from(modesMap.values()).flat();
 }
 
 /**
@@ -126,7 +129,7 @@ function updatePreview(): void {
   const filteredData = filterTokens(
     tokenData, 
     selectedCollections, 
-    flattenedSelectedModes, 
+    selectedModes, 
     flatStructureCheckbox.checked
   );
   
@@ -187,6 +190,8 @@ function updatePreview(): void {
   
   // Validate references if enabled
   if (validateReferencesCheckbox.checked) {
+    // First get all modes as a flattened array for compatibility with validateReferences
+    const allModes = flattenModesMap(selectedModes);
     referenceProblems = validateReferences(filteredData);
     if (referenceProblems.length > 0) {
       statusEl.textContent = `Found ${referenceProblems.length} reference problems. Click "Validate References" for details.`;
@@ -301,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filterTokens(
           tokenData, 
           selectedCollections, 
-          Array.from(selectedModes.values()).flat(), 
+          selectedModes, 
           flatStructureCheckbox.checked
         ) : 
         getCurrentTabData(currentTabId);
@@ -312,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
       validationContent.appendChild(diagnosisElement);
       
       // Analyze and display reference issues
-      const diagnosis = analyzeReferenceIssues(currentTabData, diagnosisElement);
+      const diagnosis = analyzeReferenceIssuesWithMap(currentTabData, diagnosisElement);
       
       // Setup listeners for the diagnosis UI components
       setupReferenceDiagnosisListeners(diagnosisElement, currentTabData, (fixedTokenData) => {
@@ -336,13 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.className = "success";
         
         // Re-analyze to show progress
-        analyzeReferenceIssues(
-          filterTokens(
-            tokenData, 
-            selectedCollections, 
-            Array.from(selectedModes.values()).flat(), 
-            flatStructureCheckbox.checked
-          ), 
+        analyzeReferenceIssuesWithMap(
+          currentTabData, 
           diagnosisElement
         );
       });
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const files = getSeparateFiles(
         tokenData, 
         selectedCollections, 
-        flattenedSelectedModes, 
+        selectedModes,
         flatStructureCheckbox.checked
       );
       
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const filteredData = filterTokens(
         tokenData, 
         selectedCollections, 
-        flattenedSelectedModes, 
+        selectedModes,
         flatStructureCheckbox.checked
       );
       
@@ -430,13 +430,13 @@ document.addEventListener('DOMContentLoaded', () => {
       filterTokens(
         tokenData, 
         selectedCollections, 
-        Array.from(selectedModes.values()).flat(), 
+        selectedModes, 
         flatStructureCheckbox.checked
       ) : 
       getCurrentTabData(currentTabId);
       
     // Analyze and display reference issues
-    const diagnosis = analyzeReferenceIssues(currentTabData, diagnosisContainer);
+    const diagnosis = analyzeReferenceIssuesWithMap(currentTabData, diagnosisContainer);
     
     // Setup listeners for fixes
     setupReferenceDiagnosisListeners(diagnosisContainer, currentTabData, (fixedTokenData) => {
@@ -458,13 +458,8 @@ document.addEventListener('DOMContentLoaded', () => {
       statusEl.className = "success";
       
       // Re-analyze to show progress
-      analyzeReferenceIssues(
-        filterTokens(
-          tokenData, 
-          selectedCollections, 
-          Array.from(selectedModes.values()).flat(), 
-          flatStructureCheckbox.checked
-        ), 
+      analyzeReferenceIssuesWithMap(
+        currentTabData, 
         diagnosisContainer
       );
     });

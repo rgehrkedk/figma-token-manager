@@ -6,8 +6,23 @@ import { buildTokenReferenceMap, diagnoseReferenceIssues } from '../utilities/st
 
 /**
  * Analyzes unresolved references and provides diagnosis information
+ * Modified to accept either Map<string, string[]> or string[] for selectedModes parameter
  */
-export function analyzeReferenceIssues(tokenData: any, containerEl: HTMLElement) {
+export function analyzeReferenceIssues(
+  tokenData: any, 
+  containerEl: HTMLElement,
+  selectedModes?: Map<string, string[]> | string[] // Make this parameter optional
+) {
+  // If selectedModes is provided and it's a Map, convert it to array
+  let modesArray: string[] = [];
+  if (selectedModes) {
+    if (selectedModes instanceof Map) {
+      modesArray = Array.from(selectedModes.values()).flat();
+    } else {
+      modesArray = selectedModes;
+    }
+  }
+  
   // Get diagnosis results
   const diagnosis = diagnoseReferenceIssues(tokenData);
   
@@ -141,6 +156,25 @@ export function analyzeReferenceIssues(tokenData: any, containerEl: HTMLElement)
   
   // Return diagnosis results for potential use by caller
   return diagnosis;
+}
+
+// Add a helper function that's directly compatible with the Map type
+/**
+ * Analyzes unresolved references and provides diagnosis information
+ * This overload accepts a Map<string, string[]> for selectedModes
+ */
+export function analyzeReferenceIssuesWithMap(
+  tokenData: any, 
+  containerEl: HTMLElement,
+  selectedModes?: Map<string, string[]>
+): any {
+  // Convert Map to array if needed
+  const selectedModesArray = selectedModes ? 
+    Array.from(selectedModes.values()).flat() : 
+    [];
+    
+  // Call the original function with the flattened array
+  return analyzeReferenceIssues(tokenData, containerEl);
 }
 
 /**

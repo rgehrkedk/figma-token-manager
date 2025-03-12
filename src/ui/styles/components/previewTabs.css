@@ -1,0 +1,70 @@
+/**
+ * Preview Tabs Component styles
+ */
+
+.preview-tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-gray-300);
+  margin-bottom: var(--space-3);
+}
+
+.tab-button {
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast) var(--transition-timing);
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  background-color: var(--color-gray-100);
+}
+
+.tab-button.active {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.tab-content {
+  overflow: auto;
+  padding: var(--space-2);
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-md);
+}
+
+.tab-content pre {
+  margin: 0;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  overflow-x: auto;
+}
+
+.preview-toggle-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.preview-content-json,
+.preview-content-visual {
+  display: none;
+}
+
+.preview-content-json.active,
+.preview-content-visual.active {
+  display: block;
+}
+
+.empty-message {
+  padding: var(--space-3);
+  color: var(--color-gray-600);
+  font-style: italic;
+  text-align: center;
+}
