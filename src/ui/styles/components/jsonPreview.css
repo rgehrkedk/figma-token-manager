@@ -3,26 +3,26 @@
  */
 
 .preview-section {
-  margin-top: 16px;
+  margin-top: var(--space-4);
 }
 
 .preview-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .preview-header h2 {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 #preview-container {
-  border: 1px solid var(--figma-color-border);
-  border-radius: 2px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height var(--transition-normal) var(--transition-timing);
   max-height: 300px;
 }
 
@@ -34,11 +34,11 @@
   height: 300px;
   overflow: auto;
   margin: 0;
-  padding: 8px;
-  font-family: 'SF Mono', 'Roboto Mono', monospace;
-  font-size: 11px;
-  background-color: var(--figma-color-bg);
-  color: var(--figma-color-text);
+  padding: var(--space-2);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-800);
   white-space: pre-wrap;
 }
 
@@ -46,11 +46,11 @@
   border: none;
   background: none;
   cursor: pointer;
-  padding: 4px 8px;
-  color: var(--figma-color-text-secondary);
-  font-size: 11px;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
 }
 
 #toggle-preview:hover {
-  color: var(--figma-color-text);
+  color: var(--color-gray-800);
 }

@@ -1,0 +1,67 @@
+/* Selection group styles using CSS variables */
+
+.selection-group {
+  margin-bottom: var(--space-4);
+}
+
+.selection-group__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.selection-group__title {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-800);
+}
+
+.selection-group__toggle-all {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.selection-group__toggle-all:hover {
+  text-decoration: underline;
+}
+
+.selection-group__item {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.selection-group__item label {
+  margin-left: var(--space-2);
+  cursor: pointer;
+}
+
+/* Utility classes */
+.mb-sm {
+  margin-bottom: var(--space-2);
+}
+
+.mb-md {
+  margin-bottom: var(--space-4);
+}
+
+.mb-lg {
+  margin-bottom: var(--space-6);
+}
+
+.mt-sm {
+  margin-top: var(--space-2);
+}
+
+.mt-md {
+  margin-top: var(--space-4);
+}
+
+.mt-lg {
+  margin-top: var(--space-6);
+}

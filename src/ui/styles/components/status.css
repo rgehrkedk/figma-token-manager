@@ -1,0 +1,53 @@
+/* Status indicator styles using CSS variables */
+
+.status {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+.status.info {
+  background-color: #e8f4fd;
+  color: var(--color-info);
+}
+
+.status.success {
+  background-color: #e6ffed;
+  color: var(--color-success);
+}
+
+.status.warning {
+  background-color: #fff8e1;
+  color: var(--color-warning);
+}
+
+.status.error {
+  background-color: #ffeef0;
+  color: var(--color-danger);
+}
+
+/* Loading indicator */
+.loading {
+  display: flex;
+  align-items: center;
+  font-style: italic;
+  color: var(--color-gray-600);
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: var(--space-2);
+  border: 2px solid var(--color-gray-200);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

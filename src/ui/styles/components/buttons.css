@@ -1,0 +1,50 @@
+/* Button styles using CSS variables */
+
+.button {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  margin-right: var(--space-2);
+  margin-top: var(--space-4);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--transition-fast) var(--transition-timing);
+}
+
+.button.primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.button.primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.button.secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+}
+
+.button.secondary:hover {
+  background-color: var(--color-secondary-dark);
+}
+
+.button:disabled {
+  background-color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+.token-copy-button {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.token-copy-button:hover {
+  background-color: var(--color-gray-300);
+}

@@ -1,41 +1,37 @@
 /* Organism components for token manager UI */
 
-/* Design system variables for consistency */
-:root {
-  /* Spacing */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  
-  /* Colors */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f5f5f5;
-  --color-border: #e0e0e0;
-  --color-border-hover: #cccccc;
-  --color-border-light: #eeeeee;
-  --color-text-primary: #333333;
-  --color-text-secondary: #666666;
-  --color-text-tertiary: #999999;
-  --color-accent: #0066ff;
-  --color-accent-hover: #0052cc;
-  --color-accent-light: #f5f8ff;
-  --color-success: #00a047;
-  --color-warning: #f59e0b;
-  --color-error: #d32f2f;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-  
-  /* Border radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-}
 
 /* Options Group - Container for plugin options/settings */
+.token-preview-container {
+  margin-top: var(--space-4);
+  border: 1px solid var(--token-item-border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background-color: var(--color-gray-100);
+}
+
+.token-preview-heading {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-3);
+  color: var(--color-gray-900);
+}
+
+.token-preview-subheading {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--color-gray-700);
+}
+
+.token-preview-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--token-preview-grid-gap);
+  margin-bottom: var(--space-4);
+}
+
 .options-group {
   display: flex;
   flex-direction: column;
