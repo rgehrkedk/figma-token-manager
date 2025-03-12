@@ -1,0 +1,74 @@
+/* Header Component Styles */
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .header-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-gray-900);
+  }
+  
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .settings-button {
+    background: none;
+    border: none;
+    color: var(--color-gray-600);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .settings-button:hover {
+    background-color: var(--color-gray-200);
+    color: var(--color-gray-800);
+  }
+  
+  .view-toggle {
+    display: flex;
+    background-color: var(--color-gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 32px;
+  }
+  
+  .view-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    background: none;
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .view-toggle-btn:hover {
+    background-color: var(--color-gray-300);
+  }
+  
+  .view-toggle-btn.active {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  .view-toggle-btn svg {
+    opacity: 0.8;
+  }

@@ -10,6 +10,10 @@
 @import './layout.css';
 
 /* Component styles */
+@import './components/header.css';
+@import './components/sidebarPanel.css';
+@import './components/tokenGrid.css';
+@import './components/tokenDetailsPanel.css';
 @import './components/tabs.css';
 @import './components/tokens.css';
 @import './components/toggle.css';

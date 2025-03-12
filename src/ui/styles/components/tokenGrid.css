@@ -1,0 +1,206 @@
+/* Token Grid Styles */
+
+.token-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .token-section-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--color-gray-300);
+  }
+  
+  .token-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .token-card {
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .token-card:hover {
+    border-color: var(--color-primary-light);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+  
+  .token-card-content {
+    padding: 12px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .token-visual {
+    margin-right: 12px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  
+  .token-info {
+    flex: 1;
+    min-width: 0; /* Ensure text wrapping works with flexbox */
+  }
+  
+  .token-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-900);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .token-value {
+    font-size: 12px;
+    font-family: var(--font-family-monospace);
+    color: var(--color-gray-600);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* References */
+  .token-card.is-reference {
+    border-color: var(--color-primary-light);
+    background-color: var(--color-primary-50);
+  }
+  
+  .reference-indicator {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    background-color: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  
+  .resolved-value {
+    color: var(--color-success);
+    font-size: 10px;
+    margin-left: 4px;
+  }
+  
+  /* Color tokens */
+  .color-swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid var(--color-gray-300);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Dimension tokens */
+  .dimension-swatch {
+    width: 80px;
+    height: 12px;
+    background-color: var(--color-gray-200);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  
+  .dimension-line {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 6px;
+    min-width: 4px;
+  }
+  
+  /* Typography tokens */
+  .font-family-sample,
+  .font-weight-sample,
+  .font-size-sample {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-gray-100);
+    border-radius: 6px;
+    font-size: 18px;
+  }
+  
+  .line-height-sample {
+    width: 40px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-gray-100);
+    border-radius: 6px;
+    font-size: 10px;
+    text-align: center;
+  }
+  
+  .letter-spacing-sample {
+    width: 60px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-gray-100);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  
+  /* Shadow tokens */
+  .shadow-sample {
+    width: 60px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .shadow-box {
+    width: 40px;
+    height: 20px;
+    background-color: white;
+    border-radius: 4px;
+  }
+  
+  /* Generic tokens */
+  .generic-sample {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-gray-100);
+    border-radius: 6px;
+  }
+  
+  .generic-icon {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--color-gray-600);
+  }
+  
+  /* Empty state */
+  .token-grid-empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--color-gray-500);
+    font-style: italic;
+  }

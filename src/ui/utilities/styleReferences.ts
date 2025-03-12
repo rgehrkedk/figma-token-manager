@@ -24,8 +24,22 @@ interface ResolvedToken {
   resolvedFrom?: string;
 }
 
+interface DiagnosisResult {
+  unresolvedReferences: Array<{
+    path: string;
+    reference: string;
+    potentialMatches: Array<{ path: string; similarity: number }>;
+  }>;
+  suggestedFixes: Array<{
+    path: string;
+    original: string;
+    suggested: string;
+  }>;
+}
+
 /**
  * Builds a flattened map of all tokens for reference resolution
+ * Enhanced to better support Style Dictionary references
  */
 export function buildTokenReferenceMap(tokenData: any): FlatTokenMap {
   const flatMap: FlatTokenMap = {};
@@ -36,7 +50,9 @@ export function buildTokenReferenceMap(tokenData: any): FlatTokenMap {
     
     // Process DTCG-format tokens with $value
     if (obj.$value !== undefined && obj.$type !== undefined) {
-      // Store in the flat map with the full path (using dot notation)
+      // Store in the flat map with various path formats to improve resolution
+      
+      // 1. Store with exact path using dots (Style Dictionary format)
       const dotPath = path.replace(/\//g, '.');
       flatMap[dotPath] = {
         value: obj.$value,
@@ -44,20 +60,31 @@ export function buildTokenReferenceMap(tokenData: any): FlatTokenMap {
         originalPath
       };
       
-      // Also store the slash path for backward compatibility
+      // 2. Store with exact path using slashes
       flatMap[path] = {
         value: obj.$value,
         type: obj.$type,
         originalPath
       };
       
-      // Also store with just the token name (last part of the path)
-      const pathParts = path.split(/[\/\.]/);
-      const tokenName = pathParts[pathParts.length - 1];
-      if (tokenName && tokenName !== path) {
-        // Don't overwrite more specific paths with the same name
-        if (!flatMap[tokenName]) {
-          flatMap[tokenName] = {
+      // 3. Store each path segment for partial references
+      const pathParts = dotPath.split('.');
+      
+      // Store progressively more specific paths
+      for (let i = pathParts.length; i > 0; i--) {
+        const partialPath = pathParts.slice(pathParts.length - i).join('.');
+        if (!flatMap[partialPath] && partialPath !== dotPath) {
+          flatMap[partialPath] = {
+            value: obj.$value,
+            type: obj.$type,
+            originalPath
+          };
+        }
+        
+        // Also store with slashes for compatibility
+        const partialSlashPath = pathParts.slice(pathParts.length - i).join('/');
+        if (!flatMap[partialSlashPath] && partialSlashPath !== path) {
+          flatMap[partialSlashPath] = {
             value: obj.$value,
             type: obj.$type,
             originalPath
@@ -65,36 +92,14 @@ export function buildTokenReferenceMap(tokenData: any): FlatTokenMap {
         }
       }
       
-      // Store each segment of the path for partial matching (both dot and slash formats)
-      // This allows references like {colors.red.500} or {colors/red/500} to be found even 
-      // if the full path is theme/light/colors/red/500
-      let partialPathSlash = '';
-      let partialPathDot = '';
-      for (let i = pathParts.length - 1; i >= 0; i--) {
-        if (partialPathSlash) {
-          partialPathSlash = pathParts[i] + '/' + partialPathSlash;
-          partialPathDot = pathParts[i] + '.' + partialPathDot;
-        } else {
-          partialPathSlash = pathParts[i];
-          partialPathDot = pathParts[i];
-        }
-        
-        // Don't overwrite more specific paths (store both formats)
-        if (!flatMap[partialPathSlash] && partialPathSlash !== path && partialPathSlash !== tokenName) {
-          flatMap[partialPathSlash] = {
-            value: obj.$value,
-            type: obj.$type,
-            originalPath
-          };
-        }
-        
-        if (!flatMap[partialPathDot] && partialPathDot !== dotPath && partialPathDot !== tokenName) {
-          flatMap[partialPathDot] = {
-            value: obj.$value,
-            type: obj.$type,
-            originalPath
-          };
-        }
+      // 4. Store just the token name for simplest references
+      const tokenName = pathParts[pathParts.length - 1];
+      if (!flatMap[tokenName]) {
+        flatMap[tokenName] = {
+          value: obj.$value,
+          type: obj.$type,
+          originalPath
+        };
       }
       
       return;
@@ -119,8 +124,18 @@ export function buildTokenReferenceMap(tokenData: any): FlatTokenMap {
         `${collection}/${mode}`, 
         `${collection}.${mode}`
       );
+      
+      // Also add entries without collection and mode for better resolution
+      processTokens(
+        tokenData[collection][mode],
+        '',
+        ''
+      );
     }
   }
+  
+  // Debug: log all paths in the flat map (uncomment if needed)
+  // console.log('Token paths in flat map:', Object.keys(flatMap));
   
   return flatMap;
 }
@@ -146,6 +161,9 @@ export function resolveTokenReference(
   // Extract reference path without curly braces
   const refPath = reference.substring(1, reference.length - 1);
   
+  // Debug: log the reference being resolved
+  // console.log('Resolving reference:', refPath);
+  
   // Check for circular references
   if (visited.has(refPath)) {
     console.warn(`Circular reference detected: ${refPath}`);
@@ -160,7 +178,9 @@ export function resolveTokenReference(
   // Add current path to visited set for circular reference detection
   visited.add(refPath);
   
-  // Try to find an exact match first
+  // Try multiple reference path formats for better resolution
+  
+  // 1. Try exact reference path first
   if (referenceMap[refPath]) {
     const resolved = referenceMap[refPath];
     
@@ -190,9 +210,7 @@ export function resolveTokenReference(
     };
   }
   
-  // No exact match found, try more flexible matching strategies
-  
-  // 1. Try with multiple path separators ('/' vs '.')
+  // 2. Try with alternative separators (slash vs dot)
   const alternativePath = refPath.includes('/') 
     ? refPath.replace(/\//g, '.') 
     : refPath.replace(/\./g, '/');
@@ -226,118 +244,121 @@ export function resolveTokenReference(
     };
   }
   
-  // 2. Try to find any path that ends with the reference path
-  for (const path in referenceMap) {
-    // Skip paths that would be an exact match (already checked)
-    if (path === refPath) continue;
+  // 3. Try the last part of the path (for simple token names)
+  const simplePath = refPath.split(/[\/\.]/).pop() || '';
+  if (simplePath !== refPath && referenceMap[simplePath]) {
+    const resolved = referenceMap[simplePath];
     
-    // Check if this path ends with the reference (using either separator)
-    if (path.endsWith(`/${refPath}`) || path.endsWith(`.${refPath}`) || 
-        path.endsWith(`/${alternativePath}`) || path.endsWith(`.${alternativePath}`)) {
-      const resolved = referenceMap[path];
+    // If this is also a reference, resolve it recursively
+    if (typeof resolved.value === 'string' && 
+        resolved.value.startsWith('{') && 
+        resolved.value.endsWith('}')) {
       
-      // If this is also a reference, resolve it recursively
-      if (typeof resolved.value === 'string' && 
-          resolved.value.startsWith('{') && 
-          resolved.value.endsWith('}')) {
-        
-        const nestedResult = resolveTokenReference(resolved.value, referenceMap, visited);
-        
-        return {
-          ...nestedResult,
-          originalReference: reference,
-          originalPath: resolved.originalPath,
-          resolvedFrom: path
-        };
-      }
+      const nestedResult = resolveTokenReference(resolved.value, referenceMap, visited);
       
-      // Return the resolved value
       return {
-        value: resolved.value,
-        type: resolved.type,
+        ...nestedResult,
         originalReference: reference,
         originalPath: resolved.originalPath,
-        isResolved: true,
-        resolvedFrom: path
+        resolvedFrom: simplePath
       };
     }
+    
+    // Return the resolved value
+    return {
+      value: resolved.value,
+      type: resolved.type,
+      originalReference: reference,
+      originalPath: resolved.originalPath,
+      isResolved: true,
+      resolvedFrom: simplePath
+    };
   }
   
-  // 3. If we still haven't found it, check for any subpath matches
-  const refPathParts = refPath.split(/[\/\.]/);
-  
-  // Start with the most specific (longest) subpath
-  for (let length = refPathParts.length - 1; length > 0; length--) {
-    const subPathSlash = refPathParts.slice(refPathParts.length - length).join('/');
-    const subPathDot = refPathParts.slice(refPathParts.length - length).join('.');
+  // 4. Try matching with fuzzy path matching for better resolution
+  const bestMatchPath = findBestTokenPathMatch(refPath, referenceMap);
+  if (bestMatchPath) {
+    const resolved = referenceMap[bestMatchPath];
     
-    // Try both formats
-    if (referenceMap[subPathSlash]) {
-      const resolved = referenceMap[subPathSlash];
+    // If this is also a reference, resolve it recursively
+    if (typeof resolved.value === 'string' && 
+        resolved.value.startsWith('{') && 
+        resolved.value.endsWith('}')) {
       
-      // If this is also a reference, resolve it recursively
-      if (typeof resolved.value === 'string' && 
-          resolved.value.startsWith('{') && 
-          resolved.value.endsWith('}')) {
-        
-        const nestedResult = resolveTokenReference(resolved.value, referenceMap, visited);
-        
-        return {
-          ...nestedResult,
-          originalReference: reference,
-          originalPath: resolved.originalPath,
-          resolvedFrom: subPathSlash
-        };
-      }
+      const nestedResult = resolveTokenReference(resolved.value, referenceMap, visited);
       
-      // Return the resolved value
       return {
-        value: resolved.value,
-        type: resolved.type,
+        ...nestedResult,
         originalReference: reference,
         originalPath: resolved.originalPath,
-        isResolved: true,
-        resolvedFrom: subPathSlash
+        resolvedFrom: bestMatchPath
       };
     }
     
-    if (referenceMap[subPathDot]) {
-      const resolved = referenceMap[subPathDot];
-      
-      // If this is also a reference, resolve it recursively
-      if (typeof resolved.value === 'string' && 
-          resolved.value.startsWith('{') && 
-          resolved.value.endsWith('}')) {
-        
-        const nestedResult = resolveTokenReference(resolved.value, referenceMap, visited);
-        
-        return {
-          ...nestedResult,
-          originalReference: reference,
-          originalPath: resolved.originalPath,
-          resolvedFrom: subPathDot
-        };
-      }
-      
-      // Return the resolved value
-      return {
-        value: resolved.value,
-        type: resolved.type,
-        originalReference: reference,
-        originalPath: resolved.originalPath,
-        isResolved: true,
-        resolvedFrom: subPathDot
-      };
-    }
+    // Return the resolved value
+    return {
+      value: resolved.value,
+      type: resolved.type,
+      originalReference: reference,
+      originalPath: resolved.originalPath,
+      isResolved: true,
+      resolvedFrom: bestMatchPath
+    };
   }
   
   // If we get here, we couldn't resolve the reference
+  // console.warn('Reference not resolved:', refPath);
+  
   return { 
     value: reference, 
     type: 'reference', 
     originalReference: reference,
     isResolved: false 
   };
+}
+
+/**
+ * Find the best match for a token path from available paths
+ */
+function findBestTokenPathMatch(path: string, referenceMap: FlatTokenMap): string | null {
+  const allPaths = Object.keys(referenceMap);
+  let bestMatch: string | null = null;
+  let bestScore = 0;
+  
+  // Normalize the path for matching
+  const normalizedPath = path.toLowerCase();
+  
+  // Try to find the best match based on string similarity
+  for (const candidatePath of allPaths) {
+    // Check for partial matches (end of path matching)
+    const normalizedCandidate = candidatePath.toLowerCase();
+    
+    if (normalizedCandidate.endsWith(normalizedPath)) {
+      const score = normalizedPath.length / normalizedCandidate.length;
+      if (score > bestScore) {
+        bestMatch = candidatePath;
+        bestScore = score;
+      }
+    }
+    // Also check for segments matching
+    else {
+      const pathSegments = normalizedPath.split(/[\/\.]/);
+      const candidateSegments = normalizedCandidate.split(/[\/\.]/);
+      
+      const lastPathSegment = pathSegments[pathSegments.length - 1];
+      const lastCandidateSegment = candidateSegments[candidateSegments.length - 1];
+      
+      if (lastPathSegment === lastCandidateSegment) {
+        const score = 0.5; // Half score for just last segment match
+        if (score > bestScore) {
+          bestMatch = candidatePath;
+          bestScore = score;
+        }
+      }
+    }
+  }
+  
+  return bestMatch;
 }
 
 /**
@@ -397,18 +418,7 @@ export function resolveAllReferences(tokens: any, referenceMap: FlatTokenMap): a
  * Diagnose reference resolution issues
  * Returns information about failed references and potential matches
  */
-export function diagnoseReferenceIssues(tokenData: any): {
-  unresolvedReferences: Array<{
-    path: string;
-    reference: string;
-    potentialMatches: Array<{ path: string; similarity: number }>;
-  }>;
-  suggestedFixes: Array<{
-    path: string;
-    original: string;
-    suggested: string;
-  }>;
-} {
+export function diagnoseReferenceIssues(tokenData: any): DiagnosisResult {
   // Build the reference map
   const referenceMap = buildTokenReferenceMap(tokenData);
   const unresolvedReferences: Array<{

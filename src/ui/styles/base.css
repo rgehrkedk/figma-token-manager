@@ -9,6 +9,7 @@
   --color-primary: #0066FF;
   --color-primary-light: #4D94FF;
   --color-primary-dark: #0047B3;
+  --color-primary-50: #E5F0FF; /* Added from main.css */
   
   --color-secondary: #6C757D;
   --color-secondary-light: #A1A8AE;
@@ -113,15 +114,23 @@
   --token-item-border-radius: var(--radius-md);
   --token-item-padding: var(--space-3);
 }
+
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: var(--font-family-base);
   margin: 0;
-  padding: var(--space-5);
+  padding: 0; /* Updated to remove padding for full screen layout */
   font-size: var(--font-size-sm);
   color: var(--color-gray-800);
-  overflow-y: auto;
+  overflow: hidden; /* Updated to prevent scrolling on body */
   height: 100vh;
-  box-sizing: border-box;
+  line-height: 1.5;
 }
 
 h2 {
@@ -149,7 +158,6 @@ button {
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-4);
   margin-right: var(--space-2);
-  margin-top: var(--space-4);
   cursor: pointer;
   font-weight: var(--font-weight-medium);
 }
@@ -161,6 +169,12 @@ button:hover {
 button:disabled {
   background-color: var(--color-gray-400);
   cursor: not-allowed;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 pre {
@@ -241,4 +255,62 @@ pre {
   font-weight: var(--font-weight-medium);
   background-color: var(--color-primary-light);
   color: var(--color-primary-dark);
+}
+
+/* Main panel styles from main.css */
+.main-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.main-panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.main-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.grouping-select {
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 4px;
+  background-color: white;
+}
+
+.reference-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: rgba(255, 193, 7, 0.1);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border-left: 4px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+/* Token views */
+.token-view {
+  width: 100%;
+}
+
+.json-view {
+  background-color: var(--color-gray-100);
+  border-radius: 4px;
+  overflow: auto;
+}
+
+#json-content {
+  font-family: var(--font-family-monospace);
+  font-size: 12px;
+  padding: 16px;
+  white-space: pre-wrap;
+  color: var(--color-gray-900);
 }

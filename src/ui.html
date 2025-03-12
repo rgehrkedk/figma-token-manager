@@ -3,131 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Design Token Export</title>
-  <!-- Styles will be injected here by webpack -->
+  <title>Figma Token Manager</title>
 </head>
 <body>
-  <h2>Design Token Export</h2>
-  <p>Extract your Figma design variables as DTCG-compliant design tokens.</p>
-  
-  <div id="content" class="two-panel-layout">
-    <!-- Left Panel -->
-    <div class="left-panel">
-      <div class="option-group">
-        <h3>Format Options</h3>
-        <div class="radio-item">
-          <input type="radio" id="format-dtcg" name="format" value="dtcg" checked>
-          <label for="format-dtcg">DTCG Format (Design Tokens Community Group)</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="format-legacy" name="format" value="legacy">
-          <label for="format-legacy">Legacy Format (Simple JSON)</label>
-        </div>
-        
-        <h3>Color Format</h3>
-        <div class="radio-item">
-          <input type="radio" id="color-hex" name="color-format" value="hex" checked>
-          <label for="color-hex">HEX (#ffffff)</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="color-rgb" name="color-format" value="rgb">
-          <label for="color-rgb">RGB (rgb(255, 255, 255))</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="color-rgba" name="color-format" value="rgba">
-          <label for="color-rgba">RGBA (rgba(255, 255, 255, 1))</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="color-hsl" name="color-format" value="hsl">
-          <label for="color-hsl">HSL (hsl(0deg, 0%, 100%))</label>
-        </div>
-        <div class="radio-item">
-          <input type="radio" id="color-hsla" name="color-format" value="hsla">
-          <label for="color-hsla">HSLA (hsla(0deg, 0%, 100%, 1))</label>
-        </div>
-        
-        <h3>Export Options</h3>
-        <div class="checkbox-item">
-          <input type="checkbox" id="separate-files" checked>
-          <label for="separate-files">Export separate files (one per collection/mode)</label>
-        </div>
-        
-        <div class="checkbox-item">
-          <input type="checkbox" id="validate-references" checked>
-          <label for="validate-references">Validate and fix references</label>
-        </div>
-        
-        <div class="checkbox-item">
-          <input type="checkbox" id="flat-structure">
-          <label for="flat-structure">Generate flat structure (easier reference resolution)</label>
-        </div>
-      </div>
-      
-      <div class="selection-group">
-        <h3>Collections & Modes <span class="select-all" id="toggle-all-collections">Select All</span></h3>
-        <div id="collection-modes-list">
-          <div class="loading">
-            <div class="spinner"></div>
-            Loading collections and modes...
-          </div>
-        </div>
-      </div>
-      
-      <div>
-        <button id="extract-btn">Refresh Tokens</button>
-        <button id="download-btn" disabled>Download JSON</button>
-        <button id="validate-btn">Validate References</button>
-      </div>
-    </div>
+  <div class="plugin-container">
+    <!-- Header -->
+    <header id="header-container" class="header"></header>
     
-    <!-- Right Panel -->
-    <div class="right-panel">
-      <div id="reference-validation-results" class="reference-validation" style="display: none;">
-        <h3>Reference Validation</h3>
-        <div id="validation-content">
-          Validating references...
+    <!-- Sidebar -->
+    <aside id="sidebar-container" class="sidebar"></aside>
+    
+    <!-- Main Panel -->
+    <main id="main-panel-container" class="main-panel">
+      <!-- Main panel header -->
+      <div class="main-panel-header">
+        <h1 class="main-panel-title">Design Tokens</h1>
+        <div class="main-panel-actions">
+          <select id="grouping-select" class="grouping-select">
+            <option value="type">Group by Type</option>
+            <option value="collection">Group by Collection</option>
+            <option value="alphabetical">Alphabetical</option>
+          </select>
         </div>
       </div>
       
-      <div id="preview-container">
-        <div class="preview-toggle-container">
-          <h3>Preview</h3>
-          <div class="segmented-toggle" id="preview-mode-toggle">
-            <div class="segmented-toggle-option active" data-mode="json">JSON</div>
-            <div class="segmented-toggle-option" data-mode="visual">Visual</div>
-          </div>
-        </div>
+      <!-- Reference warnings -->
+      <div id="reference-warning" class="reference-warning" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="reference-warning-text">Unresolved references found</span>
+      </div>
+      
+      <!-- Token content container (for either visual or JSON view) -->
+      <div id="token-content-container" class="token-content-area">
+        <!-- Visual token grid -->
+        <div id="token-grid-container" class="token-view visual-view"></div>
         
-        <!-- JSON Preview Content -->
-        <div class="preview-content-json active">
-          <div class="preview-tabs" id="preview-tabs">
-            <!-- Tabs will be generated dynamically here -->
-            <button class="tab-button active" data-tab="combined">Combined</button>
-          </div>
-          
-          <div class="preview-content">
-            <div class="tab-content" id="tab-combined" style="display: block;">
-              <pre id="output">Loading data...</pre>
-            </div>
-            <!-- Additional tab contents will be generated dynamically -->
-          </div>
-        </div>
-        
-        <!-- Visual Preview Content (will be populated by visual token preview) -->
-        <div class="preview-content-visual" id="visual-preview-container">
-          <!-- Visual token preview will be inserted here -->
+        <!-- JSON view -->
+        <div id="json-view-container" class="token-view json-view" style="display: none;">
+          <pre id="json-content"></pre>
         </div>
       </div>
-    </div>
+    </main>
+    
+    <!-- Details Panel -->
+    <aside id="details-panel-container" class="details-panel"></aside>
   </div>
-  
-  <div id="status" class="info">Waiting for data...</div>
-
-  <% if (htmlWebpackPlugin.options.mode === 'development') { %>
-  <!-- Debug helper script (development only) -->
-  <script src="debug-helpers.js"></script>
-  <% } %>
-  
-  <!-- UI JavaScript will be inlined here by webpack -->
 </body>
 </html>
