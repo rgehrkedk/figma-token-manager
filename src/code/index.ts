@@ -11,7 +11,7 @@ let currentColorFormat: ColorFormat = 'hex';
 let originalTokenData: any = null;
 
 // Show UI with larger size to accommodate two-panel layout
-figma.showUI(__html__, { width: 750, height: 700 });
+figma.showUI(__html__, { width: 950, height: 800 });
 console.log("Plugin UI shown with updated dimensions");
 
 // Listen for messages from the UI

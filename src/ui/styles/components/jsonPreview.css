@@ -23,7 +23,6 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   transition: max-height var(--transition-normal) var(--transition-timing);
-  max-height: 300px;
 }
 
 #preview-container.collapsed {

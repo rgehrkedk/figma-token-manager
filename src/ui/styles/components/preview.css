@@ -38,7 +38,7 @@
 
 .preview-container__content {
   padding: var(--space-3);
-  max-height: 300px;
+
   overflow: auto;
 }
 
