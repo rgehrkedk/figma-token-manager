@@ -1,0 +1,212 @@
+/* Organism components for token manager UI */
+
+/* Design system variables for consistency */
+:root {
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  
+  /* Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f5f5f5;
+  --color-border: #e0e0e0;
+  --color-border-hover: #cccccc;
+  --color-border-light: #eeeeee;
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-accent: #0066ff;
+  --color-accent-hover: #0052cc;
+  --color-accent-light: #f5f8ff;
+  --color-success: #00a047;
+  --color-warning: #f59e0b;
+  --color-error: #d32f2f;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* Options Group - Container for plugin options/settings */
+.options-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  margin-bottom: var(--space-md);
+}
+
+.options-group__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.options-group__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.options-group__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+/* Selection Group - For grouping related selection items */
+.selection-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-primary);
+}
+
+.selection-group__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--space-xs) var(--space-xs);
+  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: var(--space-xs);
+}
+
+.selection-group__title {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.selection-group__toggle-all {
+  font-size: 12px;
+  color: var(--color-accent);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.selection-group__toggle-all:hover {
+  text-decoration: underline;
+}
+
+.selection-group__item {
+  display: flex;
+  align-items: center;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+}
+
+.selection-group__item:hover {
+  background-color: var(--color-accent-light);
+}
+
+.selection-group__item label {
+  margin-left: var(--space-xs);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Enhanced Preview Container */
+.preview-container {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.preview-container__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preview-container__title {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.preview-container__toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.preview-container__toggle:hover {
+  color: var(--color-accent);
+}
+
+.preview-container__content {
+  padding: 12px;
+  max-height: 400px;
+  overflow: auto;
+}
+
+.preview-container.collapsed .preview-container__content {
+  display: none;
+}
+
+.preview-container.collapsed {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Token Preview Wrapper - For the visual token preview component */
+.token-preview-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-md);
+  padding: 12px;
+}
+
+.token-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.token-preview-heading {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.token-preview-subheading {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 8px;
+  color: var(--color-text-tertiary);
+}
+
+/* Utility classes for consistent spacing */
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }

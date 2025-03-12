@@ -37,6 +37,39 @@ function filterTokensByCollections(tokens: any, collections: string[]): any {
   return result;
 }
 
+// Setup selection group "Select All" toggle
+function setupSelectionGroup(): void {
+  const selectionGroups = document.querySelectorAll('.selection-group');
+  
+  selectionGroups.forEach(group => {
+    const toggleAllButton = group.querySelector('.selection-group__toggle-all') as HTMLButtonElement;
+    const checkboxes = group.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    
+    if (toggleAllButton) {
+      toggleAllButton.addEventListener('click', () => {
+        // Check if all are currently selected
+        const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+        
+        // Toggle based on current state
+        checkboxes.forEach(cb => {
+          cb.checked = !allSelected;
+          // Trigger change event to update selection state
+          cb.dispatchEvent(new Event('change'));
+        });
+        
+        // Update button text
+        toggleAllButton.textContent = allSelected ? 'Select All' : 'Deselect All';
+      });
+    }
+    
+    // Initialize button text
+    if (toggleAllButton && checkboxes.length > 0) {
+      const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+      toggleAllButton.textContent = allSelected ? 'Deselect All' : 'Select All';
+    }
+  });
+}
+
 // Function to update UI based on selected options
 function updateUI() {
   const downloadButton = document.getElementById('download-button') as HTMLButtonElement;
@@ -56,7 +89,7 @@ function updateUI() {
   }
 }
 
-// Function to update the collection list
+// Function to update the collection list with enhanced selection-group
 function updateCollectionList() {
   const collectionList = document.getElementById('collection-list') as HTMLDivElement;
   
@@ -65,18 +98,41 @@ function updateCollectionList() {
     return;
   }
   
-  collectionList.innerHTML = '';
+  // Create the selection group structure
+  let selectionGroupHTML = `
+    <div class="selection-group mb-md">
+      <div class="selection-group__header">
+        <div class="selection-group__title">Token Collections</div>
+        <button type="button" class="selection-group__toggle-all">Select All</button>
+      </div>
+  `;
+  
   const collections = Object.keys(extractedTokens);
   
   collections.forEach(collection => {
-    const checkboxDiv = document.createElement('div');
-    checkboxDiv.className = 'checkbox-item';
+    selectionGroupHTML += `
+      <div class="selection-group__item">
+        <input type="checkbox" id="collection-${collection}" value="${collection}" checked>
+        <label for="collection-${collection}">${collection}${
+          extractedTokens[collection].variableCount !== undefined 
+            ? ` (${extractedTokens[collection].variableCount} variables)` 
+            : ''
+        }</label>
+      </div>
+    `;
     
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = `collection-${collection}`;
-    checkbox.value = collection;
-    checkbox.checked = true;
+    // Add to selected collections by default
+    if (!selectedCollections.includes(collection)) {
+      selectedCollections.push(collection);
+    }
+  });
+  
+  selectionGroupHTML += `</div>`;
+  collectionList.innerHTML = selectionGroupHTML;
+  
+  // Add event listeners to checkboxes
+  collections.forEach(collection => {
+    const checkbox = document.getElementById(`collection-${collection}`) as HTMLInputElement;
     
     checkbox.addEventListener('change', () => {
       if (checkbox.checked) {
@@ -88,27 +144,23 @@ function updateCollectionList() {
       }
       
       updateUI();
+      
+      // Update "Select All" button text
+      const selectionGroup = checkbox.closest('.selection-group');
+      if (selectionGroup) {
+        const toggleAllButton = selectionGroup.querySelector('.selection-group__toggle-all') as HTMLButtonElement;
+        const checkboxes = selectionGroup.querySelectorAll('input[type="checkbox"]');
+        const allSelected = Array.from(checkboxes).every(cb => (cb as HTMLInputElement).checked);
+        
+        if (toggleAllButton) {
+          toggleAllButton.textContent = allSelected ? 'Deselect All' : 'Select All';
+        }
+      }
     });
-    
-    // Add to selected collections by default
-    if (!selectedCollections.includes(collection)) {
-      selectedCollections.push(collection);
-    }
-    
-    const label = document.createElement('label');
-    label.htmlFor = `collection-${collection}`;
-    
-    // Show variable count if available
-    if (extractedTokens[collection].variableCount !== undefined) {
-      label.textContent = `${collection} (${extractedTokens[collection].variableCount} variables)`;
-    } else {
-      label.textContent = collection;
-    }
-    
-    checkboxDiv.appendChild(checkbox);
-    checkboxDiv.appendChild(label);
-    collectionList.appendChild(checkboxDiv);
   });
+  
+  // Setup selection group controls
+  setupSelectionGroup();
 }
 
 // Initialize UI after DOM is loaded
@@ -129,6 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggle preview visibility
   togglePreviewButton.addEventListener('click', () => {
     previewContainer.classList.toggle('collapsed');
+    
+    // Update button text based on state
+    const isCollapsed = previewContainer.classList.contains('collapsed');
+    togglePreviewButton.innerHTML = isCollapsed ? 'Show Preview' : 'Hide Preview';
   });
   
   // Extract tokens
