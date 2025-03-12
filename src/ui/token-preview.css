@@ -43,7 +43,7 @@
   transition: all 0.2s ease;
   flex: 1 0 calc(50% - 2px);
   max-width: calc(50% - 2px);
-  min-width: 200px;
+
   box-sizing: border-box;
   border-radius: 3px;
 }
@@ -96,13 +96,14 @@
 /* Tilføj en referenceindikator i hjørnet */
 .reference-icon {
   position: absolute;
-  top: -1px;
-  right: -1px;
+  top: 2px;
+  right: 2px;
   width: 12px;
   height: 12px;
   color: #0366d6;
+  background: hsl(0deg 0% 100% / 80%);
   font-size: 9px;
-  border-radius: 50%;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -435,19 +436,6 @@
   border-radius: 4px;
   max-height: 80px;
   overflow: hidden;
-}
-
-/* Visuel indikator for løst reference */
-.color-swatch.reference-token.resolved-reference::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 8px 8px 0;
-  border-color: transparent #ffffff transparent transparent;
 }
 
 /* Responsive justeringer */
