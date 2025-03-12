@@ -88,10 +88,7 @@
   border: 1px dashed #999;
 }
 
-/* Løste reference tokens – vis den faktiske farve */
-.color-swatch.reference-token.resolved-reference {
-  /* Ingen background-image, så baggrundsfarven træder frem */
-}
+
 
 /* Tilføj en referenceindikator i hjørnet */
 .reference-icon {
