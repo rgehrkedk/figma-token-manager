@@ -1,8 +1,4 @@
-import './styles.css';
-import './tab-styles.css';
-import './token-preview.css';
-import './segmented-toggle.css';
-import '../panel-layout.css'; // Import new panel layout styles
+import './styles/index.css';
 
 // Import utilities
 import { 

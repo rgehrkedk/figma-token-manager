@@ -1,3 +1,9 @@
+/* src/ui/styles/layout.css */
+/**
+ * Layout styles for the Figma Token Manager
+ * Contains panel and container layouts
+ */
+
 /* Two-panel layout styles */
 .two-panel-layout {
     display: flex;
@@ -17,6 +23,25 @@
     min-width: 0; /* Ensures the panel doesn't overflow its container */
     display: flex;
     flex-direction: column;
+  }
+  
+  /* Section containers */
+  .selection-group {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+  }
+  
+  .option-group {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background-color: #f0f7ff;
   }
   
   /* Make the preview container take the full available height */
@@ -48,7 +73,23 @@
     padding-right: 8px;
   }
   
-  /* Improved styling for collection/mode lists */
+  /* Responsive adjustments */
+  @media (max-width: 700px) {
+    .two-panel-layout {
+      flex-direction: column;
+    }
+    
+    .left-panel {
+      flex: none;
+      width: 100%;
+    }
+    
+    .right-panel {
+      width: 100%;
+    }
+  }
+  
+  /* Collection/Mode tree structure */
   .collection-item {
     margin-bottom: 10px;
     border-left: 3px solid #e0e0e0;
@@ -84,20 +125,4 @@
   .mode-item label {
     margin-left: 8px;
     cursor: pointer;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 700px) {
-    .two-panel-layout {
-      flex-direction: column;
-    }
-    
-    .left-panel {
-      flex: none;
-      width: 100%;
-    }
-    
-    .right-panel {
-      width: 100%;
-    }
   }

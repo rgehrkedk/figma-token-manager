@@ -1,9 +1,18 @@
-body {
+/* src/ui/styles/base.css */
+/**
+ * Base styles for the Figma Token Manager
+ * Contains reset and global styles
+ */
+
+ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     margin: 0;
     padding: 20px;
     font-size: 12px;
     color: #333;
+    overflow-y: auto;
+    height: 100vh;
+    box-sizing: border-box;
   }
   
   h2 {
@@ -45,76 +54,16 @@ body {
     cursor: not-allowed;
   }
   
-  .selection-group {
-    margin-top: 16px;
-    margin-bottom: 16px;
-    padding: 12px;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-  }
-  
-  .option-group {
-    margin-top: 16px;
-    margin-bottom: 16px;
-    padding: 12px;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    background-color: #f0f7ff;
-  }
-  
-  .checkbox-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  
-  .checkbox-item label {
-    margin-left: 8px;
-    cursor: pointer;
-  }
-  
-  .radio-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  
-  .radio-item label {
-    margin-left: 8px;
-    cursor: pointer;
-  }
-  
-  .mode-container {
-    margin-left: 24px;
-    padding-top: 4px;
-  }
-  
   pre {
     background-color: #f5f5f5;
     padding: 10px;
     border-radius: 4px;
     overflow: auto;
-    max-height: 300px;
     font-family: monospace;
     font-size: 11px;
   }
   
-  .reference-validation {
-    background-color: #fff8e1;
-    padding: 10px;
-    border-radius: 4px;
-    border-left: 4px solid #ffca28;
-    margin-top: 16px;
-    font-size: 11px;
-  }
-  
-  .reference-problem {
-    color: #d32f2f;
-    font-weight: 500;
-    padding: 4px 0;
-  }
-  
+  /* Status indicators */
   #status {
     margin-top: 16px;
     padding: 8px 12px;
@@ -142,6 +91,7 @@ body {
     color: #d73a49;
   }
   
+  /* Loading indicator */
   .loading {
     display: flex;
     align-items: center;
@@ -165,17 +115,12 @@ body {
     100% { transform: rotate(360deg); }
   }
   
+  /* Utility classes */
   .select-all {
     font-size: 11px;
     color: #0366d6;
     cursor: pointer;
     margin-left: 16px;
-  }
-  
-  .validation-tools {
-    margin-top: 16px;
-    padding-top: 8px;
-    border-top: 1px solid #e5e5e5;
   }
   
   .pill {
@@ -187,18 +132,4 @@ body {
     font-weight: 500;
     background-color: #e1f5fe;
     color: #0277bd;
-  }
-  
-  .export-options {
-    margin-top: 16px;
-    display: flex;
-    gap: 8px;
-  }
-  
-  .dropdown-select {
-    padding: 6px 8px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    background-color: white;
-    font-size: 12px;
   }

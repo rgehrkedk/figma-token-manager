@@ -1,0 +1,62 @@
+/* src/ui/styles/components/toggle.css */
+/**
+ * Segmented toggle component styles
+ */
+
+ .segmented-toggle {
+    display: flex;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 28px;
+  }
+  
+  .segmented-toggle-option {
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    transition: background-color 0.2s, color 0.2s;
+    user-select: none;
+  }
+  
+  .segmented-toggle-option:not(:last-child) {
+    border-right: 1px solid #ddd;
+  }
+  
+  .segmented-toggle-option.active {
+    background-color: #18a0fb;
+    color: white;
+    font-weight: 500;
+  }
+  
+  .segmented-toggle-option:not(.active):hover {
+    background-color: #e5e5e5;
+  }
+  
+  /* Form controls */
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .checkbox-item label {
+    margin-left: 8px;
+    cursor: pointer;
+  }
+  
+  .radio-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .radio-item label {
+    margin-left: 8px;
+    cursor: pointer;
+  }

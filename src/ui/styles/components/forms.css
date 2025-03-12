@@ -1,0 +1,85 @@
+/* src/ui/styles/components/forms.css */
+/**
+ * Form controls and input styles
+ */
+
+/* Input fields */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: #18a0fb;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.2);
+}
+
+/* Dropdowns and selects */
+.dropdown-select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 12px;
+}
+
+/* Button groups */
+.export-options {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Form groups */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* Form layout */
+.form-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.form-row > div {
+  flex: 1;
+}
+
+/* Checkboxes and radio buttons with improved styling */
+.checkbox-item,
+.radio-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.checkbox-item input[type="checkbox"],
+.radio-item input[type="radio"] {
+  margin-right: 8px;
+}
+
+.checkbox-item label,
+.radio-item label {
+  margin-left: 0;
+  cursor: pointer;
+  font-size: 12px;
+}
