@@ -23,6 +23,25 @@ module.exports = (env, argv) => {
             `<script>${js}</script>`
           );
           
+          // Extra optimization: Look for any remaining CSS files and inline them too
+          const linkCssRegex = /<link.*href=["'](.+\.css)["'].*>/g;
+          let match;
+          
+          while ((match = linkCssRegex.exec(html)) !== null) {
+            const cssFileName = match[1];
+            const cssFilePath = path.join(outputPath, cssFileName);
+            
+            if (fs.existsSync(cssFilePath)) {
+              const cssContent = fs.readFileSync(cssFilePath, 'utf8');
+              html = html.replace(
+                match[0],
+                `<style>${cssContent}</style>`
+              );
+              // Optionally remove the CSS file if we're inlining it
+              fs.unlinkSync(cssFilePath);
+            }
+          }
+          
           fs.writeFileSync(htmlFile, html);
           fs.unlinkSync(jsFile); // Remove the external JS file
         }

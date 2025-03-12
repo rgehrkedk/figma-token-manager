@@ -1,0 +1,56 @@
+/**
+ * Styles for JSON preview component
+ */
+
+.preview-section {
+  margin-top: 16px;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.preview-header h2 {
+  font-size: 14px;
+  margin: 0;
+}
+
+#preview-container {
+  border: 1px solid var(--figma-color-border);
+  border-radius: 2px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  max-height: 300px;
+}
+
+#preview-container.collapsed {
+  max-height: 0;
+}
+
+#preview-content {
+  height: 300px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  font-size: 11px;
+  background-color: var(--figma-color-bg);
+  color: var(--figma-color-text);
+  white-space: pre-wrap;
+}
+
+#toggle-preview {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  color: var(--figma-color-text-secondary);
+  font-size: 11px;
+}
+
+#toggle-preview:hover {
+  color: var(--figma-color-text);
+}

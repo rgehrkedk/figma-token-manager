@@ -1,0 +1,50 @@
+/**
+ * Styles for action buttons
+ */
+
+.button-container {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.button-primary,
+.button-secondary {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 12px;
+}
+
+.button-primary {
+  background-color: var(--figma-color-bg-brand);
+  color: white;
+}
+
+.button-primary:hover {
+  background-color: var(--figma-color-bg-brand-hover);
+}
+
+.button-primary:disabled {
+  background-color: var(--figma-color-bg-disabled);
+  color: var(--figma-color-text-disabled);
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  background-color: var(--figma-color-bg-secondary);
+  color: var(--figma-color-text);
+}
+
+.button-secondary:hover {
+  background-color: var(--figma-color-bg-secondary-hover);
+}
+
+.button-secondary:disabled {
+  background-color: var(--figma-color-bg-disabled);
+  color: var(--figma-color-text-disabled);
+  cursor: not-allowed;
+}
