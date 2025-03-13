@@ -2,6 +2,8 @@
  * Utility functions for formatting token data
  */
 
+import { buildTokenReferenceMap, resolveTokenReference } from './styleReferences';
+
 /**
  * Format JSON with indentation
  */
@@ -88,6 +90,67 @@ export function flattenTokens(tokenData: any): { [key: string]: any } {
 }
 
 /**
+ * Resolves references in token data using Style Dictionary approach
+ */
+export function resolveReferences(tokenData: any): any {
+  // Clone the token data to avoid modifying the original
+  const resolvedTokens = JSON.parse(JSON.stringify(tokenData));
+  
+  // Build reference map for resolution
+  const referenceMap = buildTokenReferenceMap(tokenData);
+  
+  // Process all references in the token data
+  function processTokenObject(obj: any): void {
+    if (!obj || typeof obj !== 'object') return;
+    
+    // If it's an array, process each item
+    if (Array.isArray(obj)) {
+      obj.forEach(item => processTokenObject(item));
+      return;
+    }
+    
+    // Check for $value with reference
+    if (obj.$value && typeof obj.$value === 'string' && 
+        obj.$value.startsWith('{') && obj.$value.endsWith('}')) {
+      // Try to resolve the reference
+      const resolved = resolveTokenReference(obj.$value, referenceMap);
+      if (resolved.isResolved) {
+        // Store original value
+        obj.$original = obj.$value;
+        // Update with resolved value
+        obj.$value = resolved.value;
+        // Add resolved metadata
+        obj.$resolvedFrom = resolved.resolvedFrom;
+        if (!obj.$type && resolved.type) {
+          obj.$type = resolved.type;
+        }
+      }
+    }
+    
+    // Process each property in the object
+    for (const key in obj) {
+      const value = obj[key];
+      
+      // Skip metadata fields that start with $
+      if (key.startsWith('$')) continue;
+      
+      if (typeof value === 'object' && value !== null) {
+        processTokenObject(value);
+      }
+    }
+  }
+  
+  // Process each collection and mode
+  for (const collection in resolvedTokens) {
+    for (const mode in resolvedTokens[collection]) {
+      processTokenObject(resolvedTokens[collection][mode]);
+    }
+  }
+  
+  return resolvedTokens;
+}
+
+/**
  * Gets individual files for separate export
  */
 export function getSeparateFiles(
@@ -102,7 +165,36 @@ export function getSeparateFiles(
   // If it's a flat structure, create one file per collection-mode pair
   if (flatStructure) {
     // In a flat structure, group by collection and mode prefixes
-    // ...existing code...
+    // Extract tokens with their full paths
+    const flatTokens = flattenTokens(filteredData);
+    
+    // Group by collection and mode
+    const groupedTokens: Record<string, Record<string, any>> = {};
+    
+    for (const path in flatTokens) {
+      const parts = path.split('.');
+      if (parts.length >= 2) {
+        const collection = parts[0];
+        const mode = parts[1];
+        const key = `${collection}.${mode}`;
+        
+        if (!groupedTokens[key]) {
+          groupedTokens[key] = {};
+        }
+        
+        // Add token with remaining path
+        groupedTokens[key][parts.slice(2).join('.')] = flatTokens[path];
+      }
+    }
+    
+    // Create a file for each collection-mode pair
+    for (const key in groupedTokens) {
+      const [collection, mode] = key.split('.');
+      files.push({
+        name: `${collection}-${mode}.json`,
+        data: groupedTokens[key]
+      });
+    }
   } else {
     // For nested structure, create one file per collection/mode
     for (const collection in filteredData) {

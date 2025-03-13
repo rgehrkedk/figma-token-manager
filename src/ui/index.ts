@@ -11,10 +11,15 @@ import { setupSidebarPanel, SidebarCallbacks } from './components/sidebarPanel';
 import { setupTokenGrid, TokenData } from './components/tokenGrid';
 import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 
+// Import utilities
+import { resolveReferences } from './utilities/formatters';
+import { buildTokenReferenceMap, resolveTokenReference } from './utilities/styleReferences';
+
 // State
 let activeView: 'visual' | 'json' = 'visual';
 let tokenData: any = null;
 let currentTokens: TokenData[] = [];
+let referenceMap: any = {};
 
 // Initialize components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -337,6 +342,12 @@ document.addEventListener('DOMContentLoaded', () => {
             collections.map(c => [c.id, c.modes])
           )
         });
+        
+        // Build reference map
+        referenceMap = buildTokenReferenceMap(tokenData);
+        
+        // Resolve references in the tokenData itself
+        tokenData = resolveReferences(tokenData);
         
         // Filter and display tokens
         filterAndDisplayTokens();

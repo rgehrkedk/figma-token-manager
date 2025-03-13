@@ -486,67 +486,7 @@ export function diagnoseReferenceIssues(tokenData: any): DiagnosisResult {
     }
   }
   
-  // Calculate simple similarity between two strings
-  function calculateSimilarity(str1: string, str2: string): number {
-    const s1 = str1.toLowerCase();
-    const s2 = str2.toLowerCase();
-    
-    // Normalize paths (convert slashes to dots for comparison)
-    const normalized1 = s1.replace(/\//g, '.');
-    const normalized2 = s2.replace(/\//g, '.');
-    
-    // Check if one contains the other after normalization
-    if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
-      return 0.8;
-    }
-    
-    // Check for path similarity (common segments)
-    const parts1 = normalized1.split('.');
-    const parts2 = normalized2.split('.');
-    
-    let commonSegments = 0;
-    for (const p1 of parts1) {
-      if (parts2.includes(p1)) {
-        commonSegments++;
-      }
-    }
-    
-    if (commonSegments > 0) {
-      return 0.5 + (0.5 * commonSegments / Math.max(parts1.length, parts2.length));
-    }
-    
-    // Simple character-based similarity as fallback
-    let common = 0;
-    const minLength = Math.min(normalized1.length, normalized2.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (normalized1[i] === normalized2[i]) {
-        common++;
-      }
-    }
-    
-    return common / Math.max(normalized1.length, normalized2.length);
-  }
-  
-  // Find potential matches for a reference path
-  function findPotentialMatches(refPath: string, refMap: FlatTokenMap): Array<{ path: string; similarity: number }> {
-    const matches: Array<{ path: string; similarity: number }> = [];
-    
-    for (const path in refMap) {
-      const similarity = calculateSimilarity(refPath, path);
-      
-      if (similarity > 0.5) {
-        // Always suggest dot notation format for paths
-        const normalizedPath = path.replace(/\//g, '.');
-        matches.push({ path: normalizedPath, similarity });
-      }
-    }
-    
-    // Sort by similarity, highest first
-    return matches.sort((a, b) => b.similarity - a.similarity).slice(0, 5);
-  }
-  
-  // Scan the entire token set for references
+  // Process collections and modes
   for (const collection in tokenData) {
     for (const mode in tokenData[collection]) {
       findReferences(tokenData[collection][mode], `${collection}.${mode}`);
@@ -557,6 +497,114 @@ export function diagnoseReferenceIssues(tokenData: any): DiagnosisResult {
     unresolvedReferences,
     suggestedFixes
   };
+}
+
+/**
+ * Find potential matches for an unresolved reference
+ */
+function findPotentialMatches(
+  reference: string,
+  referenceMap: FlatTokenMap
+): Array<{ path: string; similarity: number }> {
+  const matches: Array<{ path: string; similarity: number }> = [];
+  
+  for (const path in referenceMap) {
+    const similarity = calculateSimilarity(reference, path);
+    
+    if (similarity > 0.5) {
+      // Always suggest dot notation format for paths
+      const normalizedPath = path.replace(/\//g, '.');
+      matches.push({ path: normalizedPath, similarity });
+    }
+  }
+  
+  // Sort by similarity, highest first
+  return matches.sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+}
+
+/**
+ * Calculate similarity between two strings
+ * Returns a value between 0 (completely different) and 1 (identical)
+ */
+function calculateSimilarity(a: string, b: string): number {
+  // Basic implementation of string similarity
+  // Could be improved with more sophisticated algorithms
+  if (a === b) return 1;
+  
+  // Check if b contains a
+  if (b.includes(a)) return 0.9;
+  
+  // Check if a is the last part of b (e.g. "red.500" in "colors.red.500")
+  const aParts = a.split('.');
+  const bParts = b.split('.');
+  
+  if (aParts.length > 0 && bParts.length > 0) {
+    // Check if last parts match
+    if (aParts[aParts.length - 1] === bParts[bParts.length - 1]) {
+      return 0.8;
+    }
+    
+    // Check if multiple end parts match
+    let matchingEndParts = 0;
+    const minLength = Math.min(aParts.length, bParts.length);
+    
+    for (let i = 1; i <= minLength; i++) {
+      if (aParts[aParts.length - i] === bParts[bParts.length - i]) {
+        matchingEndParts++;
+      } else {
+        break;
+      }
+    }
+    
+    if (matchingEndParts > 0) {
+      return 0.6 + (0.1 * matchingEndParts);
+    }
+  }
+  
+  // Fallback - calculate primitive Levenshtein distance ratio
+  const maxLength = Math.max(a.length, b.length);
+  if (maxLength === 0) return 1.0;
+  
+  // Very basic similarity check - not a true Levenshtein
+  let differences = 0;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] !== b[i]) differences++;
+  }
+  differences += Math.abs(a.length - b.length);
+  
+  return 1 - (differences / maxLength);
+}
+
+/**
+ * Infer token type from its value
+ */
+function inferTokenType(value: any): string {
+  if (typeof value === 'string') {
+    // Color check (most common)
+    if (value.startsWith('#') || value.startsWith('rgb') || value.startsWith('hsl')) {
+      return 'color';
+    }
+    // Dimension check
+    if (/^-?\d*\.?\d+(px|rem|em|%|vh|vw|vmin|vmax|pt|pc|in|cm|mm)$/.test(value)) {
+      return 'dimension';
+    }
+    // Reference check
+    if (value.startsWith('{') && value.endsWith('}')) {
+      return 'reference';
+    }
+    // Font weight check
+    if (/^(normal|bold|lighter|bolder|\d{3})$/.test(value)) {
+      return 'fontWeight';
+    }
+    // Duration check
+    if (/^-?\d*\.?\d+(s|ms)$/.test(value)) {
+      return 'duration';
+    }
+  } else if (typeof value === 'number') {
+    return 'number';
+  }
+  
+  return 'string';
 }
 
 /**
