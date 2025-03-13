@@ -1,4 +1,4 @@
-import { ColorFormat } from '../code/formatters/colorTransforms';
+import { ColorFormat } from '../code/formatters/colorUtils';
 
 /**
  * Setup event listeners for color format radio buttons
@@ -25,35 +25,35 @@ export function setupColorFormatHandlers() {
   }
   
   // Add event listeners to each radio button
-  colorHexRadio.addEventListener('change', () => {
+  colorHexRadio?.addEventListener('change', () => {
     if (colorHexRadio.checked && currentFormat !== 'hex') {
       currentFormat = 'hex';
       sendColorFormatMessage(currentFormat);
     }
   });
   
-  colorRgbRadio.addEventListener('change', () => {
+  colorRgbRadio?.addEventListener('change', () => {
     if (colorRgbRadio.checked && currentFormat !== 'rgb') {
       currentFormat = 'rgb';
       sendColorFormatMessage(currentFormat);
     }
   });
   
-  colorRgbaRadio.addEventListener('change', () => {
+  colorRgbaRadio?.addEventListener('change', () => {
     if (colorRgbaRadio.checked && currentFormat !== 'rgba') {
       currentFormat = 'rgba';
       sendColorFormatMessage(currentFormat);
     }
   });
   
-  colorHslRadio.addEventListener('change', () => {
+  colorHslRadio?.addEventListener('change', () => {
     if (colorHslRadio.checked && currentFormat !== 'hsl') {
       currentFormat = 'hsl';
       sendColorFormatMessage(currentFormat);
     }
   });
   
-  colorHslaRadio.addEventListener('change', () => {
+  colorHslaRadio?.addEventListener('change', () => {
     if (colorHslaRadio.checked && currentFormat !== 'hsla') {
       currentFormat = 'hsla';
       sendColorFormatMessage(currentFormat);
@@ -62,5 +62,7 @@ export function setupColorFormatHandlers() {
   
   // Initialize the current format (hex is default)
   currentFormat = 'hex';
-  colorHexRadio.checked = true;
+  if (colorHexRadio) {
+    colorHexRadio.checked = true;
+  }
 }

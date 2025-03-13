@@ -1,6 +1,6 @@
 /**
  * Figma Token Manager
- * Main UI entry point
+ * Main UI entry point - Updated to use visualTokenPreview.ts
  */
 
 import './styles/index.css';
@@ -10,20 +10,27 @@ import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarCallbacks } from './components/sidebarPanel';
 import { setupTokenGrid, TokenData } from './components/tokenGrid';
 import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
+// Import the visualTokenPreview instead of tokenPreview
+import { setupVisualTokenPreview } from './components/visualTokenPreview';
 
 // Import utilities
-import { resolveReferences } from './utilities/formatters';
-import { buildTokenReferenceMap, resolveTokenReference } from './utilities/styleReferences';
+import { resolveReferences, diagnoseReferenceIssues } from '../code/formatters/tokenResolver';
+import { setupColorFormatHandlers } from './color-handlers';
 
 // State
 let activeView: 'visual' | 'json' = 'visual';
 let tokenData: any = null;
 let currentTokens: TokenData[] = [];
-let referenceMap: any = {};
+let currentColorFormat = 'hex';
+// Add state for the visual token preview component
+let tokenPreviewComponent: { update: (data: any) => void; clear: () => void } | null = null;
 
 // Initialize components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Initializing UI components');
+  
+  // Setup color format handlers (radio buttons in settings)
+  setupColorFormatHandlers();
   
   // 1. Setup header with view toggle
   const headerInterface = setupHeader('header-container', (view) => {
@@ -46,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log(`Setting ${setting} changed to ${value}`);
       // Handle specific settings
       if (setting === 'colorFormat') {
+        currentColorFormat = value;
         applyColorFormat(value);
       }
     },
@@ -70,7 +78,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. Setup token details panel
   const detailsPanelInterface = setupTokenDetailsPanel('details-panel-container');
   
-  // 5. Setup grouping select
+  // 5. Setup visual token preview component
+  const visualPreviewContainer = document.getElementById('token-visual-preview');
+  if (visualPreviewContainer) {
+    tokenPreviewComponent = setupVisualTokenPreview({
+      containerId: 'token-visual-preview',
+      onTokenClick: (path, value) => {
+        console.log(`Token clicked: ${path} = ${value}`);
+        // You could create a TokenData object here and pass it to showTokenDetails
+        // if you want the same details panel behavior
+      }
+    });
+  }
+  
+  // 6. Setup grouping select
   const groupingSelect = document.getElementById('grouping-select') as HTMLSelectElement;
   if (groupingSelect) {
     groupingSelect.addEventListener('change', () => {
@@ -184,6 +205,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update visual token grid
     tokenGridInterface.update(filteredTokens);
     
+    // Filter data for the visual preview
+    const filteredData: any = {};
+    
+    for (const collection of state.selectedCollections) {
+      if (tokenData[collection]) {
+        filteredData[collection] = {};
+        
+        const modesForCollection = state.selectedModes.get(collection) || [];
+        for (const mode of modesForCollection) {
+          if (tokenData[collection][mode]) {
+            filteredData[collection][mode] = tokenData[collection][mode];
+          }
+        }
+      }
+    }
+    
+    // Update the visual token preview
+    if (tokenPreviewComponent) {
+      tokenPreviewComponent.update(filteredData);
+    }
+    
     // Update JSON view if it's active
     if (activeView === 'json') {
       updateJsonView();
@@ -216,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: tokenType,
             path: newPath,
             reference: isReference,
-            resolvedValue: isReference ? null : undefined
+            resolvedValue: isReference && value.$resolvedValue ? value.$resolvedValue : undefined
           });
         } 
         // Continue processing nested objects
@@ -343,10 +385,16 @@ document.addEventListener('DOMContentLoaded', () => {
           )
         });
         
-        // Build reference map
-        referenceMap = buildTokenReferenceMap(tokenData);
+        // Run diagnostics for reference issues
+        const diagnostics = diagnoseReferenceIssues(tokenData);
         
-        // Resolve references in the tokenData itself
+        // Update reference counts in the sidebar
+        sidebarInterface.setReferenceCounts(
+          diagnostics.resolvedCount, 
+          diagnostics.unresolvedCount
+        );
+        
+        // Resolve references in the tokenData
         tokenData = resolveReferences(tokenData);
         
         // Filter and display tokens

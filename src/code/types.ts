@@ -1,4 +1,6 @@
-// Type definitions for the plugin code
+/**
+ * Type definitions for the Figma Token Manager
+ */
 
 // Available color formats
 export type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla';
@@ -27,6 +29,9 @@ export interface DTCGToken {
   $value: any;
   $type: string;
   $description?: string;
+  $original?: string;
+  $resolvedFrom?: string;
+  $originalValue?: any;
 }
 
 // Type for reference validation problems
@@ -34,6 +39,7 @@ export interface ReferenceError {
   path: string;
   reference: string;
   message: string;
+  potentialMatches?: Array<{ path: string; similarity: number }>;
 }
 
 // Plugin settings type
@@ -43,4 +49,46 @@ export interface PluginSettings {
   validateReferences: boolean;
   flatStructure: boolean;
   colorFormat: ColorFormat;
+}
+
+// Token Reference Map
+export interface TokenReferenceMap {
+  [path: string]: {
+    value: any;
+    type: string;
+    originalPath?: string;
+  };
+}
+
+// Resolved Reference
+export interface ResolvedReference {
+  value: any;
+  type: string;
+  originalReference?: string;
+  originalPath?: string;
+  isResolved: boolean;
+  resolvedFrom?: string;
+}
+
+// Diagnosis result
+export interface DiagnosisResult {
+  unresolvedReferences: ReferenceError[];
+  suggestedFixes: Array<{
+    path: string;
+    original: string;
+    suggested: string;
+  }>;
+  resolvedCount: number;
+  unresolvedCount: number;
+}
+
+// Visual token interface
+export interface VisualToken {
+  path: string;
+  type: string;
+  value: any;
+  originalValue?: any;
+  referencedValue?: any;
+  referencedType?: string;
+  resolvedFrom?: string;
 }

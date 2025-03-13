@@ -1,6 +1,6 @@
-import { formatRGBAToHex, mapToDTCGType, createDTCGToken } from '../formatters/color';
-import { resolveVariableReference, validateAndFixReferences } from '../formatters/references';
-import { TokenData, VariableLookup } from '../types';
+import { formatRGBAToHex, mapToDTCGType, createDTCGToken } from '../formatters/colorUtils';
+import { resolveVariableReference, validateAndFixReferences, VariableLookup } from '../formatters/tokenResolver';
+import { TokenData } from '../types';
 
 /**
  * Function to properly format values based on their type for DTCG
@@ -111,7 +111,7 @@ export async function extractDTCGVariables(): Promise<TokenData> {
           // Determine DTCG type - ensure every token has a type for DTCG compliance
           const dtcgType = mapToDTCGType(variable.resolvedType, formattedValue);
           
-          // Create DTCG token object (without $original field)
+          // Create DTCG token object
           const tokenObj = createDTCGToken(formattedValue, dtcgType, '');
           
           // Build the nested structure for this variable

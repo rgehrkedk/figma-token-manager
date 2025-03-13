@@ -1,5 +1,5 @@
 import { extractDTCGVariables } from './extractors/dtcgVariables';
-import { formatAllColors, ColorFormat } from './formatters/colorTransforms';
+import { formatAllColors, ColorFormat } from './formatters/colorUtils';
 
 // Flag to track if we should extract on startup
 let shouldExtractOnStartup = true;
