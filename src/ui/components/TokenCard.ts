@@ -68,6 +68,7 @@ export function createTokenCard(props: TokenCardProps): HTMLElement {
   // Add click handler
   card.addEventListener('click', (e) => {
     e.preventDefault();
+    console.log('TokenCard clicked:', token);
     onClick(token);
   });
   

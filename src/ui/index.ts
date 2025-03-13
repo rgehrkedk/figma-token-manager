@@ -1,20 +1,23 @@
 /**
  * Figma Token Manager
- * Main UI entry point - Updated to use visualTokenPreview.ts
+ * Main UI entry point - Updated to use new reference display components
  */
 
 import './styles/index.css';
+console.log('Existing setupTokenDetailsPanel function:', typeof setupTokenDetailsPanel);
 
 // Import components
 import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarCallbacks } from './components/sidebarPanel';
-import { setupTokenGrid, TokenData } from './components/tokenGrid';
-import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
-// Import the visualTokenPreview instead of tokenPreview
-import { setupVisualTokenPreview } from './components/visualTokenPreview';
+import { TokenData } from './reference/ReferenceResolver'; // Import TokenData from the correct source
+import { createTokenGrid } from './components/TokenGrid';
+import { createTokenDetails } from './components/TokenDetails'; // Use the correct function name
+
+// Import reference handling utilities
+import { buildTokenMap, processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver'; // New imports
 
 // Import utilities
-import { resolveReferences, diagnoseReferenceIssues } from '../code/formatters/tokenResolver';
+import { diagnoseReferenceIssues } from '../code/formatters/tokenResolver';
 import { setupColorFormatHandlers } from './color-handlers';
 
 // State
@@ -22,8 +25,6 @@ let activeView: 'visual' | 'json' = 'visual';
 let tokenData: any = null;
 let currentTokens: TokenData[] = [];
 let currentColorFormat = 'hex';
-// Add state for the visual token preview component
-let tokenPreviewComponent: { update: (data: any) => void; clear: () => void } | null = null;
 
 // Initialize components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -69,29 +70,55 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const sidebarInterface = setupSidebarPanel('sidebar-container', [], {}, sidebarCallbacks);
   
-  // 3. Setup token grid
-  const tokenGridInterface = setupTokenGrid('token-grid-container', [], (token) => {
-    console.log('Token clicked:', token);
-    showTokenDetails(token);
+  // 3. Setup token grid using new component
+  const tokenGridInterface = createTokenGrid({
+    tokens: [],
+    onTokenClick: (token) => {
+      console.log('TokenGrid onTokenClick called:', token);
+      showTokenDetails(token);
+    }
   });
   
-  // 4. Setup token details panel
-  const detailsPanelInterface = setupTokenDetailsPanel('details-panel-container');
-  
-  // 5. Setup visual token preview component
-  const visualPreviewContainer = document.getElementById('token-visual-preview');
-  if (visualPreviewContainer) {
-    tokenPreviewComponent = setupVisualTokenPreview({
-      containerId: 'token-visual-preview',
-      onTokenClick: (path, value) => {
-        console.log(`Token clicked: ${path} = ${value}`);
-        // You could create a TokenData object here and pass it to showTokenDetails
-        // if you want the same details panel behavior
-      }
-    });
+  // Add the token grid to the container
+  const tokenGridContainer = document.getElementById('token-grid-container');
+  if (tokenGridContainer) {
+    tokenGridContainer.appendChild(tokenGridInterface.element);
   }
   
-  // 6. Setup grouping select
+  // 4. Setup token details panel using new component
+  const detailsPanelContainer = document.getElementById('details-panel-container');
+  console.log('Details panel container:', detailsPanelContainer);
+  // In index.ts
+const detailsPanelInterface = {
+  show: (token: TokenData) => {
+    console.log('detailsPanelInterface.show called:', token);
+    if (detailsPanelContainer) {
+      console.log('detailsPanelContainer exists');
+      // Clear existing content
+      detailsPanelContainer.innerHTML = '';
+      
+      // Create details panel
+      const detailsPanel = createTokenDetails({
+        token,
+        onClose: () => {
+          // Hide the details panel
+          if (detailsPanelContainer) {
+            detailsPanelContainer.innerHTML = '';
+            detailsPanelContainer.style.display = 'none';
+          }
+        }
+      });
+      
+      // Add panel to container and show it
+      detailsPanelContainer.appendChild(detailsPanel);
+      detailsPanelContainer.style.display = 'block';
+    } else {
+      console.log('detailsPanelContainer is null or undefined');
+    }
+  }
+};
+
+  // 5. Setup grouping select
   const groupingSelect = document.getElementById('grouping-select') as HTMLSelectElement;
   if (groupingSelect) {
     groupingSelect.addEventListener('change', () => {
@@ -152,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * Show token details in the panel
    */
   function showTokenDetails(token: TokenData) {
+    console.log('showTokenDetails called:', token);
     detailsPanelInterface.show(token);
   }
   
@@ -164,28 +192,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = sidebarInterface.getState();
     const grouping = (document.getElementById('grouping-select') as HTMLSelectElement)?.value || 'type';
     
-    // Filter tokens based on selected collections and modes
-    let filteredTokens: TokenData[] = [];
+    // Get all tokens from the processed data
+    let allTokens = extractTokenList(tokenData);
     
-    // Process each selected collection
-    for (const collection of state.selectedCollections) {
-      if (tokenData[collection]) {
-        const modesForCollection = state.selectedModes.get(collection) || [];
-        
-        // Process each selected mode in this collection
-        for (const mode of modesForCollection) {
-          if (tokenData[collection][mode]) {
-            // Extract tokens from this collection/mode
-            const tokensInMode = extractTokensFromData(
-              tokenData[collection][mode], 
-              `${collection}.${mode}`
-            );
-            
-            filteredTokens = [...filteredTokens, ...tokensInMode];
-          }
-        }
-      }
-    }
+    // Filter tokens based on selected collections and modes
+    const filteredTokens = allTokens.filter(token => {
+      const [collection, mode] = token.path.split('.');
+      return state.selectedCollections.includes(collection) &&
+             (state.selectedModes.get(collection) || []).includes(mode);
+    });
     
     // Update reference warning if needed
     updateReferenceWarning(filteredTokens);
@@ -202,74 +217,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store current tokens
     currentTokens = filteredTokens;
     
-    // Update visual token grid
+    // Update token grid with filtered tokens
     tokenGridInterface.update(filteredTokens);
-    
-    // Filter data for the visual preview
-    const filteredData: any = {};
-    
-    for (const collection of state.selectedCollections) {
-      if (tokenData[collection]) {
-        filteredData[collection] = {};
-        
-        const modesForCollection = state.selectedModes.get(collection) || [];
-        for (const mode of modesForCollection) {
-          if (tokenData[collection][mode]) {
-            filteredData[collection][mode] = tokenData[collection][mode];
-          }
-        }
-      }
-    }
-    
-    // Update the visual token preview
-    if (tokenPreviewComponent) {
-      tokenPreviewComponent.update(filteredData);
-    }
     
     // Update JSON view if it's active
     if (activeView === 'json') {
       updateJsonView();
     }
-  }
-  
-  /**
-   * Extract tokens from nested data structure
-   */
-  function extractTokensFromData(data: any, basePath: string): TokenData[] {
-    const tokens: TokenData[] = [];
-    
-    function processObject(obj: any, path: string, namePath: string) {
-      for (const key in obj) {
-        const value = obj[key];
-        const newPath = path ? `${path}.${key}` : key;
-        const newNamePath = namePath ? `${namePath}.${key}` : key;
-        
-        // Check if it's a DTCG token
-        if (value && typeof value === 'object' && value.$value !== undefined) {
-          const tokenType = value.$type || 'unknown';
-          const isReference = typeof value.$value === 'string' && 
-                             value.$value.startsWith('{') && 
-                             value.$value.endsWith('}');
-          
-          tokens.push({
-            id: newPath,
-            name: newNamePath,
-            value: value.$value,
-            type: tokenType,
-            path: newPath,
-            reference: isReference,
-            resolvedValue: isReference && value.$resolvedValue ? value.$resolvedValue : undefined
-          });
-        } 
-        // Continue processing nested objects
-        else if (value && typeof value === 'object') {
-          processObject(value, newPath, newNamePath);
-        }
-      }
-    }
-    
-    processObject(data, basePath, '');
-    return tokens;
   }
   
   /**
@@ -394,8 +348,8 @@ document.addEventListener('DOMContentLoaded', () => {
           diagnostics.unresolvedCount
         );
         
-        // Resolve references in the tokenData
-        tokenData = resolveReferences(tokenData);
+        // Process tokens with reference information using our new ReferenceResolver
+        tokenData = processTokensWithReferences(tokenData);
         
         // Filter and display tokens
         filterAndDisplayTokens();

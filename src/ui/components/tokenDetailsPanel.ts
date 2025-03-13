@@ -3,7 +3,7 @@
  * Displays detailed information about a selected token
  */
 
-import { TokenData } from './tokenGrid';
+import { TokenData } from '../reference/ReferenceResolver';
 
 export interface TokenDetailsPanelInterface {
   show: (token: TokenData) => void;
