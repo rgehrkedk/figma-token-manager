@@ -1,9 +1,28 @@
 /**
- * Token Details Panel Component
- * Displays detailed information about a selected token
+ * @file tokenDetailsPanel.ts
+ * 
+ * @description
+ * Container component that manages the token details side panel.
+ * Handles panel behavior such as showing, hiding, positioning, and animation
+ * for the token details view.
+ * 
+ * @architecture
+ * - Provides the panel container and behavioral logic
+ * - Contains the TokenDetails component for content display
+ * - Manages panel state (visible/hidden)
+ * 
+ * @relationship
+ * This component wraps the TokenDetails.ts component, providing the sliding panel
+ * behavior and positioning. It's part of the main UI layout as a side panel that
+ * appears when a token is selected.
+ * 
+ * @maintainance
+ * Keep the panel behavior concerns separated from token details rendering concerns.
+ * This component should focus on panel behavior while delegating content rendering
+ * to TokenDetails.ts.
  */
 
-import { TokenData } from '../reference/ReferenceResolver';
+import { TokenData } from '../reference/referenceResolver';
 
 export interface TokenDetailsPanelInterface {
   show: (token: TokenData) => void;

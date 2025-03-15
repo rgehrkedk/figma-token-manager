@@ -8,12 +8,12 @@ import './styles/index.css';
 // Import components
 import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarCallbacks } from './components/sidebarPanel';
-import { TokenData } from './reference/ReferenceResolver'; // Import TokenData from the correct source
+import { TokenData } from './reference/referenceResolver'; // Import TokenData from the correct source
 import { createTokenGrid } from './components/TokenGrid';
 import { createTokenDetails } from './components/TokenDetails'; // Use the correct function name
 
 // Import reference handling utilities
-import { buildTokenMap, processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver'; // New imports
+import { buildTokenMap, processTokensWithReferences, extractTokenList } from './reference/referenceResolver'; // New imports
 
 // Import utilities
 import { diagnoseReferenceIssues } from '../code/formatters/tokenResolver';

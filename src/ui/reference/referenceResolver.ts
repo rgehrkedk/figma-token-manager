@@ -1,11 +1,26 @@
 /**
- * ReferenceResolver.ts
+ * @file referenceResolver.ts
  * 
- * Core module for handling design token references following Style Dictionary principles.
- * Responsible for extracting, validating, and resolving references within token data.
+ * @description
+ * UI-focused reference resolution functionality for the token management system.
+ * This file is primarily responsible for handling token references in a way that's
+ * optimized for UI display and user interactions. It provides simplified interfaces
+ * for visual token components.
+ * 
+ * @architecture
+ * - Provides the TokenData interface used by visual components
+ * - Handles extraction and formatting of token data for display
+ * - Maintains a simplified reference resolution system for UI needs
+ * 
+ * @relationship
+ * While this file has some overlap with utilities/styleReferences.ts,
+ * it focuses specifically on UI representation needs rather than the
+ * more comprehensive diagnostics provided by styleReferences.ts.
+ * 
+ * @maintainance
+ * Future work might include consolidating this with styleReferences.ts
+ * into a more modular reference handling system.
  */
-
-// Define interfaces for token references
 export interface TokenMap {
     [path: string]: {
       value: any;

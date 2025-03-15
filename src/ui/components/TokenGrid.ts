@@ -5,7 +5,7 @@
  * using the new TokenCard component for rendering individual tokens.
  */
 
-import { TokenData } from "../reference/ReferenceResolver";
+import { TokenData } from "../reference/referenceResolver";
 import { createTokenCard } from "./TokenCard";
 
 export interface TokenGridProps {

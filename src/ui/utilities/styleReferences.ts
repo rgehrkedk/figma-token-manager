@@ -1,12 +1,27 @@
 /**
- * Enhanced reference resolver inspired by Style Dictionary
- * Implementation focused on resolving references across the entire token set
- * rather than just within their own collection/file.
+ * @file styleReferences.ts
  * 
- * Now supports both dot notation (colors.red.500) and slash notation (colors/red/500)
+ * @description
+ * Advanced reference resolution and diagnostic tools for design tokens.
+ * Implements Style Dictionary-compatible reference handling with enhanced
+ * capabilities for finding, validating, and resolving references across
+ * the entire token set.
+ * 
+ * @architecture
+ * - Builds comprehensive reference maps for token resolution
+ * - Provides diagnostic tools for discovering and fixing broken references
+ * - Handles complex path resolution with dot and slash notation
+ * - Supports fuzzy matching for reference suggestions
+ * 
+ * @relationship
+ * This file provides more comprehensive token reference functionality than
+ * reference/ReferenceResolver.ts, with a focus on diagnostics and fixing
+ * rather than UI representation.
+ * 
+ * @maintainance
+ * Consider reorganizing this and referenceResolver.ts into a modular system
+ * with clear separation between core resolution logic and specialized tools.
  */
-
-// Type definitions
 interface FlatTokenMap {
   [path: string]: {
     value: any;

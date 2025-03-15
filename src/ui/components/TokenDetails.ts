@@ -1,12 +1,27 @@
 /**
- * TokenDetails.ts
+ * @file TokenDetails.ts
  * 
+ * @description
  * Component for displaying detailed information about a selected token.
- * Provides comprehensive display of reference information including paths,
- * resolved values, and copy functionality.
+ * Provides comprehensive view of token properties, visualizations, and usage examples
+ * when a user selects a specific token.
+ * 
+ * @architecture
+ * - Responsible for the content of the token details panel
+ * - Displays token metadata, references, and usage examples
+ * - Provides copy functionality for token values
+ * 
+ * @relationship
+ * This component provides the detailed view for tokens, while TokenCard.ts
+ * provides the compact card view in the grid. It's used by tokenDetailsPanel.ts
+ * which handles the panel container behavior.
+ * 
+ * @maintainance
+ * When adding new token types or properties, ensure consistent visualization
+ * between this component and TokenCard.ts.
  */
 
-import { TokenData, isReference, formatReferenceDisplay } from "../reference/ReferenceResolver";
+import { TokenData, isReference, formatReferenceDisplay } from "../reference/referenceResolver";
 
 export interface TokenDetailsProps {
   token: TokenData;

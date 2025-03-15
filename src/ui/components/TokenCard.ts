@@ -1,12 +1,26 @@
 /**
- * TokenCard.ts
+ * @file TokenCard.ts
  * 
- * Component for displaying individual tokens with special handling for references.
- * Focuses on showing reference paths rather than resolved values while
- * still displaying visualizations using the resolved values.
+ * @description
+ * Component for displaying individual tokens in a compact card format.
+ * Renders token preview with visualization based on token type and includes
+ * special handling for reference tokens.
+ * 
+ * @architecture
+ * - Part of the token visualization component hierarchy
+ * - Used by TokenGrid.ts to render individual tokens
+ * - Implements type-specific visualizations (color, dimension, typography, etc.)
+ * 
+ * @relationship
+ * This component provides the individual token cells used in the token grid view,
+ * while TokenDetails.ts provides the expanded view when a token is selected.
+ * 
+ * @maintainance
+ * Keep token visualization logic consistent between this component and TokenDetails.ts
+ * when adding support for new token types.
  */
 
-import { TokenData, isReference, formatReferenceDisplay } from "../reference/ReferenceResolver";
+import { TokenData, isReference, formatReferenceDisplay } from "../reference/referenceResolver";
 
 export interface TokenCardProps {
   token: TokenData;
