@@ -1,0 +1,121 @@
+/**
+ * Hierarchical Tokens Component Styles
+ */
+
+ .hierarchical-tokens {
+    margin-bottom: 24px;
+  }
+  
+  /* Section styles (top level) */
+  .token-section {
+    margin-bottom: 32px;
+    scroll-margin-top: 16px; /* For anchor links */
+  }
+  
+  .token-section-heading {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-gray-300);
+  }
+  
+  /* Subsection styles (second level) */
+  .token-subsection {
+    margin-bottom: 24px;
+  }
+  
+  .token-subsection-heading {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-gray-800);
+    margin-bottom: 12px;
+  }
+  
+  /* Token items wrapper */
+  .token-items-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  /* Individual token item */
+  .token-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .token-item:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Token preview */
+  .token-preview {
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  /* Color preview */
+  .token-color-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid var(--color-gray-300);
+  }
+  
+  /* Dimension preview */
+  .token-dimension-preview {
+    width: 100%;
+    max-width: 40px;
+    height: 8px;
+    background-color: var(--color-primary);
+    border-radius: 2px;
+  }
+  
+  /* Generic preview */
+  .token-generic-preview {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-gray-200);
+    border-radius: 4px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+  }
+  
+  /* Token info */
+  .token-info {
+    flex: 1;
+    min-width: 0; /* Allows text truncation */
+  }
+  
+  .token-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-900);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .token-value {
+    font-size: 12px;
+    font-family: var(--font-family-monospace);
+    color: var(--color-gray-600);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }

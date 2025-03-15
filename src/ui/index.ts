@@ -19,6 +19,9 @@ import { buildTokenMap, processTokensWithReferences, extractTokenList } from './
 import { diagnoseReferenceIssues } from '../code/formatters/tokenResolver';
 import { setupColorFormatHandlers } from './color-handlers';
 
+// Import the enhanced UI components
+import { initializeEnhancedUI, updateTokenDisplay } from './integration';
+
 // State
 let activeView: 'visual' | 'json' = 'visual';
 let tokenData: any = null;
@@ -144,6 +147,23 @@ const detailsPanelInterface = {
       if (activeView === 'visual') {
         visualContainer.style.display = 'block';
         jsonContainer.style.display = 'none';
+        
+        // Initialize enhanced UI if we have token data
+        if (tokenData && Object.keys(tokenData).length > 0) {
+          const state = sidebarInterface.getState();
+          
+          // Create filter options for the token display manager
+          const filterOptions = {
+            selectedCollections: state.selectedCollections,
+            selectedModes: state.selectedModes
+          };
+          
+          if (!(window as any).tokenDisplayManager) {
+            initializeEnhancedUI(tokenData, filterOptions);
+          } else {
+            updateTokenDisplay(tokenData, filterOptions);
+          }
+        }
       } else {
         visualContainer.style.display = 'none';
         jsonContainer.style.display = 'block';
@@ -189,6 +209,11 @@ const detailsPanelInterface = {
     detailsPanelInterface.show(token);
   }
   
+  // Make showTokenDetails available globally
+  (window as any).showTokenDetails = showTokenDetails;
+  // Make detailsPanelInterface available globally
+  (window as any).detailsPanelInterface = detailsPanelInterface;
+  
   /**
    * Filter tokens based on sidebar selection and display them
    */
@@ -223,11 +248,24 @@ const detailsPanelInterface = {
     // Store current tokens
     currentTokens = filteredTokens;
     
-    // Update token grid with filtered tokens
-    tokenGridInterface.update(filteredTokens);
+    // Create filter options for the token display manager
+    const filterOptions = {
+      selectedCollections: state.selectedCollections,
+      selectedModes: state.selectedModes
+    };
     
+    // For visual view, use the enhanced UI
+    if (activeView === 'visual') {
+      // Use the new updateTokenDisplay function
+      if ((window as any).tokenDisplayManager) {
+        updateTokenDisplay(tokenData, filterOptions);
+      } else {
+        // If not yet initialized, use the old token grid
+        tokenGridInterface.update(filteredTokens);
+      }
+    } 
     // Update JSON view if it's active
-    if (activeView === 'json') {
+    else if (activeView === 'json') {
       updateJsonView();
     }
   }
@@ -356,6 +394,16 @@ const detailsPanelInterface = {
         
         // Process tokens with reference information using our new ReferenceResolver
         tokenData = processTokensWithReferences(tokenData);
+        
+        // Initialize enhanced UI with processed token data if in visual view
+        if (activeView === 'visual') {
+          const state = sidebarInterface.getState();
+          const filterOptions = {
+            selectedCollections: state.selectedCollections,
+            selectedModes: state.selectedModes
+          };
+          initializeEnhancedUI(tokenData, filterOptions);
+        }
         
         // Filter and display tokens
         filterAndDisplayTokens();

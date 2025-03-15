@@ -23,5 +23,9 @@
 @import './components/statusIndicator.css';
 @import './components/jsonPreview.css';
 @import './components/actionButtons.css';
+/* New component styles */
+@import './components/modeToggle.css';
+@import './components/sectionNavigation.css';
+@import './components/hierarchicalTokens.css';
 /* Add the import for reference tokens styles */
 /* @import './components/referenceTokens.css';*/
