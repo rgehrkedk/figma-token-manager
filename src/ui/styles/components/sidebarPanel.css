@@ -101,7 +101,7 @@
   }
   
   .collection-header.selected {
-    background-color: var(--color-primary-light);
+    background-color: var(--color-primary-50);
     color: var(--color-primary-dark);
   }
   

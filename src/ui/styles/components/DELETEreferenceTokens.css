@@ -74,13 +74,7 @@
   .copy-button:hover {
     background-color: var(--color-gray-200);
   }
-  
-  /* Token details row styling */
-  .token-details-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-  }
+    
   
   .token-details-label {
     font-weight: 500;
@@ -94,7 +88,7 @@
     flex: 1;
   }
   
-  /* Token details sections */
+  /* Token details sections 
   .token-details-section {
     margin-bottom: 16px;
     padding-bottom: 16px;
@@ -103,4 +97,4 @@
   
   .token-details-section:last-child {
     border-bottom: none;
-  }
+  }*/

@@ -4,7 +4,6 @@
  */
 
 import './styles/index.css';
-console.log('Existing setupTokenDetailsPanel function:', typeof setupTokenDetailsPanel);
 
 // Import components
 import { setupHeader } from './components/header';
@@ -88,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. Setup token details panel using new component
   const detailsPanelContainer = document.getElementById('details-panel-container');
   console.log('Details panel container:', detailsPanelContainer);
-  // In index.ts
+  // In index.ts 
+
 const detailsPanelInterface = {
   show: (token: TokenData) => {
     console.log('detailsPanelInterface.show called:', token);
@@ -105,6 +105,8 @@ const detailsPanelInterface = {
           if (detailsPanelContainer) {
             detailsPanelContainer.innerHTML = '';
             detailsPanelContainer.style.display = 'none';
+            // Remove show-details class from container
+            document.querySelector('.plugin-container')?.classList.remove('show-details');
           }
         }
       });
@@ -112,6 +114,10 @@ const detailsPanelInterface = {
       // Add panel to container and show it
       detailsPanelContainer.appendChild(detailsPanel);
       detailsPanelContainer.style.display = 'block';
+      detailsPanelContainer.classList.add('visible'); // Add visible class
+      
+      // Add show-details class to container
+      document.querySelector('.plugin-container')?.classList.add('show-details');
     } else {
       console.log('detailsPanelContainer is null or undefined');
     }
