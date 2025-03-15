@@ -3,7 +3,7 @@
  * With improved Style Dictionary compatible reference resolution
  */
 
-import { ColorFormat } from '../../code/formatters/colorTransforms';
+import { ColorFormat } from '../../code/formatters/colorUtils';
 import { 
   buildTokenReferenceMap, 
   resolveTokenReference
