@@ -1,6 +1,7 @@
 /**
  * Token Details Panel Component
  * Displays detailed information about a selected token
+ * Using intuitive class naming that matches the CSS
  */
 
 import { TokenData } from '../reference/ReferenceResolver';
@@ -29,18 +30,17 @@ export function setupTokenDetailsPanel(
    */
   function createTokenDetails(token: TokenData): void {
     container.innerHTML = `
-      <div class="details-header">
-        <h3 class="details-title">Token Details</h3>
-        <button class="details-close">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </div>
-      
-      <div class="details-content">
-        <!-- Token visualization -->
+      <div class="details-panel-container">
+        <div class="details-header">
+          <h2 class="details-title">Token Details</h2>
+          <button class="close-button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        
         <div class="details-preview">
           ${createTokenVisualization(token)}
         </div>
@@ -61,7 +61,7 @@ export function setupTokenDetailsPanel(
             <div class="details-row">
               <div class="details-label">Value</div>
               <div class="details-value details-monospace">
-                ${formatTokenValue(token)}
+                <span style="flex: 1">${formatTokenValue(token)}</span>
                 <button class="copy-button" data-value="${escapeHtml(String(token.value))}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -75,7 +75,7 @@ export function setupTokenDetailsPanel(
               <div class="details-row">
                 <div class="details-label">Resolved</div>
                 <div class="details-value details-monospace">
-                  ${token.resolvedValue}
+                  <span style="flex: 1">${token.resolvedValue}</span>
                   <button class="copy-button" data-value="${escapeHtml(String(token.resolvedValue))}">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -89,7 +89,7 @@ export function setupTokenDetailsPanel(
             <div class="details-row">
               <div class="details-label">Type</div>
               <div class="details-value">
-                ${formatTypeTitle(token.type)}
+                <span style="flex: 1">${formatTypeTitle(token.type)}</span>
                 ${token.reference ? '<span class="reference-badge">Reference</span>' : ''}
               </div>
             </div>
@@ -105,7 +105,7 @@ export function setupTokenDetailsPanel(
     `;
 
     // Add event handlers
-    const closeButton = container.querySelector('.details-close');
+    const closeButton = container.querySelector('.close-button');
     if (closeButton) {
       closeButton.addEventListener('click', hide);
     }
@@ -132,8 +132,9 @@ export function setupTokenDetailsPanel(
     switch (token.type) {
       case 'color':
         return `
-          <div class="visualization-container">
-            <div class="color-preview" style="background-color: ${displayValue}"></div>
+          <div class="token-visualization color-visualization">
+            <div class="color-swatch" style="background-color: ${displayValue}"></div>
+            <div class="color-value">${displayValue}</div>
           </div>
         `;
         
@@ -145,9 +146,9 @@ export function setupTokenDetailsPanel(
         const displayWidth = isNaN(numericalValue) ? 0 : Math.min(numericalValue, 100);
         
         return `
-          <div class="visualization-container">
-            <div class="dimension-preview">
-              <div class="dimension-bar" style="width: ${displayWidth}%"></div>
+          <div class="token-visualization dimension-visualization">
+            <div class="dimension-representation">
+              <div class="dimension-box" style="width: ${displayWidth}%"></div>
             </div>
             <div class="dimension-value">${displayValue}</div>
           </div>
@@ -155,8 +156,8 @@ export function setupTokenDetailsPanel(
         
       case 'fontFamily':
         return `
-          <div class="visualization-container">
-            <div class="typography-preview" style="font-family: ${displayValue}">
+          <div class="token-visualization typography-visualization">
+            <div class="font-sample" style="font-family: ${displayValue}">
               <div class="typography-sample-large">Aa</div>
               <div class="typography-sample-small">The quick brown fox jumps over the lazy dog</div>
             </div>
@@ -165,8 +166,8 @@ export function setupTokenDetailsPanel(
         
       case 'fontWeight':
         return `
-          <div class="visualization-container">
-            <div class="typography-preview" style="font-weight: ${displayValue}">
+          <div class="token-visualization typography-visualization">
+            <div class="font-sample" style="font-weight: ${displayValue}">
               <div class="typography-sample-large">Aa</div>
               <div class="typography-sample-small">The quick brown fox jumps over the lazy dog</div>
             </div>
@@ -175,8 +176,8 @@ export function setupTokenDetailsPanel(
         
       case 'fontSize':
         return `
-          <div class="visualization-container">
-            <div class="typography-preview" style="font-size: ${displayValue}">
+          <div class="token-visualization typography-visualization">
+            <div class="font-sample" style="font-size: ${displayValue}">
               <div class="typography-sample-text">Aa</div>
             </div>
           </div>
@@ -184,8 +185,8 @@ export function setupTokenDetailsPanel(
         
       case 'lineHeight':
         return `
-          <div class="visualization-container">
-            <div class="typography-preview" style="line-height: ${displayValue}">
+          <div class="token-visualization typography-visualization">
+            <div class="font-sample" style="line-height: ${displayValue}">
               <div class="typography-sample-lines">
                 Line 1<br>
                 Line 2<br>
@@ -197,8 +198,8 @@ export function setupTokenDetailsPanel(
         
       case 'letterSpacing':
         return `
-          <div class="visualization-container">
-            <div class="typography-preview" style="letter-spacing: ${displayValue}">
+          <div class="token-visualization typography-visualization">
+            <div class="font-sample" style="letter-spacing: ${displayValue}">
               <div class="typography-sample-text">TYPOGRAPHY</div>
             </div>
           </div>
@@ -207,19 +208,15 @@ export function setupTokenDetailsPanel(
       case 'shadow':
       case 'boxShadow':
         return `
-          <div class="visualization-container">
-            <div class="shadow-preview">
-              <div class="shadow-box" style="box-shadow: ${displayValue}"></div>
-            </div>
+          <div class="token-visualization shadow-visualization">
+            <div class="shadow-box" style="box-shadow: ${displayValue}"></div>
           </div>
         `;
         
       default:
         return `
-          <div class="visualization-container">
-            <div class="generic-preview">
-              <div class="generic-value">${formatTypeTitle(token.type)}</div>
-            </div>
+          <div class="token-visualization generic-visualization">
+            <div class="generic-value">${formatTypeTitle(token.type)}</div>
           </div>
         `;
     }
@@ -278,7 +275,7 @@ export function setupTokenDetailsPanel(
       <div class="usage-item">
         <div class="usage-label">CSS</div>
         <div class="usage-code">
-          ${cssVariableName}
+          <span style="flex: 1">${cssVariableName}</span>
           <button class="copy-button" data-value="${cssVariableName}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -291,7 +288,7 @@ export function setupTokenDetailsPanel(
       <div class="usage-item">
         <div class="usage-label">CSS Usage</div>
         <div class="usage-code">
-          ${cssUsage}
+          <span style="flex: 1">${cssUsage}</span>
           <button class="copy-button" data-value="${cssUsage}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -304,7 +301,7 @@ export function setupTokenDetailsPanel(
       <div class="usage-item">
         <div class="usage-label">SCSS</div>
         <div class="usage-code">
-          ${scssVariableName}
+          <span style="flex: 1">${scssVariableName}</span>
           <button class="copy-button" data-value="${scssVariableName}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 9H11C9.89543 9 9 9.89543 9 11V20C9 21.1046 9.89543 22 11 22H20C21.1046 22 22 21.1046 22 20V11C22 9.89543 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

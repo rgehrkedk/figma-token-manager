@@ -10,7 +10,8 @@ import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarCallbacks } from './components/sidebarPanel';
 import { TokenData } from './reference/ReferenceResolver'; // Import TokenData from the correct source
 import { createTokenGrid } from './components/TokenGrid';
-import { createTokenDetails } from './components/TokenDetails'; // Use the correct function name
+// Replace TokenDetails import with tokenDetailsPanel
+import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 
 // Import reference handling utilities
 import { buildTokenMap, processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver'; // New imports
@@ -84,46 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
     tokenGridContainer.appendChild(tokenGridInterface.element);
   }
   
-  // 4. Setup token details panel using new component
-  const detailsPanelContainer = document.getElementById('details-panel-container');
-  console.log('Details panel container:', detailsPanelContainer);
-  // In index.ts 
-
-const detailsPanelInterface = {
-  show: (token: TokenData) => {
-    console.log('detailsPanelInterface.show called:', token);
-    if (detailsPanelContainer) {
-      console.log('detailsPanelContainer exists');
-      // Clear existing content
-      detailsPanelContainer.innerHTML = '';
-      
-      // Create details panel
-      const detailsPanel = createTokenDetails({
-        token,
-        onClose: () => {
-          // Hide the details panel
-          if (detailsPanelContainer) {
-            detailsPanelContainer.innerHTML = '';
-            detailsPanelContainer.style.display = 'none';
-            // Remove show-details class from container
-            document.querySelector('.plugin-container')?.classList.remove('show-details');
-          }
-        }
-      });
-      
-      // Add panel to container and show it
-      detailsPanelContainer.appendChild(detailsPanel);
-      detailsPanelContainer.style.display = 'block';
-      detailsPanelContainer.classList.add('visible'); // Add visible class
-      
-      // Add show-details class to container
-      document.querySelector('.plugin-container')?.classList.add('show-details');
-    } else {
-      console.log('detailsPanelContainer is null or undefined');
-    }
-  }
-};
-
+  // 4. Setup token details panel using tokenDetailsPanel component
+  const detailsPanelInterface = setupTokenDetailsPanel('details-panel-container');
+  
   // 5. Setup grouping select
   const groupingSelect = document.getElementById('grouping-select') as HTMLSelectElement;
   if (groupingSelect) {
