@@ -1,6 +1,7 @@
 /**
  * Collection UI templates
  * Defines HTML templates for collection cards with segmented toggle UI
+ * Improved for cleaner, more intuitive interface
  */
 
 /**
@@ -8,23 +9,6 @@
  */
 export function createSectionTitleTemplate(): string {
     return `<h2 class="section-title">Collections & Modes</h2>`;
-  }
-  
-  /**
-   * Creates the HTML for the search input
-   */
-  export function createSearchTemplate(): string {
-    return `
-      <div class="search-container">
-        <div class="search-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <input type="text" class="search-input" placeholder="Search tokens...">
-      </div>
-    `;
   }
   
   /**
@@ -94,7 +78,6 @@ export function createSectionTitleTemplate(): string {
   export function createCollectionsContainerTemplate(collectionCardsHtml: string): string {
     return `
       ${createSectionTitleTemplate()}
-      ${createSearchTemplate()}
       <div class="collections-container">
         ${collectionCardsHtml}
       </div>

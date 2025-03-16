@@ -1,6 +1,7 @@
 /**
  * HTML templates for sidebar UI components
  * Separates UI structure from functional logic
+ * Improved for cleaner interface without search functionality
  */
 
 /**
@@ -15,17 +16,6 @@ export function createSidebarTemplate(): string {
     
     <div class="sidebar-content">
       <div class="sidebar-panel active" id="collections-panel">
-        <!-- Search box -->
-        <div class="search-container">
-          <div class="search-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <input type="text" class="search-input" placeholder="Search tokens...">
-        </div>
-        
         <!-- Collections & Modes -->
         <div id="collections-container" class="collections-tree"></div>
       </div>
@@ -119,53 +109,6 @@ export function createSidebarTemplate(): string {
           </svg>
           <span>Export</span>
         </button>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Generates HTML for a collection item template
- */
-export function createCollectionItemTemplate(
-  collection: string,
-  isActive: boolean,
-  modes: string[],
-  selectedMode: string | undefined,
-  tokenCount: number
-): string {
-  const modesHTML = modes.map(mode => {
-    return `
-      <div class="mode-item">
-        <input type="radio" 
-          id="mode-${collection}-${mode}" 
-          name="modes-${collection}" 
-          data-collection="${collection}" 
-          data-mode="${mode}"
-          ${selectedMode === mode ? 'checked' : ''}>
-        <label for="mode-${collection}-${mode}">
-          ${mode}
-          <span class="token-count">(${tokenCount} tokens)</span>
-        </label>
-      </div>
-    `;
-  }).join('');
-
-  return `
-    <div class="collection-item" data-collection="${collection}">
-      <div class="collection-header ${isActive ? 'active' : ''}">
-        <span class="collection-toggle expander-icon expanded" data-collection="${collection}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 5L16 12L9 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        <div class="collection-selector" data-collection="${collection}"></div>
-        <div class="collection-label">${collection}</div>
-        <span class="collection-badge">${modes.length} modes</span>
-      </div>
-      
-      <div class="mode-container" data-collection="${collection}">
-        ${modesHTML}
       </div>
     </div>
   `;

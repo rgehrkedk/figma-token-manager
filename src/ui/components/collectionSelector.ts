@@ -1,6 +1,7 @@
 /**
  * Collection Selector Component
  * Handles selection of collections and modes using segmented toggle UI
+ * Improved for cleaner interface without search functionality
  */
 
 import { 
@@ -201,34 +202,6 @@ import {
             this.selectMode(collection, mode);
           }
         });
-      });
-      
-      // Search input event
-      const searchInput = this.containerEl.querySelector('.search-input');
-      if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-          const query = (e.target as HTMLInputElement).value.toLowerCase();
-          this.handleSearch(query);
-        });
-      }
-    }
-  
-    /**
-     * Handle search functionality
-     */
-    private handleSearch(query: string): void {
-      // Simple implementation - just hiding collections that don't match
-      const collectionCards = this.containerEl.querySelectorAll('.collection-card');
-      
-      collectionCards.forEach(card => {
-        const collection = card.getAttribute('data-collection');
-        if (collection) {
-          if (collection.toLowerCase().includes(query)) {
-            (card as HTMLElement).style.display = 'block';
-          } else {
-            (card as HTMLElement).style.display = 'none';
-          }
-        }
       });
     }
   
