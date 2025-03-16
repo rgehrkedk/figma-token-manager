@@ -162,8 +162,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = sidebarInterface.getState();
     const grouping = (document.getElementById('grouping-select') as HTMLSelectElement)?.value || 'type';
     
+    // Process tokens with reference information using our new context-aware method
+    const processedTokenData = processTokensWithReferences(
+      tokenData,
+      state.selectedCollections,
+      state.selectedModes
+    );
+    
     // Get all tokens from the processed data
-    let allTokens = extractTokenList(tokenData);
+    let allTokens = extractTokenList(processedTokenData);
     
     // Filter tokens based on selected collections and modes
     const filteredTokens = allTokens.filter(token => {
@@ -281,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     switch (message.type) {
       case 'tokens-data':
-        // Process and store received token data
+        // Store the original token data
         tokenData = message.data;
         
         // Extract collections for sidebar
@@ -318,10 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
           diagnostics.unresolvedCount
         );
         
-        // Process tokens with reference information using our new ReferenceResolver
-        tokenData = processTokensWithReferences(tokenData);
-        
-        // Filter and display tokens
+        // Filter and display tokens - this will now use our prioritized resolving
         filterAndDisplayTokens();
         break;
         
