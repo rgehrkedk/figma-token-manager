@@ -1,23 +1,33 @@
 /**
  * Figma Token Manager
- * Main UI entry point - Updated to use new reference display components
+ * Main UI entry point - Properly separated UI and functionality
+ * Fixed to handle type compatibility
  */
 
 import './styles/index.css';
 
 // Import components
 import { setupHeader } from './components/header';
-import { setupSidebarPanel, SidebarCallbacks } from './components/sidebarPanel';
-import { TokenData } from './reference/ReferenceResolver'; // Import TokenData from the correct source
+import { setupSidebarPanel, SidebarInterface, SidebarCallbacks } from './components/sidebarPanel';
+import { TokenData } from './reference/ReferenceResolver';
 import { createTokenGrid } from './components/TokenGrid';
-// Replace TokenDetails import with tokenDetailsPanel
 import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
+import { CollectionSelector } from './components/collectionSelector';
 
 // Import reference handling utilities
-import { buildTokenMap, processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver'; // New imports
+import { processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver';
 
-// Import utilities
-import { diagnoseReferenceIssues } from '../code/formatters/tokenResolver';
+// Import token filtering utilities
+import { 
+  filterTokensByActiveCollection,
+  createReferenceResolverMap,
+  extractDisplayTokens
+} from './utilities/tokenFilter';
+
+// Import map adapter for type compatibility
+import { convertToArrayMap } from './utilities/mapAdapter';
+
+// Import color format handlers
 import { setupColorFormatHandlers } from './color-handlers';
 
 // State
@@ -25,12 +35,13 @@ let activeView: 'visual' | 'json' = 'visual';
 let tokenData: any = null;
 let currentTokens: TokenData[] = [];
 let currentColorFormat = 'hex';
+let sidebarInterface: SidebarInterface | null = null;
 
 // Initialize components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Initializing UI components');
   
-  // Setup color format handlers (radio buttons in settings)
+  // Setup color format handlers
   setupColorFormatHandlers();
   
   // 1. Setup header with view toggle
@@ -40,18 +51,19 @@ document.addEventListener('DOMContentLoaded', () => {
     updateActiveView();
   });
   
-  // 2. Setup sidebar panel
+  // 2. Setup sidebar panel with callbacks
   const sidebarCallbacks: SidebarCallbacks = {
-    onCollectionToggle: (collection, selected) => {
-      console.log(`Collection ${collection} ${selected ? 'selected' : 'unselected'}`);
+    onActiveCollectionChange: (collection) => {
+      console.log(`Active collection changed to: ${collection}`);
       filterAndDisplayTokens();
     },
-    onModeToggle: (collection, mode, selected) => {
-      console.log(`Mode ${mode} in collection ${collection} ${selected ? 'selected' : 'unselected'}`);
+    onModeChange: (collection, mode) => {
+      console.log(`Mode changed for ${collection} to ${mode}`);
       filterAndDisplayTokens();
     },
     onSettingsChange: (setting, value) => {
       console.log(`Setting ${setting} changed to ${value}`);
+      
       // Handle specific settings
       if (setting === 'colorFormat') {
         currentColorFormat = value;
@@ -68,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   
-  const sidebarInterface = setupSidebarPanel('sidebar-container', [], {}, sidebarCallbacks);
+  sidebarInterface = setupSidebarPanel('sidebar-container', sidebarCallbacks);
   
-  // 3. Setup token grid using new component
+  // 3. Setup token grid
   const tokenGridInterface = createTokenGrid({
     tokens: [],
     onTokenClick: (token) => {
@@ -85,22 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
     tokenGridContainer.appendChild(tokenGridInterface.element);
   }
   
-  // 4. Setup token details panel using tokenDetailsPanel component
+  // 4. Setup token details panel
   const detailsPanelInterface = setupTokenDetailsPanel('details-panel-container');
-  
-  // 5. Setup grouping select
-  const groupingSelect = document.getElementById('grouping-select') as HTMLSelectElement;
-  if (groupingSelect) {
-    groupingSelect.addEventListener('change', () => {
-      console.log('Grouping changed:', groupingSelect.value);
-      filterAndDisplayTokens();
-    });
-  }
   
   /**
    * Updates the active view (visual or JSON)
    */
-  function updateActiveView() {
+  function updateActiveView(): void {
     const visualContainer = document.getElementById('token-grid-container');
     const jsonContainer = document.getElementById('json-view-container');
     
@@ -119,26 +122,19 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Updates the JSON view with current token data
    */
-  function updateJsonView() {
+  function updateJsonView(): void {
+    if (!sidebarInterface) return;
+    
     const jsonContent = document.getElementById('json-content');
     if (jsonContent && tokenData) {
       const state = sidebarInterface.getState();
       
-      // Filter data based on selected collections and modes
-      const filteredData: any = {};
-      
-      for (const collection in tokenData) {
-        if (state.selectedCollections.includes(collection)) {
-          filteredData[collection] = {};
-          
-          const modesForCollection = state.selectedModes.get(collection) || [];
-          for (const mode in tokenData[collection]) {
-            if (modesForCollection.includes(mode)) {
-              filteredData[collection][mode] = tokenData[collection][mode];
-            }
-          }
-        }
-      }
+      // Filter data based on selected collection and mode
+      const filteredData = filterTokensByActiveCollection(
+        tokenData,
+        state.activeCollection,
+        state.selectedModes
+      );
       
       // Convert to formatted JSON
       jsonContent.textContent = JSON.stringify(filteredData, null, 2);
@@ -148,76 +144,101 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Show token details in the panel
    */
-  function showTokenDetails(token: TokenData) {
+  function showTokenDetails(token: TokenData): void {
     console.log('showTokenDetails called:', token);
     detailsPanelInterface.show(token);
   }
   
   /**
-   * Filter tokens based on sidebar selection and display them
+   * Filter tokens based on active collection and display them
    */
-  function filterAndDisplayTokens() {
-    if (!tokenData) return;
+  function filterAndDisplayTokens(): void {
+    if (!tokenData || !sidebarInterface) return;
     
     const state = sidebarInterface.getState();
-    const grouping = (document.getElementById('grouping-select') as HTMLSelectElement)?.value || 'type';
+    const activeCollection = state.activeCollection;
     
-    // Process tokens with reference information using our new context-aware method
-    const processedTokenData = processTokensWithReferences(
+    // Extract tokens for display
+    const { 
+      displayTokens, 
+      referenceMap,
+      unresolvedReferences 
+    } = extractDisplayTokens(
       tokenData,
-      state.selectedCollections,
+      activeCollection,
       state.selectedModes
     );
     
-    // Get all tokens from the processed data
+    // Process tokens with references
+    // Convert Map<string, string> to Map<string, string[]> for compatibility
+    const modesArrayMap = convertToArrayMap(state.selectedModes);
+    
+    const resolverData = createReferenceResolverMap(tokenData, state.selectedModes);
+    const processedTokenData = processTokensWithReferences(
+      resolverData,
+      Array.from(state.selectedModes.keys()),
+      modesArrayMap // Use the converted map here
+    );
+    
+    // Get all tokens from the active collection
     let allTokens = extractTokenList(processedTokenData);
     
-    // Filter tokens based on selected collections and modes
-    const filteredTokens = allTokens.filter(token => {
-      const [collection, mode] = token.path.split('.');
-      return state.selectedCollections.includes(collection) &&
-             (state.selectedModes.get(collection) || []).includes(mode);
-    });
-    
-    // Update reference warning if needed
-    updateReferenceWarning(filteredTokens);
-    
-    // Sort tokens based on grouping
-    if (grouping === 'type') {
-      filteredTokens.sort((a, b) => a.type.localeCompare(b.type));
-    } else if (grouping === 'collection') {
-      filteredTokens.sort((a, b) => a.path.split('.')[0].localeCompare(b.path.split('.')[0]));
-    } else if (grouping === 'alphabetical') {
-      filteredTokens.sort((a, b) => a.name.localeCompare(b.name));
+    // Filter tokens to show only the active collection
+    if (activeCollection) {
+      allTokens = allTokens.filter(token => {
+        return token.path.startsWith(`${activeCollection}.`);
+      });
     }
     
+    // Count resolved references for status display
+    const resolvedRefs = allTokens.filter(t => t.reference && t.resolvedValue).length;
+    const unresolvedRefs = allTokens.filter(t => t.reference && !t.resolvedValue).length;
+    
+    // Update reference status in sidebar
+    sidebarInterface.setReferenceCounts(resolvedRefs, unresolvedRefs);
+    
+    // Update reference warning if needed
+    updateReferenceWarning(unresolvedRefs);
+    
     // Store current tokens
-    currentTokens = filteredTokens;
+    currentTokens = allTokens;
     
     // Update token grid with filtered tokens
-    tokenGridInterface.update(filteredTokens);
+    tokenGridInterface.update(allTokens);
     
     // Update JSON view if it's active
     if (activeView === 'json') {
       updateJsonView();
+    }
+    
+    // Update the main panel title to show the active collection
+    updateMainPanelTitle(activeCollection);
+  }
+  
+  /**
+   * Update the main panel title to show the active collection and mode
+   */
+  function updateMainPanelTitle(activeCollection: string | null): void {
+    if (!sidebarInterface) return;
+    
+    const titleEl = document.querySelector('.main-panel-title');
+    if (titleEl && activeCollection) {
+      const state = sidebarInterface.getState();
+      const selectedMode = state.selectedModes.get(activeCollection);
+      titleEl.textContent = `${activeCollection}/${selectedMode}`;
+    } else if (titleEl) {
+      titleEl.textContent = 'Design Tokens';
     }
   }
   
   /**
    * Update reference warning based on token data
    */
-  function updateReferenceWarning(tokens: TokenData[]) {
+  function updateReferenceWarning(unresolvedCount: number): void {
     const warningEl = document.getElementById('reference-warning');
     const warningTextEl = document.getElementById('reference-warning-text');
     
     if (!warningEl || !warningTextEl) return;
-    
-    // Count unresolved references
-    const unresolvedCount = tokens.filter(t => t.reference && !t.resolvedValue).length;
-    const resolvedCount = tokens.filter(t => t.reference && t.resolvedValue).length;
-    
-    // Update sidebar reference counts
-    sidebarInterface.setReferenceCounts(resolvedCount, unresolvedCount);
     
     if (unresolvedCount > 0) {
       warningEl.style.display = 'flex';
@@ -230,8 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Apply color format to tokens
    */
-  function applyColorFormat(format: string) {
-    // This would send a message to the plugin to transform colors
+  function applyColorFormat(format: string): void {
+    // Send message to plugin to transform colors
     parent.postMessage({ 
       pluginMessage: { 
         type: 'apply-color-format',
@@ -243,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Request token extraction from Figma
    */
-  function requestTokenExtraction() {
+  function requestTokenExtraction(): void {
     // Send message to plugin to extract tokens
     parent.postMessage({ 
       pluginMessage: { 
@@ -255,7 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Export tokens
    */
-  function exportTokens() {
+  function exportTokens(): void {
+    if (!sidebarInterface) return;
+    
     const state = sidebarInterface.getState();
     
     // Get export options from state
@@ -291,41 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Store the original token data
         tokenData = message.data;
         
-        // Extract collections for sidebar
-        const collections = Object.keys(tokenData).map(collectionKey => {
-          const modes = Object.keys(tokenData[collectionKey]);
-          const tokenCount = countTokensInCollection(tokenData[collectionKey]);
-          
-          return {
-            id: collectionKey,
-            name: collectionKey,
-            modes,
-            count: tokenCount
-          };
-        });
+        // Update sidebar with new token data
+        if (sidebarInterface) {
+          sidebarInterface.updateTokenData(tokenData);
+        }
         
-        // Update sidebar with collections
-        sidebarInterface.updateCollections(collections);
-        
-        // Select all collections by default
-        sidebarInterface.setState({
-          selectedCollections: collections.map(c => c.id),
-          expandedCollections: [collections[0]?.id].filter(Boolean),
-          selectedModes: new Map(
-            collections.map(c => [c.id, c.modes])
-          )
-        });
-        
-        // Run diagnostics for reference issues
-        const diagnostics = diagnoseReferenceIssues(tokenData);
-        
-        // Update reference counts in the sidebar
-        sidebarInterface.setReferenceCounts(
-          diagnostics.resolvedCount, 
-          diagnostics.unresolvedCount
-        );
-        
-        // Filter and display tokens - this will now use our prioritized resolving
+        // Filter and display tokens
         filterAndDisplayTokens();
         break;
         
@@ -337,32 +331,4 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
     }
   };
-  
-  /**
-   * Count tokens in a collection
-   */
-  function countTokensInCollection(collection: any): number {
-    let count = 0;
-    
-    function countInObject(obj: any) {
-      for (const key in obj) {
-        const value = obj[key];
-        
-        // Count DTCG tokens
-        if (value && typeof value === 'object' && value.$value !== undefined) {
-          count++;
-        } 
-        // Recurse into nested objects
-        else if (value && typeof value === 'object') {
-          countInObject(value);
-        }
-      }
-    }
-    
-    for (const mode in collection) {
-      countInObject(collection[mode]);
-    }
-    
-    return count;
-  }
 });

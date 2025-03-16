@@ -1,6 +1,7 @@
 /**
  * Main stylesheet entry point
  * Imports all component and layout styles
+ * Updated to include the consolidated collectionSelector.css
  */
 
 /* Base styles */
@@ -19,7 +20,7 @@
 @import './components/toggle.css';
 @import './components/diagnostics.css';
 @import './components/forms.css';
-@import './components/collectionList.css';
+@import './components/collectionSelector.css'; /* Consolidated collection styles */
 @import './components/statusIndicator.css';
 @import './components/jsonPreview.css';
 @import './components/actionButtons.css';

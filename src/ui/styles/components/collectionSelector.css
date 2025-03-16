@@ -1,0 +1,154 @@
+/**
+ * Collection Selector Component Styles
+ * Consolidated styling for collections and modes with segmented toggle UI
+ */
+
+/* Collections container */
+.collections-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 0;
+  }
+  
+  /* Collection card */
+  .collection-card {
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .collection-card:hover {
+    border-color: var(--color-gray-400);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .collection-card.active {
+    background-color: var(--color-primary-50);
+    border-color: var(--color-primary);
+  }
+  
+  /* Collection header */
+  .collection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .collection-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-800);
+  }
+  
+  .collection-card.active .collection-name {
+    color: var(--color-primary-dark);
+  }
+  
+  .collection-count {
+    padding: 2px 8px;
+    background-color: var(--color-gray-200);
+    border-radius: 12px;
+    font-size: 11px;
+    color: var(--color-gray-700);
+  }
+  
+  .collection-card.active .collection-count {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  /* Segmented toggle for modes */
+  .modes-toggle {
+    display: flex;
+    background-color: var(--color-gray-200);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 8px;
+    height: 32px;
+  }
+  
+  .mode-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    border-right: 1px solid var(--color-gray-300);
+  }
+  
+  .mode-option:last-child {
+    border-right: none;
+  }
+  
+  .mode-option:hover {
+    background-color: var(--color-gray-300);
+  }
+  
+  .mode-option.active {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  /* Hide the segmented toggle if there's only one mode */
+  .single-mode {
+    display: none;
+  }
+  
+  /* Section title */
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-gray-300);
+  }
+  
+  /* Search box styling */
+  .search-container {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-gray-500);
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 8px 8px 8px 32px;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  
+  .search-input:focus {
+    border-color: var(--color-primary);
+    outline: none;
+  }
+  
+  /* Empty state */
+  .empty-collections {
+    padding: 24px;
+    text-align: center;
+    color: var(--color-gray-500);
+    font-style: italic;
+    background-color: var(--color-gray-100);
+    border-radius: 8px;
+  }
