@@ -104,7 +104,8 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: 'update-variables-result',
         success: result.success,
-        error: result.error
+        error: result.error,
+        warnings: result.warnings
       });
     } catch (error: unknown) {
       console.error("Error handling variable update:", error);

@@ -156,6 +156,26 @@
     color: var(--color-success);
   }
   
+  .json-editor-message.info {
+    color: var(--color-info, #0077cc);
+  }
+  
+  .json-editor-message.pending {
+    color: var(--color-warning);
+  }
+  
+  .json-editor-message.warning {
+    color: var(--color-warning, #e6a700);
+  }
+  
+  .message-details {
+    margin-top: 4px;
+    font-size: 11px;
+    padding-left: 10px;
+    border-left: 2px solid currentColor;
+    opacity: 0.9;
+  }
+  
   /* Fix for Chrome autofill background */
   .json-editor-textarea:-webkit-autofill {
     -webkit-text-fill-color: var(--color-gray-800);

@@ -230,9 +230,21 @@ async function saveJsonToFigma(messageArea: HTMLElement | null): Promise<void> {
   }
   
   try {
-    // Show saving message
+    // Check if the JSON is empty or has no meaningful content
+    const isEmpty = Object.keys(json).length === 0 || 
+                   !Object.values(json).some(val => typeof val === 'object' && Object.keys(val).length > 0);
+    
+    if (isEmpty) {
+      if (messageArea) {
+        messageArea.textContent = 'Cannot save empty JSON data. No variables would be updated.';
+        messageArea.className = 'json-editor-message error';
+      }
+      return;
+    }
+    
+    // Show saving message with clear explanation that only filtered variables will be updated
     if (messageArea) {
-      messageArea.textContent = 'Saving changes to Figma variables...';
+      messageArea.textContent = 'Saving changes to filtered Figma variables (non-filtered variables will be preserved)...';
       messageArea.className = 'json-editor-message pending';
     }
     
@@ -241,7 +253,7 @@ async function saveJsonToFigma(messageArea: HTMLElement | null): Promise<void> {
     
     // Show success message
     if (messageArea) {
-      messageArea.textContent = 'Variables updated successfully!';
+      messageArea.textContent = 'Filtered variables updated successfully!';
       messageArea.className = 'json-editor-message success';
     }
     

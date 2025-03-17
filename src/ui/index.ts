@@ -421,11 +421,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (message.success) {
           console.log('Variables updated successfully');
           
-          // Show success message if we have the message area
-          const messageArea = document.querySelector('.json-editor-message');
-          if (messageArea) {
-            messageArea.textContent = 'Variables updated successfully!';
-            (messageArea as HTMLElement).className = 'json-editor-message success';
+          // Check if there are warnings about reference resolution
+          if (message.warnings && Array.isArray(message.warnings) && message.warnings.length > 0) {
+            console.log('Reference warnings:', message.warnings);
+            
+            // Show warning message with details
+            const messageArea = document.querySelector('.json-editor-message');
+            if (messageArea) {
+              const warningMessage = `Variables updated with ${message.warnings.length} reference warning(s). Some aliases couldn't be resolved.`;
+              messageArea.textContent = warningMessage;
+              (messageArea as HTMLElement).className = 'json-editor-message warning';
+              
+              // Add a details section for warnings (up to 3)
+              if (message.warnings.length > 0) {
+                const details = document.createElement('div');
+                details.className = 'message-details';
+                details.innerHTML = message.warnings.slice(0, 3).map(w => `- ${w}`).join('<br>');
+                if (message.warnings.length > 3) {
+                  details.innerHTML += `<br>- ... and ${message.warnings.length - 3} more`;
+                }
+                messageArea.appendChild(details);
+              }
+            }
+          }
+          // Check if there's an informational message even on success
+          else if (message.error) {
+            console.log('Information from variable update:', message.error);
+            
+            // Show informational message if we have the message area
+            const messageArea = document.querySelector('.json-editor-message');
+            if (messageArea) {
+              // This is an informational message, not an error
+              messageArea.textContent = `${message.error}`;
+              (messageArea as HTMLElement).className = 'json-editor-message info';
+            }
+          } else {
+            // Show success message if we have the message area
+            const messageArea = document.querySelector('.json-editor-message');
+            if (messageArea) {
+              messageArea.textContent = 'Filtered variables updated successfully! Other variables were preserved.';
+              (messageArea as HTMLElement).className = 'json-editor-message success';
+            }
           }
         } else {
           console.error('Error updating variables:', message.error);
