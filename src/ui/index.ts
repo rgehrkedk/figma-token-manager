@@ -421,6 +421,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (message.success) {
           console.log('Variables updated successfully');
           
+          // Format counts for display
+          const createdCount = message.created || 0;
+          const updatedCount = message.updated || 0;
+          const collectionsCount = message.collections || 0;
+          const modesCount = message.modes || 0;
+          const renamedCount = message.renamed || 0;
+          const totalCount = createdCount + updatedCount;
+          
           // Check if there are warnings about reference resolution
           if (message.warnings && Array.isArray(message.warnings) && message.warnings.length > 0) {
             console.log('Reference warnings:', message.warnings);
@@ -428,7 +436,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show warning message with details
             const messageArea = document.querySelector('.json-editor-message');
             if (messageArea) {
-              const warningMessage = `Variables updated with ${message.warnings.length} reference warning(s). Some aliases couldn't be resolved.`;
+              // Build warning message with all counts
+              const parts = [];
+              
+              if (totalCount > 0) {
+                parts.push(`${totalCount} variables (${createdCount} created, ${updatedCount} updated)`);
+              }
+              if (collectionsCount > 0) {
+                parts.push(`${collectionsCount} collection${collectionsCount > 1 ? 's' : ''}`);
+              }
+              if (modesCount > 0) {
+                parts.push(`${modesCount} mode${modesCount > 1 ? 's' : ''}`);
+              }
+              
+              const changesText = parts.length > 0 ? parts.join(', ') : 'items';
+              const warningMessage = `Updated ${changesText} with ${message.warnings.length} warning(s).`;
               messageArea.textContent = warningMessage;
               (messageArea as HTMLElement).className = 'json-editor-message warning';
               
@@ -459,7 +481,37 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show success message if we have the message area
             const messageArea = document.querySelector('.json-editor-message');
             if (messageArea) {
-              messageArea.textContent = 'Filtered variables updated successfully! Other variables were preserved.';
+              // Build a detailed success message with all counts
+              let successMessage = '';
+              const changes = [];
+              
+              // Add variable counts
+              if (totalCount > 0) {
+                changes.push(`${totalCount} variables (${createdCount} created, ${updatedCount} updated)`);
+              }
+              
+              // Add collection counts
+              if (collectionsCount > 0) {
+                changes.push(`${collectionsCount} collection${collectionsCount > 1 ? 's' : ''}`);
+              }
+              
+              // Add mode counts
+              if (modesCount > 0) {
+                changes.push(`${modesCount} mode${modesCount > 1 ? 's' : ''}`);
+              }
+              
+              // Add renamed counts
+              if (renamedCount > 0) {
+                changes.push(`${renamedCount} item${renamedCount > 1 ? 's' : ''} renamed`);
+              }
+              
+              if (changes.length > 0) {
+                successMessage = `Successfully updated ${changes.join(', ')}! Other items were preserved.`;
+              } else {
+                successMessage = 'No changes needed. All items are up to date.';
+              }
+              
+              messageArea.textContent = successMessage;
               (messageArea as HTMLElement).className = 'json-editor-message success';
             }
           }

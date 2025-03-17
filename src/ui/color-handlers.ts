@@ -5,9 +5,7 @@ import { ColorFormat } from '../code/formatters/colorUtils';
  */
 export function setupColorFormatHandlers() {
   const colorHexRadio = document.getElementById('color-hex') as HTMLInputElement;
-  const colorRgbRadio = document.getElementById('color-rgb') as HTMLInputElement;
   const colorRgbaRadio = document.getElementById('color-rgba') as HTMLInputElement;
-  const colorHslRadio = document.getElementById('color-hsl') as HTMLInputElement;
   const colorHslaRadio = document.getElementById('color-hsla') as HTMLInputElement;
   
   // Store current color format
@@ -32,23 +30,9 @@ export function setupColorFormatHandlers() {
     }
   });
   
-  colorRgbRadio?.addEventListener('change', () => {
-    if (colorRgbRadio.checked && currentFormat !== 'rgb') {
-      currentFormat = 'rgb';
-      sendColorFormatMessage(currentFormat);
-    }
-  });
-  
   colorRgbaRadio?.addEventListener('change', () => {
     if (colorRgbaRadio.checked && currentFormat !== 'rgba') {
       currentFormat = 'rgba';
-      sendColorFormatMessage(currentFormat);
-    }
-  });
-  
-  colorHslRadio?.addEventListener('change', () => {
-    if (colorHslRadio.checked && currentFormat !== 'hsl') {
-      currentFormat = 'hsl';
       sendColorFormatMessage(currentFormat);
     }
   });

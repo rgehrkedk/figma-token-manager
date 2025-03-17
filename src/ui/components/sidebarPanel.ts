@@ -6,11 +6,13 @@
 import { createSidebarTemplate } from '../templates/sidebarTemplate';
 import { CollectionSelector, SelectionState, CollectionSelectorCallbacks } from './collectionSelector';
 
+import { ColorFormat } from '../../code/formatters/colorUtils';
+
 interface SidebarState {
   activeCollection: string | null;
   selectedModes: Map<string, string>; // Single mode per collection
   activeSidebarTab: 'collections' | 'settings';
-  colorFormat: 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla';
+  colorFormat: ColorFormat;
   exportFormat: 'dtcg' | 'legacy';
   separateFiles: boolean;
   validateReferences: boolean;
@@ -134,7 +136,7 @@ export function setupSidebarPanel(
     colorFormatRadios.forEach(radio => {
       radio.addEventListener('change', () => {
         if ((radio as HTMLInputElement).checked) {
-          const format = radio.id.replace('color-', '') as 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla';
+          const format = radio.id.replace('color-', '') as 'hex' | 'rgba' | 'hsla';
           state.colorFormat = format;
           callbacks.onSettingsChange('colorFormat', format);
         }
@@ -241,7 +243,7 @@ function createEmptySidebarInterface(): SidebarInterface {
       activeCollection: null,
       selectedModes: new Map(),
       activeSidebarTab: 'collections',
-      colorFormat: 'hex',
+      colorFormat: 'hex' as ColorFormat,
       exportFormat: 'dtcg',
       separateFiles: true,
       validateReferences: true,

@@ -4,7 +4,7 @@
  */
 
 // Type for color format options
-export type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla';
+export type ColorFormat = 'hex' | 'rgba' | 'hsla';
 
 // Type for color object
 export interface RGBColor {
@@ -203,10 +203,8 @@ export function transformColorToFormat(color: any, format: ColorFormat): string 
       switch (format) {
         case 'hex':
           return color;
-        case 'rgb':
         case 'rgba':
           return rgbaToRgb(rgbaColor);
-        case 'hsl':
         case 'hsla':
           return rgbaToHsl(rgbaColor);
       }
@@ -221,10 +219,8 @@ export function transformColorToFormat(color: any, format: ColorFormat): string 
     switch (format) {
       case 'hex':
         return formatRGBAToHex(color);
-      case 'rgb':
       case 'rgba':
         return rgbaToRgb(color);
-      case 'hsl':
       case 'hsla':
         return rgbaToHsl(color);
       default:

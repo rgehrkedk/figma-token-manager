@@ -7,10 +7,10 @@
 
 /**
  * Updates Figma variables based on JSON data
- * Only updates variables explicitly defined in the JSON data
+ * Creates variables if they don't exist and updates existing ones
  * @param jsonData The JSON data containing variable updates
  */
-export async function handleUpdateVariables(jsonData: any): Promise<{success: boolean, error?: string, warnings?: string[]}> {
+export async function handleUpdateVariables(jsonData: any): Promise<{success: boolean, error?: string, warnings?: string[], created?: number, updated?: number, collections?: number, modes?: number, renamed?: number}> {
   try {
     console.log("Starting variable update process");
     
@@ -27,20 +27,87 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     
     // Flag to track if we've processed anything
     let updatedAnyVariables = false;
+    let createdCount = 0;
+    let updatedCount = 0;
+    let collectionsCreated = 0;
+    let modesCreated = 0;
+    let renamedCount = 0;
     
     // Track reference resolution errors
     const referenceErrors: string[] = [];
+    const creationErrors: string[] = [];
     
-    // Process each collection in the JSON data
-    for (const collectionName in jsonData) {
+    // Get collection names and preserve their order
+    const collectionNames = Object.keys(jsonData);
+    
+    // Keep track of the original collection and mode names before any changes
+    // This helps us detect renames
+    const originalCollectionNames = collections.map(c => c.name.toLowerCase());
+    const collectionModeMap = new Map<string, Set<string>>();
+    
+    // Build a map of existing modes for each collection
+    collections.forEach(collection => {
+      const modes = new Set<string>();
+      collection.modes.forEach(mode => {
+        modes.add(mode.name.toLowerCase());
+      });
+      collectionModeMap.set(collection.name.toLowerCase(), modes);
+    });
+    
+    // Process each collection in the JSON data in order
+    for (const collectionName of collectionNames) {
       console.log(`Processing collection: ${collectionName}`);
       
       // Find the matching collection in Figma
-      const collection = collections.find(c => c.name.toLowerCase() === collectionName.toLowerCase());
+      let collection = collections.find(c => c.name.toLowerCase() === collectionName.toLowerCase());
       
+      // If collection doesn't exist, check if it's a renamed collection
       if (!collection) {
-        console.warn(`Collection not found: ${collectionName}`);
-        continue;
+        // Check if we need to rename a collection instead of creating one
+        // If there are exactly the same number of collections in JSON as in Figma
+        // and this is the first unmatched collection, it's likely a rename
+        if (collectionNames.length === collections.length && collectionsCreated === 0) {
+          // Find collections in Figma that don't match any collection in JSON
+          const unmatchedFigmaCollections = collections.filter(c => 
+            !collectionNames.some(jsonCollection => jsonCollection.toLowerCase() === c.name.toLowerCase())
+          );
+          
+          // If there's exactly one unmatched collection, assume it was renamed
+          if (unmatchedFigmaCollections.length === 1) {
+            const oldCollection = unmatchedFigmaCollections[0];
+            console.log(`Renaming collection: ${oldCollection.name} to ${collectionName}`);
+            
+            try {
+              // Rename the collection
+              oldCollection.name = collectionName;
+              collection = oldCollection;
+              renamedCount++;
+            } catch (error) {
+              console.error(`Error renaming collection ${oldCollection.name} to ${collectionName}:`, error);
+              creationErrors.push(`Error renaming collection: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }
+        }
+        
+        // If still no collection (not a rename), create it
+        if (!collection) {
+          console.log(`Creating new collection: ${collectionName}`);
+          
+          try {
+            collection = figma.variables.createVariableCollection(collectionName);
+            collectionsCreated++;
+            
+            // If this is the first collection, refresh the list
+            if (collectionsCreated === 1) {
+              // Refresh collections list
+              collections.push(collection);
+            }
+          } catch (error) {
+            console.error(`Error creating collection ${collectionName}:`, error);
+            creationErrors.push(`Error creating collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`);
+            continue;
+          }
+        }
       }
       
       // Get variables for this collection
@@ -51,24 +118,85 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
       // Get the JSON data for this collection
       const collectionData = jsonData[collectionName];
       
-      // Process each mode in the collection
-      for (const modeName in collectionData) {
+      // Get mode names and preserve their order
+      const modeNames = Object.keys(collectionData);
+      
+      // Process each mode in the collection in order
+      for (const modeName of modeNames) {
         console.log(`Processing mode: ${modeName}`);
         
         // Find the matching mode in the collection
-        const mode = collection.modes.find(m => m.name.toLowerCase() === modeName.toLowerCase());
+        let mode = collection.modes.find(m => m.name.toLowerCase() === modeName.toLowerCase());
         
+        // If mode doesn't exist, check if it's a renamed mode
         if (!mode) {
-          console.warn(`Mode not found: ${modeName} in collection ${collectionName}`);
-          continue;
+          // Get the existing modes in this collection
+          const existingModes = collection.modes;
+          
+          // Check if we need to rename a mode instead of creating one
+          // If there are exactly the same number of modes in JSON as in Figma
+          // and this is the first unmatched mode, it's likely a rename
+          if (modeNames.length === existingModes.length && modesCreated === 0) {
+            // Find modes in Figma that don't match any mode in JSON
+            const unmatchedFigmaModes = existingModes.filter(m => 
+              !modeNames.some(jsonMode => jsonMode.toLowerCase() === m.name.toLowerCase())
+            );
+            
+            // If there's exactly one unmatched mode, assume it was renamed
+            if (unmatchedFigmaModes.length === 1) {
+              const oldMode = unmatchedFigmaModes[0];
+              console.log(`Renaming mode: ${oldMode.name} to ${modeName}`);
+              
+              try {
+                // Rename the mode
+                collection.renameMode(oldMode.modeId, modeName);
+                mode = collection.modes.find(m => m.modeId === oldMode.modeId);
+                renamedCount++;
+              } catch (error) {
+                console.error(`Error renaming mode ${oldMode.name} to ${modeName}:`, error);
+                creationErrors.push(`Error renaming mode: ${error instanceof Error ? error.message : String(error)}`);
+              }
+            }
+          }
+          
+          // If still no mode (not a rename), create it
+          if (!mode) {
+            console.log(`Creating new mode: ${modeName} in collection ${collectionName}`);
+            
+            try {
+              // Add the mode to the collection
+              const modeId = collection.addMode(modeName);
+              modesCreated++;
+              
+              // Use the new mode
+              mode = collection.modes.find(m => m.modeId === modeId);
+              
+              if (!mode) {
+                throw new Error(`Failed to find newly created mode: ${modeName}`);
+              }
+            } catch (error) {
+              console.error(`Error creating mode ${modeName} in collection ${collectionName}:`, error);
+              creationErrors.push(`Error creating mode ${modeName}: ${error instanceof Error ? error.message : String(error)}`);
+              continue;
+            }
+          }
         }
         
         // Get the JSON data for this mode
         const modeData = collectionData[modeName];
         
         // Process variables in this mode
-        const updateResult = await updateVariablesInMode(variables, modeData, mode.modeId, `${collectionName}.${modeName}`);
+        const updateResult = await updateVariablesInMode(
+          variables, 
+          modeData, 
+          mode.modeId, 
+          `${collectionName}.${modeName}`,
+          collection.id  // Pass the collection ID for variable creation
+        );
+        
         updatedAnyVariables = updatedAnyVariables || updateResult.updated;
+        updatedCount += updateResult.updatedCount || 0;
+        createdCount += updateResult.createdCount || 0;
         
         // Collect reference errors
         if (updateResult.referenceErrors && updateResult.referenceErrors.length > 0) {
@@ -78,31 +206,56 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     }
     
     // Handle completion status
-    if (!updatedAnyVariables) {
-      console.log("No variables were updated - possibly empty input");
+    if (!updatedAnyVariables && collectionsCreated === 0 && modesCreated === 0 && renamedCount === 0) {
+      console.log("No variables, collections, or modes were updated, created, or renamed - possibly empty input");
       return { 
         success: true,
-        error: "No variables were updated. The filter might be too restrictive or data is empty."
+        error: "No variables, collections, or modes were updated, created, or renamed. The filter might be too restrictive or data is empty."
       };
     }
     
-    // Handle reference errors (still a success but with warnings)
-    if (referenceErrors.length > 0) {
-      console.warn(`Updated variables with ${referenceErrors.length} reference warnings`);
+    // Combine all warnings
+    const allWarnings = [...referenceErrors, ...creationErrors];
+    
+    // Handle warnings (still a success but with warnings)
+    if (allWarnings.length > 0) {
+      console.warn(`Operation completed with ${allWarnings.length} warnings`);
       
       // Group identical errors
-      const uniqueErrors = Array.from(new Set(referenceErrors));
+      const uniqueWarnings = Array.from(new Set(allWarnings));
       
       // Return success but include warnings
       return { 
         success: true,
-        warnings: uniqueErrors,
-        error: `Variables updated with ${uniqueErrors.length} reference warning(s). Some references couldn't be resolved.`
+        warnings: uniqueWarnings,
+        error: `Variables updated with ${uniqueWarnings.length} warning(s).`,
+        created: createdCount,
+        updated: updatedCount,
+        collections: collectionsCreated,
+        modes: modesCreated,
+        renamed: renamedCount
       };
     }
     
-    console.log("Variable update completed successfully");
-    return { success: true };
+    // Build a success message
+    const successParts = [];
+    if (createdCount > 0) successParts.push(`created ${createdCount} variables`);
+    if (updatedCount > 0) successParts.push(`updated ${updatedCount} variables`);
+    if (collectionsCreated > 0) successParts.push(`created ${collectionsCreated} collections`);
+    if (modesCreated > 0) successParts.push(`created ${modesCreated} modes`);
+    if (renamedCount > 0) successParts.push(`renamed ${renamedCount} collections/modes`);
+    
+    const successMessage = successParts.join(', ');
+    console.log(`Variable update completed successfully: ${successMessage}`);
+    
+    return { 
+      success: true,
+      created: createdCount,
+      updated: updatedCount,
+      collections: collectionsCreated,
+      modes: modesCreated,
+      renamed: renamedCount
+    };
   } catch (error) {
     console.error("Error updating variables:", error);
     return {
@@ -126,14 +279,46 @@ async function updateVariablesInMode(
   modeData: any,
   modeId: string,
   path: string,
-  currentPath: string = ''
-): Promise<{ updated: boolean, updatedCount: number, referenceErrors?: string[] }> {
+  currentPath: string = '',
+  collectionId?: string
+): Promise<{ updated: boolean, updatedCount: number, createdCount: number, referenceErrors?: string[] }> {
   let updated = false;
   let updatedCount = 0;
+  let createdCount = 0;
   const referenceErrors: string[] = [];
   
+  // Get all keys and sort them to maintain a consistent order
+  // Sort tokens to ensure that referenced tokens are processed first
+  const keys = Object.keys(modeData).sort((a, b) => {
+    // Helper function to check if a key is a reference token
+    const isReference = (key: string) => {
+      const val = modeData[key];
+      return val && 
+             typeof val === 'object' && 
+             val.$value !== undefined && 
+             typeof val.$value === 'string' &&
+             val.$value.startsWith('{') && 
+             val.$value.endsWith('}');
+    };
+    
+    // Handle nested paths - tokens with fewer nesting levels go first
+    const aDepth = a.split('/').length;
+    const bDepth = b.split('/').length;
+    
+    if (aDepth !== bDepth) return aDepth - bDepth;
+    
+    // If one is a reference and the other isn't, non-reference goes first
+    const aIsRef = isReference(a);
+    const bIsRef = isReference(b);
+    
+    if (aIsRef !== bIsRef) return aIsRef ? 1 : -1;
+    
+    // Default to alphabetical order
+    return a.localeCompare(b);
+  });
+  
   // Process each property in the mode data
-  for (const key in modeData) {
+  for (const key of keys) {
     const value = modeData[key];
     const newPath = currentPath ? `${currentPath}/${key}` : key;
     
@@ -141,52 +326,92 @@ async function updateVariablesInMode(
     if (value && typeof value === 'object' && value.$value !== undefined) {
       // Find the matching variable
       const variableName = newPath;
-      const variable = variables.find(v => v.name === variableName);
+      let variable = variables.find(v => v.name === variableName);
       
-      if (variable) {
-        // Update the variable value
-        try {
-          // Check if this is a reference value
-          const isReference = typeof value.$value === 'string' && 
-                              value.$value.startsWith('{') && 
-                              value.$value.endsWith('}');
-          
-          // Convert the value if needed
-          const processedValue = processValueForFigma(value.$value, value.$type);
-          
-          // Handle null values from unresolved references
-          if (processedValue === null && isReference) {
-            console.warn(`Could not resolve reference for variable ${variableName}: ${value.$value}`);
-            referenceErrors.push(`Could not resolve reference for ${variableName}: ${value.$value}`);
-            // Skip setting the value if reference can't be resolved
+      try {
+        // Check if this is a reference value
+        const isReference = typeof value.$value === 'string' && 
+                           value.$value.startsWith('{') && 
+                           value.$value.endsWith('}');
+        
+        // Convert the value if needed
+        const processedValue = processValueForFigma(value.$value, value.$type);
+        
+        // Handle null values from unresolved references
+        if (processedValue === null && isReference) {
+          console.warn(`Could not resolve reference for variable ${variableName}: ${value.$value}`);
+          referenceErrors.push(`Could not resolve reference for ${variableName}: ${value.$value}`);
+          // Skip setting the value if reference can't be resolved
+          continue;
+        }
+        
+        // If variable doesn't exist, create it
+        if (!variable) {
+          // Map DTCG type to Figma variable type
+          const figmaType = mapDTCGTypeToFigmaType(value.$type);
+          if (!figmaType) {
+            console.error(`Invalid variable type: ${value.$type}`);
+            referenceErrors.push(`Invalid variable type: ${value.$type}`);
             continue;
           }
           
-          // Update the variable value for this mode
-          await variable.setValueForMode(modeId, processedValue);
+          // Determine which collection ID to use
+          let targetCollectionId: string;
           
-          if (isReference) {
-            console.log(`Updated variable with reference: ${variableName} → ${value.$value}`);
+          if (collectionId) {
+            // Use the provided collection ID 
+            targetCollectionId = collectionId;
           } else {
-            console.log(`Updated variable: ${variableName}`);
+            // Extract the collection name from the path
+            const extractedCollectionName = path.split('.')[0]; 
+            
+            // Find the collection by name
+            const collections = figma.variables.getLocalVariableCollections();
+            const collection = collections.find(c => c.name.toLowerCase() === extractedCollectionName.toLowerCase());
+            
+            if (!collection) {
+              console.error(`Collection not found: ${extractedCollectionName}`);
+              referenceErrors.push(`Collection not found: ${extractedCollectionName}`);
+              continue;
+            }
+            
+            targetCollectionId = collection.id;
           }
           
-          updated = true;
-          updatedCount++;
-        } catch (error) {
-          console.error(`Error updating variable ${variableName}:`, error);
-          referenceErrors.push(`Error updating ${variableName}: ${error instanceof Error ? error.message : String(error)}`);
+          // Create the variable
+          console.log(`Creating new variable: ${variableName} of type ${figmaType}`);
+          variable = figma.variables.createVariable(variableName, targetCollectionId, figmaType);
+          
+          // Add to the variables array so we can find it later
+          variables.push(variable);
+          
+          // Increment creation counter (this is a new variable)
+          createdCount++;
         }
-      } else {
-        console.warn(`Variable not found: ${variableName}`);
+        
+        // Update the variable value for this mode
+        await variable.setValueForMode(modeId, processedValue);
+        
+        if (isReference) {
+          console.log(`${variable ? 'Updated' : 'Created'} variable with reference: ${variableName} → ${value.$value}`);
+        } else {
+          console.log(`${variable ? 'Updated' : 'Created'} variable: ${variableName}`);
+        }
+        
+        updated = true;
+        updatedCount++;
+      } catch (error) {
+        console.error(`Error updating/creating variable ${variableName}:`, error);
+        referenceErrors.push(`Error with ${variableName}: ${error instanceof Error ? error.message : String(error)}`);
       }
     } 
     // If this is a nested object (not a token)
     else if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Recursively process nested objects
-      const nestedResult = await updateVariablesInMode(variables, value, modeId, path, newPath);
+      const nestedResult = await updateVariablesInMode(variables, value, modeId, path, newPath, collectionId);
       updated = updated || nestedResult.updated;
       updatedCount += nestedResult.updatedCount;
+      createdCount += nestedResult.createdCount;
       
       // Collect any reference errors from nested calls
       if (nestedResult.referenceErrors && nestedResult.referenceErrors.length > 0) {
@@ -195,7 +420,7 @@ async function updateVariablesInMode(
     }
   }
   
-  return { updated, updatedCount, referenceErrors };
+  return { updated, updatedCount, createdCount, referenceErrors };
 }
 
 /**
@@ -354,6 +579,50 @@ function rgbStringToRGBA(rgb: string): { r: number, g: number, b: number, a: num
   } catch (error) {
     console.error(`Error parsing RGB color: ${rgb}`, error);
     return { r: 0, g: 0, b: 0, a: 1 }; // Default black on error
+  }
+}
+
+/**
+ * Maps DTCG token type to Figma variable type
+ * @param dtcgType DTCG token type
+ * @returns Figma variable type or null if no mapping exists
+ */
+function mapDTCGTypeToFigmaType(dtcgType: string): 'COLOR' | 'FLOAT' | 'STRING' | 'BOOLEAN' | null {
+  switch (dtcgType.toLowerCase()) {
+    case 'color':
+      return 'COLOR';
+    case 'number':
+    case 'dimension':
+    case 'spacing':
+    case 'borderWidth':
+    case 'borderRadius':
+    case 'fontWeight':
+    case 'lineHeight':
+    case 'fontSizes':
+    case 'size':
+    case 'opacity':
+      return 'FLOAT';
+    case 'string':
+    case 'fontFamily':
+    case 'fontStyle':
+    case 'textCase':
+    case 'textDecoration':
+    case 'duration':
+    case 'letterSpacing':
+      return 'STRING';
+    case 'boolean':
+      return 'BOOLEAN';
+    default:
+      // For unknown or custom types, make a best guess
+      if (dtcgType.includes('color')) {
+        return 'COLOR';
+      } else if (dtcgType.includes('size') || dtcgType.includes('width') || dtcgType.includes('height')) {
+        return 'FLOAT';
+      }
+      
+      // Default to string for unknown types
+      console.warn(`Unknown DTCG type "${dtcgType}" - defaulting to STRING`);
+      return 'STRING';
   }
 }
 

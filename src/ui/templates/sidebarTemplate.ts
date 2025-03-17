@@ -45,16 +45,8 @@ export function createSidebarTemplate(): string {
               <label for="color-hex">HEX (#ffffff)</label>
             </div>
             <div class="settings-option">
-              <input type="radio" id="color-rgb" name="color-format">
-              <label for="color-rgb">RGB (rgb(255, 255, 255))</label>
-            </div>
-            <div class="settings-option">
               <input type="radio" id="color-rgba" name="color-format">
               <label for="color-rgba">RGBA (rgba(255, 255, 255, 1))</label>
-            </div>
-            <div class="settings-option">
-              <input type="radio" id="color-hsl" name="color-format">
-              <label for="color-hsl">HSL (hsl(0deg, 0%, 100%))</label>
             </div>
             <div class="settings-option">
               <input type="radio" id="color-hsla" name="color-format">
