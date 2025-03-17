@@ -1,7 +1,7 @@
 /**
  * Main stylesheet entry point
  * Imports all component and layout styles
- * Updated to include the category navigation styles
+ * Updated to include the JSON viewer styles
  */
 
 /* Base styles */
@@ -24,7 +24,8 @@
 @import './components/statusIndicator.css';
 @import './components/jsonPreview.css';
 @import './components/actionButtons.css';
-@import './components/categoryNavigation.css'; /* Added new category navigation styles */
+@import './components/categoryNavigation.css';
+@import './components/jsonViewer.css'; /* Added JSON viewer styles */
 
 /* Add the import for reference tokens styles */
 /* @import './components/referenceTokens.css';*/
