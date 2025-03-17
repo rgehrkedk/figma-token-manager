@@ -1,5 +1,6 @@
 import { extractDTCGVariables } from './extractors/dtcgVariables';
 import { formatAllColors, ColorFormat } from './formatters/colorUtils';
+import { handleUpdateVariables } from './updateVariablesHandler'; // Import the update handler
 
 // Flag to track if we should extract on startup
 let shouldExtractOnStartup = true;
@@ -90,6 +91,28 @@ figma.ui.onmessage = async (msg) => {
           message: `Error applying color format: ${error instanceof Error ? error.message : "Unknown error"}`
         });
       }
+    }
+  } else if (msg.type === 'update-variables') {
+    // Handle variable update requests from UI
+    try {
+      console.log("Received update variables request");
+      
+      // Process the update
+      const result = await handleUpdateVariables(msg.data);
+      
+      // Send response back to UI
+      figma.ui.postMessage({
+        type: 'update-variables-result',
+        success: result.success,
+        error: result.error
+      });
+    } catch (error: unknown) {
+      console.error("Error handling variable update:", error);
+      figma.ui.postMessage({
+        type: 'update-variables-result',
+        success: false,
+        error: `Error handling variable update: ${error instanceof Error ? error.message : "Unknown error"}`
+      });
     }
   } else if (msg.type === 'close') {
     figma.closePlugin();

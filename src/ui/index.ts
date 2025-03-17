@@ -1,7 +1,6 @@
 /**
  * Figma Token Manager
- * Main UI entry point - Properly separated UI and functionality
- * Updated to include token category navigation
+ * Main UI entry point - Updated with JSON editor functionality
  */
 
 import './styles/index.css';
@@ -10,9 +9,11 @@ import './styles/index.css';
 import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarInterface, SidebarCallbacks } from './components/sidebarPanel';
 import { TokenData } from './reference/ReferenceResolver';
-import { createTokenGrid } from './components/TokenGrid'; // This now includes category navigation
+import { createTokenGrid } from './components/TokenGrid';
 import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 import { CollectionSelector } from './components/collectionSelector';
+import { createJsonEditor } from './components/JsonEditor'; // Import JSON editor
+import { updateFigmaVariables } from './utilities/updateFigmaVariables'; // Import update handler
 
 // Import reference handling utilities
 import { processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver';
@@ -36,6 +37,7 @@ let tokenData: any = null;
 let currentTokens: TokenData[] = [];
 let currentColorFormat = 'hex';
 let sidebarInterface: SidebarInterface | null = null;
+let jsonEditor: any = null; // Add JSON editor reference
 
 // Initialize components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -125,21 +127,97 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateJsonView(): void {
     if (!sidebarInterface) return;
     
-    const jsonContent = document.getElementById('json-content');
-    if (jsonContent && tokenData) {
-      const state = sidebarInterface.getState();
-      
-      // Filter data based on selected collection and mode
-      const filteredData = filterTokensByActiveCollection(
-        tokenData,
-        state.activeCollection,
-        state.selectedModes
-      );
-      
-      // Convert to formatted JSON
-      jsonContent.textContent = JSON.stringify(filteredData, null, 2);
+    const state = sidebarInterface.getState();
+    
+    // Filter data based on selected collection and mode
+    const filteredData = filterTokensByActiveCollection(
+      tokenData,
+      state.activeCollection,
+      state.selectedModes
+    );
+    
+    // Initialize or update JSON editor
+    if (!jsonEditor) {
+      // Create the JSON editor if it doesn't exist
+      jsonEditor = createJsonEditor({
+        containerId: 'json-view-container',
+        initialJson: filteredData,
+        onSave: saveJsonToFigma
+      });
+    } else {
+      // Update existing editor with new data
+      jsonEditor.setJson(filteredData);
     }
   }
+  
+  /**
+   * Save JSON data back to Figma variables
+   */
+/**
+ * Save JSON data back to Figma variables with improved feedback loop
+ */
+async function saveJsonToFigma(updatedJson: any): Promise<void> {
+  try {
+    console.log('Saving JSON to Figma variables:', updatedJson);
+    
+    // Show saving message
+    const messageArea = document.querySelector('.json-editor-message') as HTMLElement;
+    if (messageArea) {
+      messageArea.textContent = 'Saving changes to Figma variables...';
+      messageArea.className = 'json-editor-message pending';
+    }
+    
+    // Send the updated JSON to Figma
+    await updateFigmaVariables(updatedJson);
+    
+    // Show success message immediately, but don't wait for extraction
+    if (messageArea) {
+      messageArea.textContent = 'Variables updated successfully!';
+      messageArea.className = 'json-editor-message success';
+    }
+    
+    // Clear any existing timeout
+    if (window.extractionTimeout) {
+      clearTimeout(window.extractionTimeout);
+    }
+    
+    // Add a timeout to ensure we can cancel it if needed
+    window.extractionTimeout = setTimeout(() => {
+      // Request fresh extraction to refresh data
+      console.log('Requesting token extraction after save...');
+      
+      // Show extracting message
+      if (messageArea) {
+        messageArea.textContent = 'Refreshing token data...';
+        messageArea.className = 'json-editor-message pending';
+      }
+      
+      // Reset the timeout variable
+      window.extractionTimeout = null;
+      
+      // Request the extraction
+      requestTokenExtraction();
+      
+      // Set a failsafe timeout to clear the message if extraction doesn't complete
+      setTimeout(() => {
+        if (messageArea && messageArea.textContent === 'Refreshing token data...') {
+          messageArea.textContent = 'Variables updated successfully!';
+          messageArea.className = 'json-editor-message success';
+        }
+      }, 5000); // 5 second timeout
+      
+    }, 1000); // Wait 1 second before extraction
+  } catch (error) {
+    console.error('Error saving JSON to Figma:', error);
+    
+    // Show error message
+    const messageArea = document.querySelector('.json-editor-message') as HTMLElement;
+    if (messageArea) {
+      messageArea.textContent = `Error updating variables: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      messageArea.className = 'json-editor-message error';
+    }
+  }
+}
   
   /**
    * Show token details in the panel
@@ -203,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store current tokens
     currentTokens = allTokens;
     
-    // Update token grid with filtered tokens - this now includes category organization
+    // Update token grid with filtered tokens
     tokenGridInterface.update(allTokens);
     
     // Update JSON view if it's active
@@ -310,17 +388,50 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Message from plugin:', message.type);
     
     switch (message.type) {
-      case 'tokens-data':
-        // Store the original token data
-        tokenData = message.data;
+/**
+ * Handle tokens-data messages with improved feedback for JSON editor
+ */
+case 'tokens-data':
+  // Store the original token data
+  tokenData = message.data;
+  
+  // Update sidebar with new token data
+  if (sidebarInterface) {
+    sidebarInterface.updateTokenData(tokenData);
+  }
+  
+  // Filter and display tokens
+  filterAndDisplayTokens();
+  
+  // Update message in JSON editor if we're in a refresh after save operation
+  const messageArea = document.querySelector('.json-editor-message') as HTMLElement;
+  if (messageArea && messageArea.textContent === 'Refreshing token data...') {
+    messageArea.textContent = 'Variables updated and data refreshed successfully!';
+    messageArea.className = 'json-editor-message success';
+  }
+  break;
         
-        // Update sidebar with new token data
-        if (sidebarInterface) {
-          sidebarInterface.updateTokenData(tokenData);
+      case 'update-variables-result':
+        // Handle update variables result
+        if (message.success) {
+          console.log('Variables updated successfully');
+          
+          // Show success message if we have the message area
+          const messageArea = document.querySelector('.json-editor-message');
+          if (messageArea) {
+            messageArea.textContent = 'Variables updated successfully!';
+            (messageArea as HTMLElement).className = 'json-editor-message success';
+          }
+        } else {
+          console.error('Error updating variables:', message.error);
+          
+          // Show error message if we have the message area
+          const messageArea = document.querySelector('.json-editor-message');
+          if (messageArea) {
+            messageArea.textContent = `Error: ${message.error || 'Unknown error updating variables'}`;
+            (messageArea as HTMLElement).className = 'json-editor-message error';
+          }
         }
-        
-        // Filter and display tokens
-        filterAndDisplayTokens();
         break;
         
       case 'error':
