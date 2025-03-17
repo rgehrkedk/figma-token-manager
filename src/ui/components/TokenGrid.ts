@@ -1,12 +1,13 @@
 /**
- * TokenGrid.ts
+ * Updated TokenGrid.ts
  * 
- * A simplified grid component that displays tokens organized by type,
- * using the new TokenCard component for rendering individual tokens.
+ * Enhanced version of the token grid component that includes
+ * category-based navigation and organization.
  */
 
 import { TokenData } from "../reference/ReferenceResolver";
 import { createTokenCard } from "./TokenCard";
+import { setupCategoryNavigation } from "./TokenCategoryNavigation";
 
 export interface TokenGridProps {
   tokens: TokenData[];
@@ -14,7 +15,7 @@ export interface TokenGridProps {
 }
 
 /**
- * Creates a token grid component
+ * Creates a token grid component with category navigation
  */
 export function createTokenGrid(props: TokenGridProps): {
   element: HTMLElement;
@@ -39,48 +40,17 @@ export function createTokenGrid(props: TokenGridProps): {
       gridContainer.appendChild(emptyState);
       return;
     }
-    
-    // Group tokens by type
-    const tokensByType: { [type: string]: TokenData[] } = {};
-    
-    tokensToRender.forEach(token => {
-      if (!tokensByType[token.type]) {
-        tokensByType[token.type] = [];
-      }
-      tokensByType[token.type].push(token);
-    });
-    
-    // Create a section for each token type
-    Object.keys(tokensByType).sort().forEach(type => {
-      const typeTokens = tokensByType[type];
-      
-      // Create type section
-      const typeSection = document.createElement('div');
-      typeSection.className = 'token-type-section';
-      typeSection.dataset.type = type;
-      
-      // Add section header
-      const sectionHeader = document.createElement('h3');
-      sectionHeader.className = 'token-type-header';
-      sectionHeader.textContent = formatTokenType(type);
-      typeSection.appendChild(sectionHeader);
-      
-      // Create grid for this section
-      const tokenGrid = document.createElement('div');
-      tokenGrid.className = 'token-grid';
-      
-      // Add tokens to grid
-      typeTokens.forEach(token => {
-        const tokenCard = createTokenCard({
-          token,
-          onClick: onTokenClick  // This passes the click handler to each card
-        });
-        tokenGrid.appendChild(tokenCard);
-      });
-      
-      typeSection.appendChild(tokenGrid);
-      gridContainer.appendChild(typeSection);
-    });
+
+    // Set up category navigation
+    setupCategoryNavigation(
+      gridContainer,
+      tokensToRender,
+      (token) => createTokenCard({
+        token,
+        onClick: onTokenClick
+      }),
+      onTokenClick
+    );
   };
   
   // Initial render
@@ -93,27 +63,4 @@ export function createTokenGrid(props: TokenGridProps): {
       renderTokens(newTokens);
     }
   };
-}
-
-/**
- * Format token type for display
- */
-function formatTokenType(type: string): string {
-  // Handle special cases
-  switch (type) {
-    case 'color': return 'Colors';
-    case 'fontSize': return 'Font Sizes';
-    case 'fontFamily': return 'Font Families';
-    case 'fontWeight': return 'Font Weights';
-    case 'lineHeight': return 'Line Heights';
-    case 'letterSpacing': return 'Letter Spacing';
-    case 'boxShadow': return 'Box Shadows';
-    case 'borderRadius': return 'Border Radius';
-    default:
-      // Convert camelCase to Title Case
-      return type
-        .replace(/([A-Z])/g, ' $1') // Insert a space before all caps
-        .replace(/^./, str => str.toUpperCase()) // Uppercase the first character
-        + 's'; // Add plural
-  }
 }

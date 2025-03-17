@@ -1,0 +1,74 @@
+/**
+ * Category Navigation Styles
+ * Styles for token category navigation and sections
+ */
+
+/* Navigation bar */
+.category-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-gray-300);
+    position: sticky;
+    top: 0;
+    background-color: var(--color-gray-100);
+    z-index: 10;
+  }
+  
+  .category-link {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 16px;
+    background-color: var(--color-white);
+    color: var(--color-gray-700);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid var(--color-gray-300);
+    transition: all 0.2s ease;
+  }
+  
+  .category-link:hover {
+    background-color: var(--color-primary-50);
+    color: var(--color-primary);
+    border-color: var(--color-primary-light);
+  }
+  
+  .category-link:active {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+  }
+  
+  /* Category sections */
+  .token-categories-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .token-category-section {
+    scroll-margin-top: 60px; /* Ensure anchor links scroll below the navigation */
+  }
+  
+  .token-category-heading {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-primary-light);
+  }
+  
+  /* Make sure the token grid maintains its existing styles */
+  .token-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+  }
+  
+  /* Smooth scrolling for anchor navigation */
+  html {
+    scroll-behavior: smooth;
+  }

@@ -1,7 +1,7 @@
 /**
  * Main stylesheet entry point
  * Imports all component and layout styles
- * Updated to include the consolidated collectionSelector.css
+ * Updated to include the category navigation styles
  */
 
 /* Base styles */
@@ -20,10 +20,11 @@
 @import './components/toggle.css';
 @import './components/diagnostics.css';
 @import './components/forms.css';
-@import './components/collectionSelector.css'; /* Consolidated collection styles */
+@import './components/collectionSelector.css';
 @import './components/statusIndicator.css';
 @import './components/jsonPreview.css';
 @import './components/actionButtons.css';
+@import './components/categoryNavigation.css'; /* Added new category navigation styles */
 
 /* Add the import for reference tokens styles */
 /* @import './components/referenceTokens.css';*/

@@ -1,7 +1,7 @@
 /**
  * Figma Token Manager
  * Main UI entry point - Properly separated UI and functionality
- * Fixed to handle type compatibility
+ * Updated to include token category navigation
  */
 
 import './styles/index.css';
@@ -10,7 +10,7 @@ import './styles/index.css';
 import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarInterface, SidebarCallbacks } from './components/sidebarPanel';
 import { TokenData } from './reference/ReferenceResolver';
-import { createTokenGrid } from './components/TokenGrid';
+import { createTokenGrid } from './components/TokenGrid'; // This now includes category navigation
 import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 import { CollectionSelector } from './components/collectionSelector';
 
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   sidebarInterface = setupSidebarPanel('sidebar-container', sidebarCallbacks);
   
-  // 3. Setup token grid
+  // 3. Setup token grid - The updated createTokenGrid now handles category organization
   const tokenGridInterface = createTokenGrid({
     tokens: [],
     onTokenClick: (token) => {
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store current tokens
     currentTokens = allTokens;
     
-    // Update token grid with filtered tokens
+    // Update token grid with filtered tokens - this now includes category organization
     tokenGridInterface.update(allTokens);
     
     // Update JSON view if it's active
