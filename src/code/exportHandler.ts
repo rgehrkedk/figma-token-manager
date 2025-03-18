@@ -2,16 +2,18 @@
  * exportHandler.ts
  * 
  * Handles exporting token data to various formats, including generating 
- * separate JSON files for each collection and mode
+ * separate JSON files for each collection and mode with enhanced selection options
  */
 
 import JSZip from 'jszip';
 
 interface ExportOptions {
-  separateByMode?: boolean;
-  separateByCollection?: boolean;
+  format?: 'dtcg' | 'legacy';
   flattenStructure?: boolean;
+  includeCompleteFile?: boolean;
   includeMetadata?: boolean;
+  selectedCollections?: Record<string, boolean>;
+  selectedModes?: Record<string, Record<string, boolean>>;
 }
 
 /**
@@ -24,14 +26,24 @@ interface ExportOptions {
 export async function exportVariablesToZip(
   tokenData: any, 
   options: ExportOptions = { 
-    separateByMode: true, 
-    separateByCollection: true,
+    format: 'dtcg',
     flattenStructure: false,
-    includeMetadata: true
+    includeCompleteFile: true,
+    includeMetadata: true,
+    selectedCollections: {},
+    selectedModes: {}
   }
 ): Promise<void> {
   try {
-    console.log('Starting export');
+    // Log detailed export options
+    console.log('Starting export with options:', {
+      format: options.format,
+      flattenStructure: Boolean(options.flattenStructure),
+      includeCompleteFile: Boolean(options.includeCompleteFile),
+      includeMetadata: Boolean(options.includeMetadata),
+      selectedCollections: options.selectedCollections,
+      selectedModes: options.selectedModes
+    });
     
     // Get document name to use in filenames
     const documentName = figma.root.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -45,44 +57,90 @@ export async function exportVariablesToZip(
         exportDate: new Date().toISOString(),
         documentName: figma.root.name,
         documentId: figma.root.id,
-        pluginVersion: '1.0.0' // Replace with actual version
+        pluginVersion: '1.0.0', // Replace with actual version
+        exportOptions: {
+          format: options.format,
+          flattenStructure: options.flattenStructure,
+          selectedCollections: Object.keys(options.selectedCollections || {})
+            .filter(coll => options.selectedCollections?.[coll])
+        }
       };
       
       zip.file('metadata.json', JSON.stringify(metadata, null, 2));
     }
     
-    // Create index file with all tokens
-    zip.file('tokens.json', JSON.stringify(tokenData, null, 2));
+    // Create filtered token data with only selected collections and modes
+    const filteredTokenData: any = {};
     
-    // Process each collection and mode
     Object.entries(tokenData).forEach(([collectionName, collectionData]: [string, any]) => {
+      // Skip if collection is not selected
+      if (options.selectedCollections && !options.selectedCollections[collectionName]) {
+        return;
+      }
+      
+      // Create an object for this collection
+      filteredTokenData[collectionName] = {};
+      
+      // Add selected modes
+      Object.entries(collectionData as object).forEach(([modeName, modeData]: [string, any]) => {
+        // Skip if mode is not selected
+        if (
+          options.selectedModes && 
+          options.selectedModes[collectionName] && 
+          !options.selectedModes[collectionName][modeName]
+        ) {
+          return;
+        }
+        
+        // Add this mode to the filtered data
+        filteredTokenData[collectionName][modeName] = modeData;
+      });
+      
+      // Remove collection if it has no modes
+      if (Object.keys(filteredTokenData[collectionName]).length === 0) {
+        delete filteredTokenData[collectionName];
+      }
+    });
+    
+    // Create index file with all selected tokens if requested
+    if (options.includeCompleteFile) {
+      zip.file('tokens.json', JSON.stringify(filteredTokenData, null, 2));
+    }
+    
+    // Process each selected collection and mode
+    Object.entries(filteredTokenData).forEach(([collectionName, collectionData]: [string, any]) => {
       // Clean up the collection name for filenames
       const safeCollectionName = sanitizeFileName(collectionName);
       
       // Create a separate file for each collection
-      if (options.separateByCollection) {
-        zip.file(`${safeCollectionName}.json`, JSON.stringify({ [collectionName]: collectionData }, null, 2));
-      }
+      zip.file(`${safeCollectionName}.json`, JSON.stringify({ [collectionName]: collectionData }, null, 2));
       
       // Create a separate file for each mode in each collection
-      if (options.separateByMode) {
-        Object.entries(collectionData).forEach(([modeName, modeData]: [string, any]) => {
-          // Clean up the mode name for filenames
-          const safeModeName = sanitizeFileName(modeName);
-          
-          // Create filename based on collection and mode
+      Object.entries(collectionData).forEach(([modeName, modeData]: [string, any]) => {
+        // Clean up the mode name for filenames
+        const safeModeName = sanitizeFileName(modeName);
+        
+        // Format the data based on the selected format
+        let formattedData = modeData;
+        if (options.format === 'legacy') {
+          // Transform to legacy format if needed
+          console.log(`Applying legacy format for ${collectionName}/${modeName}`);
+          formattedData = transformToLegacyFormat(modeData);
+        }
+        
+        // Create filename based on collection and mode
+        if (options.flattenStructure === true) {
+          // Use flat structure
+          console.log(`Using flat structure for ${collectionName}/${modeName}`);
+          const flatFilename = `${safeCollectionName}_${safeModeName}.json`;
+          zip.file(flatFilename, JSON.stringify(formattedData, null, 2));
+        } else {
+          // Use nested structure
+          console.log(`Using nested structure for ${collectionName}/${modeName}`);
           const filename = `${safeCollectionName}/${safeModeName}.json`;
-          
-          // Add to zip with nested structure
-          zip.file(filename, JSON.stringify(modeData, null, 2));
-          
-          // If we need a flattened structure, also add a file with a combined name
-          if (options.flattenStructure) {
-            const flatFilename = `${safeCollectionName}_${safeModeName}.json`;
-            zip.file(flatFilename, JSON.stringify(modeData, null, 2));
-          }
-        });
-      }
+          zip.file(filename, JSON.stringify(formattedData, null, 2));
+        }
+      });
     });
     
     // Generate the zip file as a Uint8Array (compatible with Figma)
@@ -100,6 +158,45 @@ export async function exportVariablesToZip(
     console.error('Error exporting to zip:', error);
     throw error;
   }
+}
+
+/**
+ * Transform data to legacy format if needed
+ * 
+ * @param data Token data in DTCG format
+ * @returns Data in legacy format
+ */
+function transformToLegacyFormat(data: any): any {
+  console.log('Transforming to legacy format:', data);
+  
+  // Create a result object
+  const result: any = {};
+  
+  // DTCG format is typically nested objects with $value and $type
+  // Legacy format typically has direct key-value pairs
+  // We'll flatten the structure by taking just the $value property
+  
+  if (typeof data !== 'object' || data === null) {
+    return data;
+  }
+  
+  // Process each property in the data
+  Object.entries(data).forEach(([key, value]: [string, any]) => {
+    if (typeof value === 'object' && value !== null) {
+      if ('$value' in value && '$type' in value) {
+        // This is a DTCG token, convert to legacy format
+        result[key] = value.$value;
+      } else {
+        // This is a nested structure, recursively transform
+        result[key] = transformToLegacyFormat(value);
+      }
+    } else {
+      // This is already a primitive value
+      result[key] = value;
+    }
+  });
+  
+  return result;
 }
 
 /**

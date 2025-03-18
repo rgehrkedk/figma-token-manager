@@ -35,7 +35,7 @@ export function createSectionTitleTemplate(): string {
       const modeOptions = modes.map(mode => {
         const isActive = mode === selectedMode;
         return `
-          <div class="mode-option ${isActive ? 'active' : ''}" 
+          <div class="mode-chip ${isActive ? 'active' : ''}" 
                data-collection="${collection}" 
                data-mode="${mode}">
             ${mode}
@@ -44,15 +44,15 @@ export function createSectionTitleTemplate(): string {
       }).join('');
       
       modesToggleHtml = `
-        <div class="modes-toggle" data-collection="${collection}">
+        <div class="modes-container" data-collection="${collection}">
           ${modeOptions}
         </div>
       `;
     } else if (modes.length === 1) {
-      // Single mode - we don't show the toggle
+      // Single mode - just show it as selected
       modesToggleHtml = `
-        <div class="modes-toggle single-mode" data-collection="${collection}">
-          <div class="mode-option active" 
+        <div class="modes-container single-mode" data-collection="${collection}">
+          <div class="mode-chip active" 
                data-collection="${collection}" 
                data-mode="${modes[0]}">
             ${modes[0]}
@@ -63,11 +63,18 @@ export function createSectionTitleTemplate(): string {
   
     return `
       <div class="collection-card ${isActive ? 'active' : ''}" data-collection="${collection}">
-        <div class="collection-header">
-          <div class="collection-name">${collection}</div>
-          <div class="collection-count">${tokenCount} tokens</div>
+        <div class="collection-content">
+          <div class="collection-header">
+            <div class="collection-name">${collection}</div>
+            <div class="collection-count">${tokenCount} tokens</div>
+          </div>
+          ${modesToggleHtml}
         </div>
-        ${modesToggleHtml}
+        <div class="collection-click-indicator">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
       </div>
     `;
   }

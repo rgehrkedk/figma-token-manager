@@ -14,6 +14,7 @@ import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 import { CollectionSelector } from './components/collectionSelector';
 import { updateJsonViewer, setupJsonEditorPanel, getJsonFromViewer } from './components/jsonViewIntegration';
 import { updateFigmaVariables } from './utilities/updateFigmaVariables'; // Import update handler
+import { showExportDialog, ExportOptions } from './components/exportDialog'; // Import export dialog
 
 // Import reference handling utilities
 import { processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver';
@@ -360,29 +361,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   /**
-   * Export tokens
+   * Export tokens - Shows the export dialog
    */
   function exportTokens(): void {
-    if (!sidebarInterface) return;
+    if (!tokenData || !sidebarInterface) return;
     
-    const state = sidebarInterface.getState();
-    
-    // Get export options from state
-    const exportFormat = state.exportFormat;
-    const separateFiles = state.separateFiles;
-    const flatStructure = state.flatStructure;
-    
-    // Send message to plugin to export tokens
-    parent.postMessage({ 
-      pluginMessage: { 
-        type: 'export-tokens',
-        options: {
-          format: exportFormat,
-          separateFiles,
-          flatStructure
-        }
-      } 
-    }, '*');
+    // Show the export dialog directly
+    showExportDialog({
+      tokenData,
+      onExport: (exportOptions: ExportOptions) => {
+        console.log('Export options:', exportOptions);
+        
+        // Send message to plugin to export tokens
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'export-tokens',
+            options: exportOptions
+          } 
+        }, '*');
+      },
+      onCancel: () => {
+        console.log('Export cancelled');
+      }
+    });
   }
   
   // Notify the plugin that the UI is ready

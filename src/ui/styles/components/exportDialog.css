@@ -1,0 +1,181 @@
+/* Export Dialog Styles */
+
+.export-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.export-dialog {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 500px;
+  max-width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.export-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.export-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.export-dialog-content {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.export-dialog-section {
+  margin-bottom: 24px;
+}
+
+.export-dialog-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.export-dialog-section h4 {
+  margin: 16px 0 8px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.export-dialog-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+}
+
+.export-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.export-item:last-child {
+  border-bottom: none;
+}
+
+.collection-item {
+  background-color: #f7f7f7;
+}
+
+.modes-container {
+  margin-left: 24px;
+}
+
+.mode-item {
+  background-color: white;
+}
+
+.export-checkbox-container {
+  display: flex;
+  align-items: center;
+}
+
+.export-label {
+  margin-left: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.export-options {
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.export-option {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.export-option:last-child {
+  margin-bottom: 0;
+}
+
+.export-option input[type="checkbox"],
+.export-option input[type="radio"] {
+  margin-right: 8px;
+}
+
+.export-format-options {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.export-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid #e6e6e6;
+  gap: 12px;
+}
+
+.primary-button {
+  background-color: #0d99ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background-color: #0087ee;
+}
+
+.secondary-button {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background-color: #e9e9e9;
+}

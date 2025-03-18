@@ -124,7 +124,7 @@ figma.ui.onmessage = async (msg) => {
     }
   } else if (msg.type === 'export-tokens') {
     try {
-      console.log("Received export tokens request");
+      console.log("Received export tokens request with options:", msg.options);
       
       // If we don't have token data, extract it first
       if (!originalTokenData) {
@@ -137,8 +137,23 @@ figma.ui.onmessage = async (msg) => {
         currentColorFormat
       );
       
+      // Log received options
+      console.log('Export options received:', {
+        format: msg.options.format,
+        flattenStructure: Boolean(msg.options.flattenStructure),
+        includeCompleteFile: Boolean(msg.options.includeCompleteFile)
+      });
+      
       // Generate and download a zip file with exported tokens
-      await exportVariablesToZip(dataToExport);
+      // Now passing the user-selected options from the export dialog
+      await exportVariablesToZip(dataToExport, {
+        format: msg.options.format === 'legacy' ? 'legacy' : 'dtcg',
+        flattenStructure: Boolean(msg.options.flattenStructure),
+        includeCompleteFile: Boolean(msg.options.includeCompleteFile),
+        includeMetadata: true,
+        selectedCollections: msg.options.selectedCollections || {},
+        selectedModes: msg.options.selectedModes || {}
+      });
       
       // Notify UI that export completed successfully
       figma.ui.postMessage({

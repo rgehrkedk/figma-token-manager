@@ -177,8 +177,8 @@ import {
       const collectionCards = this.containerEl.querySelectorAll('.collection-card');
       collectionCards.forEach(card => {
         card.addEventListener('click', (e) => {
-          // Don't handle clicks on mode options here
-          if ((e.target as HTMLElement).classList.contains('mode-option')) {
+          // Don't handle clicks on mode chips here
+          if ((e.target as HTMLElement).classList.contains('mode-chip')) {
             return;
           }
           
@@ -189,14 +189,14 @@ import {
         });
       });
       
-      // Mode option click events
-      const modeOptions = this.containerEl.querySelectorAll('.mode-option');
-      modeOptions.forEach(option => {
-        option.addEventListener('click', (e) => {
+      // Mode chip click events
+      const modeChips = this.containerEl.querySelectorAll('.mode-chip');
+      modeChips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
           e.stopPropagation(); // Don't trigger collection card click
           
-          const collection = option.getAttribute('data-collection');
-          const mode = option.getAttribute('data-mode');
+          const collection = chip.getAttribute('data-collection');
+          const mode = chip.getAttribute('data-mode');
           
           if (collection && mode) {
             this.selectMode(collection, mode);
@@ -246,15 +246,15 @@ import {
       this.selectionState.selectedModes.set(collectionId, mode);
       
       // Update UI - deactivate all modes for this collection and activate the selected one
-      const modeOptions = this.containerEl.querySelectorAll(
-        `.mode-option[data-collection="${collectionId}"]`
+      const modeChips = this.containerEl.querySelectorAll(
+        `.mode-chip[data-collection="${collectionId}"]`
       );
       
-      modeOptions.forEach(option => {
-        option.classList.remove('active');
+      modeChips.forEach(chip => {
+        chip.classList.remove('active');
         
-        if (option.getAttribute('data-mode') === mode) {
-          option.classList.add('active');
+        if (chip.getAttribute('data-mode') === mode) {
+          chip.classList.add('active');
         }
       });
       
