@@ -25,8 +25,10 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     // Get all collections in the document
     const collections = await figma.variables.getLocalVariableCollections();
     
-    // Flag to track if we've processed anything
-    let updatedAnyVariables = false;
+    // Get all variables in the document
+    const allVariables = figma.variables.getLocalVariables();
+    
+    // Tracking metrics
     let createdCount = 0;
     let updatedCount = 0;
     let collectionsCreated = 0;
@@ -34,321 +36,133 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     let renamedCount = 0;
     let deletedCount = 0;
     
-    // Track reference resolution errors
-    const referenceErrors: string[] = [];
-    const creationErrors: string[] = [];
+    // Track warnings and errors
+    const warnings: string[] = [];
     
-    // Track which variables we'll keep (from the JSON)
-    const variablesToKeep = new Set<string>();
+    // Build a comprehensive map of all existing variables
+    // This will be used for quick lookups during the update process
+    const variableMap = new Map<string, Variable>();
     
-    // Get collection names and preserve their order
-    const collectionNames = Object.keys(jsonData);
+    // Map variable IDs to names for reference resolution
+    const variableIdToNameMap = new Map<string, string>();
     
-    // Keep track of the original collection and mode names before any changes
-    // This helps us detect renames
-    const originalCollectionNames = collections.map(c => c.name.toLowerCase());
-    const collectionModeMap = new Map<string, Set<string>>();
+    // Create variable maps for quick lookup
+    allVariables.forEach(variable => {
+      variableMap.set(variable.name.toLowerCase(), variable);
+      variableIdToNameMap.set(variable.id, variable.name);
+    });
     
-    // Build a map of existing modes for each collection
+    // Create a map of collection name to collection ID
+    const collectionNameToIdMap = new Map<string, string>();
     collections.forEach(collection => {
-      const modes = new Set<string>();
+      collectionNameToIdMap.set(collection.name.toLowerCase(), collection.id);
+    });
+    
+    // Create a map of all modes in each collection
+    const collectionModesMap = new Map<string, Map<string, string>>();
+    collections.forEach(collection => {
+      const modesMap = new Map<string, string>();
       collection.modes.forEach(mode => {
-        modes.add(mode.name.toLowerCase());
+        modesMap.set(mode.name.toLowerCase(), mode.modeId);
       });
-      collectionModeMap.set(collection.name.toLowerCase(), modes);
+      collectionModesMap.set(collection.id, modesMap);
     });
     
-    // Collection variables and groups map
-    const variablesMap = new Map<string, Map<string, Set<string>>>();
+    // Extract all variables from the JSON data
+    // This helps us identify what should exist in the final state
+    const jsonVariables = extractVariablesFromJson(jsonData);
     
-    // First, build a map of all variables in each collection
-    // This helps us organize variables by collection and group
-    for (const collection of collections) {
-      const collectionVars = figma.variables.getLocalVariables().filter(
-        v => v.variableCollectionId === collection.id
-      );
-      
-      const groupsMap = new Map<string, Set<string>>();
-      
-      for (const variable of collectionVars) {
-        // Extract group path from variable name
-        const parts = variable.name.split('/');
-        // Variable is directly in collection (no group)
-        if (parts.length === 1) {
-          if (!groupsMap.has('')) {
-            groupsMap.set('', new Set());
-          }
-          groupsMap.get('')?.add(variable.name);
-        } 
-        // Variable is in a group
-        else {
-          const groupPath = parts.slice(0, parts.length - 1).join('/');
-          const variableName = variable.name;
-          if (!groupsMap.has(groupPath)) {
-            groupsMap.set(groupPath, new Set());
-          }
-          groupsMap.get(groupPath)?.add(variableName);
-        }
-      }
-      
-      variablesMap.set(collection.name.toLowerCase(), groupsMap);
-    }
+    // First Phase: Process Collections and Modes
+    // We need to ensure all collections and modes exist before processing variables
+    const collectionProcessingResult = await processCollectionsAndModes(
+      jsonData, 
+      collections, 
+      collectionModesMap
+    );
     
-    // Process each collection in the JSON data in order
-    for (const collectionName of collectionNames) {
-      console.log(`Processing collection: ${collectionName}`);
-      
-      // Find the matching collection in Figma
-      let collection = collections.find(c => c.name.toLowerCase() === collectionName.toLowerCase());
-      
-      // If collection doesn't exist, check if it's a renamed collection
-      if (!collection) {
-        // Check for a collection that should be renamed
-        // Look at all collections that haven't been processed yet
-        const processedCollections = new Set();
-        const unmatchedFigmaCollections = collections.filter(c => 
-          !collectionNames.some(jsonCollection => 
-            jsonCollection.toLowerCase() === c.name.toLowerCase()
-          ) && !processedCollections.has(c.name.toLowerCase())
-        );
-        
-        if (unmatchedFigmaCollections.length > 0) {
-          // Find the first unprocessed collection to rename
-          const oldCollection = unmatchedFigmaCollections[0];
-          console.log(`Renaming collection: ${oldCollection.name} to ${collectionName}`);
-          
-          try {
-            // Rename the collection
-            oldCollection.name = collectionName;
-            collection = oldCollection;
-            renamedCount++;
-            
-            // Mark this collection as processed so we don't use it again
-            processedCollections.add(oldCollection.name.toLowerCase());
-            processedCollections.add(collectionName.toLowerCase());
-            
-            // Update our variables map with the new collection name
-            if (variablesMap.has(oldCollection.name.toLowerCase())) {
-              const groupsMap = variablesMap.get(oldCollection.name.toLowerCase());
-              if (groupsMap) {
-                variablesMap.delete(oldCollection.name.toLowerCase());
-                variablesMap.set(collectionName.toLowerCase(), groupsMap);
-              }
-            }
-          } catch (error) {
-            console.error(`Error renaming collection ${oldCollection.name} to ${collectionName}:`, error);
-            creationErrors.push(`Error renaming collection: ${error instanceof Error ? error.message : String(error)}`);
-          }
-        }
-        
-        // If still no collection (not a rename), create it
-        if (!collection) {
-          console.log(`Creating new collection: ${collectionName}`);
-          
-          try {
-            collection = figma.variables.createVariableCollection(collectionName);
-            collectionsCreated++;
-            
-            // Create an empty groups map for this collection
-            variablesMap.set(collectionName.toLowerCase(), new Map());
-            
-            // If this is the first collection, refresh the list
-            if (collectionsCreated === 1) {
-              // Refresh collections list
-              collections.push(collection);
-            }
-          } catch (error) {
-            console.error(`Error creating collection ${collectionName}:`, error);
-            creationErrors.push(`Error creating collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`);
-            continue;
-          }
-        }
-      }
-      
-      // Get variables for this collection
-      const variables = figma.variables.getLocalVariables().filter(
-        v => v.variableCollectionId === collection.id
-      );
-      
-      // Get the JSON data for this collection
-      const collectionData = jsonData[collectionName];
-      
-      // Get mode names and preserve their order
-      const modeNames = Object.keys(collectionData);
-      
-      // Process each mode in the collection in order
-      for (const modeName of modeNames) {
-        console.log(`Processing mode: ${modeName}`);
-        
-        // Find the matching mode in the collection
-        let mode = collection.modes.find(m => m.name.toLowerCase() === modeName.toLowerCase());
-        
-        // If mode doesn't exist, check if it's a renamed mode
-        if (!mode) {
-          // Get the existing modes in this collection
-          const existingModes = collection.modes;
-          
-          // Track processed modes to avoid duplicates
-          const processedModes = new Set();
-          
-          // Find modes in Figma that haven't been processed and don't match any mode in JSON
-          const unmatchedFigmaModes = existingModes.filter(m => 
-            !modeNames.some(jsonMode => 
-              jsonMode.toLowerCase() === m.name.toLowerCase()
-            ) && !processedModes.has(m.name.toLowerCase())
-          );
-          
-          // If there are unmatched modes, rename the first one
-          if (unmatchedFigmaModes.length > 0) {
-            const oldMode = unmatchedFigmaModes[0];
-            console.log(`Renaming mode: ${oldMode.name} to ${modeName}`);
-            
-            try {
-              // Rename the mode
-              collection.renameMode(oldMode.modeId, modeName);
-              mode = collection.modes.find(m => m.modeId === oldMode.modeId);
-              renamedCount++;
-              
-              // Mark as processed
-              processedModes.add(oldMode.name.toLowerCase());
-              processedModes.add(modeName.toLowerCase());
-            } catch (error) {
-              console.error(`Error renaming mode ${oldMode.name} to ${modeName}:`, error);
-              creationErrors.push(`Error renaming mode: ${error instanceof Error ? error.message : String(error)}`);
-            }
-          }
-          
-          // If still no mode (not a rename), create it
-          if (!mode) {
-            console.log(`Creating new mode: ${modeName} in collection ${collectionName}`);
-            
-            try {
-              // Add the mode to the collection
-              const modeId = collection.addMode(modeName);
-              modesCreated++;
-              
-              // Use the new mode
-              mode = collection.modes.find(m => m.modeId === modeId);
-              
-              if (!mode) {
-                throw new Error(`Failed to find newly created mode: ${modeName}`);
-              }
-            } catch (error) {
-              console.error(`Error creating mode ${modeName} in collection ${collectionName}:`, error);
-              creationErrors.push(`Error creating mode ${modeName}: ${error instanceof Error ? error.message : String(error)}`);
-              continue;
-            }
-          }
-        }
-        
-        // Get the JSON data for this mode
-        const modeData = collectionData[modeName];
-        
-        // Process variables in this mode
-        const updateResult = await updateVariablesInMode(
-          variables, 
-          modeData, 
-          mode.modeId, 
-          `${collectionName}.${modeName}`,
-          collection.id,  // Pass the collection ID for variable creation
-          variablesMap.get(collectionName.toLowerCase()) // Pass the groups map
-        );
-        
-        updatedAnyVariables = updatedAnyVariables || updateResult.updated;
-        updatedCount += updateResult.updatedCount || 0;
-        createdCount += updateResult.createdCount || 0;
-        
-        // Collect reference errors
-        if (updateResult.referenceErrors && updateResult.referenceErrors.length > 0) {
-          referenceErrors.push(...updateResult.referenceErrors);
-        }
-        
-        // No need to collect additional IDs anymore
-      }
-    }
+    // Update our metrics
+    collectionsCreated += collectionProcessingResult.collectionsCreated;
+    modesCreated += collectionProcessingResult.modesCreated;
+    renamedCount += collectionProcessingResult.renamedCount;
+    warnings.push(...collectionProcessingResult.warnings);
     
-    // Collect all variable paths that exist in the final JSON
-    const variablePathsInJson = new Set<string>();
+    // Refresh collections and modes maps after creation/renaming
+    const updatedCollections = await figma.variables.getLocalVariableCollections();
     
-    // Helper function to collect variable paths from the JSON
-    const collectVariablePaths = (data: any, prefix: string = '') => {
-      if (!data || typeof data !== 'object') return;
-      
-      Object.entries(data).forEach(([key, value]) => {
-        // Full path including this key
-        const fullPath = prefix ? `${prefix}/${key}` : key;
-        
-        // If it's a token definition with $value and $type
-        if (value && typeof value === 'object' && '$value' in value && '$type' in value) {
-          variablePathsInJson.add(fullPath);
-        }
-        // If it's a nested object, recursively process it
-        else if (value && typeof value === 'object') {
-          collectVariablePaths(value, fullPath);
-        }
+    // Rebuild collection maps
+    collectionNameToIdMap.clear();
+    updatedCollections.forEach(collection => {
+      collectionNameToIdMap.set(collection.name.toLowerCase(), collection.id);
+    });
+    
+    // Rebuild modes maps
+    collectionModesMap.clear();
+    updatedCollections.forEach(collection => {
+      const modesMap = new Map<string, string>();
+      collection.modes.forEach(mode => {
+        modesMap.set(mode.name.toLowerCase(), mode.modeId);
       });
-    };
-    
-    // Process the entire JSON to get all variable paths
-    Object.entries(jsonData).forEach(([collection, collectionData]) => {
-      if (typeof collectionData === 'object') {
-        Object.entries(collectionData).forEach(([mode, modeData]) => {
-          collectVariablePaths(modeData, `${collection}/${mode}`);
-        });
-      }
+      collectionModesMap.set(collection.id, modesMap);
     });
     
-    console.log(`Found ${variablePathsInJson.size} variables in the JSON data`);
+    // Second Phase: Process Variables
+    // Process all variables, creating, updating, or renaming as needed
+    const { 
+      created, 
+      updated, 
+      renamed, 
+      processingWarnings 
+    } = await processVariables(
+      jsonData, 
+      allVariables, 
+      variableMap, 
+      collectionNameToIdMap, 
+      collectionModesMap, 
+      updatedCollections
+    );
     
-    // Get all variables from collections we care about
-    const allVariables = figma.variables.getLocalVariables();
-    const collectionsToProcess = new Set<string>();
+    // Update our metrics
+    createdCount = created;
+    updatedCount = updated;
+    renamedCount += renamed;
+    warnings.push(...processingWarnings);
     
-    // Identify collections mentioned in the JSON
-    collections.forEach(collection => {
-      if (jsonData[collection.name]) {
-        collectionsToProcess.add(collection.id);
-      }
-    });
+    // Third Phase: Handle Deletions (Optional)
+    // By default, we don't delete variables automatically to prevent data loss
+    // Instead, we'll identify variables that could be deleted but not actually delete them
+    const variablesToDelete = identifyDeletableVariables(
+      jsonVariables,
+      allVariables,
+      updatedCollections
+    );
     
-    // IMPORTANT: Disable automatic deletion of variables
-    // Instead of automatically deleting variables, we'll make this a user-driven action
-    // to prevent accidental deletion
-    const variablesToDelete: Variable[] = [];
+    // Build result message components
+    const successParts = [];
+    if (createdCount > 0) successParts.push(`created ${createdCount} variables`);
+    if (updatedCount > 0) successParts.push(`updated ${updatedCount} variables`);
+    if (collectionsCreated > 0) successParts.push(`created ${collectionsCreated} collections`);
+    if (modesCreated > 0) successParts.push(`created ${modesCreated} modes`);
+    if (renamedCount > 0) successParts.push(`renamed ${renamedCount} items`);
+    if (deletedCount > 0) successParts.push(`deleted ${deletedCount} variables`);
     
-    // Delete the variables
-    for (const variable of variablesToDelete) {
-      try {
-        console.log(`Deleting variable: ${variable.name}`);
-        variable.remove();
-        deletedCount++;
-      } catch (error) {
-        console.error(`Error deleting variable ${variable.name}:`, error);
-        creationErrors.push(`Error deleting variable: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
+    const successMessage = successParts.join(', ');
+    console.log(`Variable update completed successfully: ${successMessage}`);
     
-    // Handle completion status
-    if (!updatedAnyVariables && collectionsCreated === 0 && modesCreated === 0 && renamedCount === 0 && deletedCount === 0) {
-      console.log("No variables, collections, or modes were updated, created, renamed or deleted - possibly empty input");
-      return { 
+    // If nothing was processed, return a message
+    if (createdCount === 0 && updatedCount === 0 && collectionsCreated === 0 && 
+        modesCreated === 0 && renamedCount === 0 && deletedCount === 0) {
+      return {
         success: true,
-        error: "No variables, collections, or modes were updated, created, renamed or deleted. The filter might be too restrictive or data is empty."
+        error: "No variables, collections, or modes were updated. The provided data might be empty or already match the current state."
       };
     }
     
-    // Combine all warnings
-    const allWarnings = [...referenceErrors, ...creationErrors];
-    
-    // Handle warnings (still a success but with warnings)
-    if (allWarnings.length > 0) {
-      console.warn(`Operation completed with ${allWarnings.length} warnings`);
+    // If there are warnings, include them in the response
+    if (warnings.length > 0) {
+      console.warn(`Operation completed with ${warnings.length} warnings`);
+      const uniqueWarnings = Array.from(new Set(warnings));
       
-      // Group identical errors
-      const uniqueWarnings = Array.from(new Set(allWarnings));
-      
-      // Return success but include warnings
-      return { 
+      return {
         success: true,
         warnings: uniqueWarnings,
         error: `Variables updated with ${uniqueWarnings.length} warning(s).`,
@@ -361,25 +175,15 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
       };
     }
     
-    // Build a success message
-    const successParts = [];
-    if (createdCount > 0) successParts.push(`created ${createdCount} variables`);
-    if (updatedCount > 0) successParts.push(`updated ${updatedCount} variables`);
-    if (collectionsCreated > 0) successParts.push(`created ${collectionsCreated} collections`);
-    if (modesCreated > 0) successParts.push(`created ${modesCreated} modes`);
-    if (renamedCount > 0) successParts.push(`renamed ${renamedCount} items`);
-    
-    const successMessage = successParts.join(', ');
-    console.log(`Variable update completed successfully: ${successMessage}`);
-    
-    return { 
+    // Return success result
+    return {
       success: true,
       created: createdCount,
       updated: updatedCount,
       collections: collectionsCreated,
       modes: modesCreated,
       renamed: renamedCount,
-      deleted: 0 // Auto-deletion is now disabled
+      deleted: deletedCount
     };
   } catch (error) {
     console.error("Error updating variables:", error);
@@ -391,417 +195,977 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
 }
 
 /**
- * Updates variables within a specific mode
- * Enhanced to handle variable groups properly
- * @param variables Array of Figma variables
- * @param modeData JSON data for the mode
- * @param modeId The mode ID
- * @param path The current path (for nested objects)
- * @param currentPath The current JSON path for nested objects
- * @param collectionId Collection ID for variable creation
- * @param groupsMap Map of groups to variables in the collection
- * @returns Object with information about update status
+ * Process collections and modes from JSON data
+ * Creates or renames collections and modes as needed
  */
-async function updateVariablesInMode(
-  variables: Variable[],
-  modeData: any,
-  modeId: string,
-  path: string,
-  collectionId?: string,
-  groupsMap?: Map<string, Set<string>>,
-  currentPath: string = ''
-): Promise<{ updated: boolean, updatedCount: number, createdCount: number, referenceErrors?: string[], processedVariableIds?: Set<string> }> {
-  let updated = false;
-  let updatedCount = 0;
-  let createdCount = 0;
-  const referenceErrors: string[] = [];
-  // Track processed variables to identify deleted ones later
-  const processedVariableIds = new Set<string>();
+async function processCollectionsAndModes(
+  jsonData: any,
+  collections: VariableCollection[],
+  collectionModesMap: Map<string, Map<string, string>>
+): Promise<{
+  collectionsCreated: number,
+  modesCreated: number,
+  renamedCount: number,
+  warnings: string[]
+}> {
+  let collectionsCreated = 0;
+  let modesCreated = 0;
+  let renamedCount = 0;
+  const warnings: string[] = [];
   
-  // Get all keys and sort them to maintain a consistent order
-  // Sort tokens to ensure that referenced tokens are processed first
-  const keys = Object.keys(modeData).sort((a, b) => {
-    // Helper function to check if a key is a reference token
-    const isReference = (key: string) => {
-      const val = modeData[key];
-      return val && 
-             typeof val === 'object' && 
-             val.$value !== undefined && 
-             typeof val.$value === 'string' &&
-             val.$value.startsWith('{') && 
-             val.$value.endsWith('}');
-    };
-    
-    // Handle nested paths - tokens with fewer nesting levels go first
-    const aDepth = a.split('/').length;
-    const bDepth = b.split('/').length;
-    
-    if (aDepth !== bDepth) return aDepth - bDepth;
-    
-    // If one is a reference and the other isn't, non-reference goes first
-    const aIsRef = isReference(a);
-    const bIsRef = isReference(b);
-    
-    if (aIsRef !== bIsRef) return aIsRef ? 1 : -1;
-    
-    // Default to alphabetical order
-    return a.localeCompare(b);
-  });
+  // Track processed collection names to avoid duplicates
+  const processedCollections = new Set<string>();
   
-  // Check if this is a group renaming scenario
-  // We need to detect if an entire group was renamed by looking at the structure
-  const isGroupRename = currentPath && modeData && typeof modeData === 'object';
+  // Get collection names from JSON
+  const collectionNames = Object.keys(jsonData);
   
-  if (isGroupRename) {
-    // Identify potential group renamings
-    const possibleOldGroups = new Set<string>();
+  // Process each collection in the JSON data
+  for (const collectionName of collectionNames) {
+    console.log(`Processing collection: ${collectionName}`);
     
-    // Get all variables that might be part of a group
-    const variableGroups = new Map<string, Variable[]>();
+    // Find the matching collection in Figma
+    let collection = collections.find(c => 
+      c.name.toLowerCase() === collectionName.toLowerCase()
+    );
     
-    // Group variables by their parent group path
-    variables.forEach(v => {
-      const parts = v.name.split('/');
-      if (parts.length > 1) {
-        const groupPath = parts.slice(0, -1).join('/');
-        if (!variableGroups.has(groupPath)) {
-          variableGroups.set(groupPath, []);
-        }
-        variableGroups.get(groupPath)?.push(v);
-      }
-    });
-    
-    // Find groups that might have been renamed
-    const currentGroupPath = currentPath;
-    
-    // Check if we can find a matching group
-    let matchingOldGroup = '';
-    let matchingOldGroupVars: Variable[] = [];
-    
-    // Look for potential old group paths that might be a match
-    // We consider it a match if:
-    // 1. The group isn't already in use as a currentPath
-    // 2. The group has a similar structure to the current group
-    for (const [groupPath, groupVars] of variableGroups.entries()) {
-      // Skip if this group matches the current path (not renamed)
-      if (groupPath === currentGroupPath) continue;
-      
-      // Check if this group is a good candidate (similar number of variables)
-      const tokensInNewGroup = Object.keys(modeData).filter(
-        k => modeData[k] && typeof modeData[k] === 'object' && modeData[k].$value !== undefined
-      ).length;
-      
-      // Similar number of variables indicates potential match
-      if (Math.abs(groupVars.length - tokensInNewGroup) <= 1) {
-        // We found a potential match
-        matchingOldGroup = groupPath;
-        matchingOldGroupVars = groupVars;
-        break;
-      }
-    }
-    
-    // If we found a matching old group, handle group renaming
-    if (matchingOldGroup && matchingOldGroupVars.length > 0) {
-      console.log(`Detected group rename: ${matchingOldGroup} -> ${currentGroupPath}`);
-      
-      // For each variable in the old group, rename it to the new group
-      for (const oldVar of matchingOldGroupVars) {
-        const oldParts = oldVar.name.split('/');
-        const baseName = oldParts[oldParts.length - 1];
-        const newVarName = `${currentGroupPath}/${baseName}`;
-        
-        console.log(`Renaming group variable: ${oldVar.name} -> ${newVarName}`);
-        
-        try {
-          // Update the variable name
-          oldVar.name = newVarName;
-          
-          // Mark this variable as processed to prevent deletion
-          processedVariableIds.add(oldVar.id);
-        } catch (error) {
-          console.error(`Error renaming variable in group: ${error}`);
-          referenceErrors.push(`Error renaming variable in group: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
-    }
-  }
-  
-  // Process each property in the mode data
-  for (const key of keys) {
-    const value = modeData[key];
-    const newPath = currentPath ? `${currentPath}/${key}` : key;
-    
-    // If this is a token object with $value and $type
-    if (value && typeof value === 'object' && value.$value !== undefined) {
-      // Find the matching variable - first by exact name
-      const variableName = newPath;
-      let variable = variables.find(v => v.name === variableName);
-      
-      // If not found, check if it's a renamed variable by looking at the path structure
-      // and comparing segments to find likely matches
-      let isRenamed = false;
-      if (!variable) {
-        const nameParts = variableName.split('/');
-        const variableBaseName = nameParts[nameParts.length - 1]; // Last part is the base name
-        const variablePath = nameParts.slice(0, -1).join('/'); // Path without the base name
-        
-        // STEP 1: First, try to find variables in the same group with similar names
-        // This helps with small token name changes like "50" to "502"
-        const variablesInSameGroup = variables.filter(v => {
-          const parts = v.name.split('/');
-          const vPath = parts.slice(0, -1).join('/');
-          const vBaseName = parts[parts.length - 1];
-          
-          // Must be in the same path
-          if (vPath !== variablePath) return false;
-          
-          // Names should be similar (one includes the other)
-          // This catches cases like "50" vs "502", "primary" vs "primary2", etc.
-          if (vBaseName.includes(variableBaseName) || variableBaseName.includes(vBaseName)) {
-            return true;
-          }
-          
-          // For number-only renames, try to be even more flexible
-          const isNumericSource = /^\d+$/.test(variableBaseName);
-          const isNumericTarget = /^\d+$/.test(vBaseName);
-          
-          if (isNumericSource && isNumericTarget) {
-            // For numeric renames, consider them similar if they start with the same digit
-            // (e.g., "50" and "500" both start with "5")
-            return variableBaseName.charAt(0) === vBaseName.charAt(0);
-          }
-          
-          return false;
-        });
-        
-        // If we found similar variables in the same group, use the first one
-        if (variablesInSameGroup.length > 0) {
-          console.log(`Found similar variable in same group: ${variablesInSameGroup[0].name} → ${variableName}`);
-          variable = variablesInSameGroup[0];
-          isRenamed = true;
-          processedVariableIds.add(variable.id);
-        }
-        
-        // STEP 2: If same group matching didn't work, try exact base name matches across groups
-        if (!variable) {
-          // Look for variables with the exact same base name anywhere
-          const variablesWithSameBaseName = variables.filter(v => {
-            const parts = v.name.split('/');
-            const baseName = parts[parts.length - 1];
-            return baseName === variableBaseName;
-          });
-          
-          // If we found variables with the same base name, check for unmatched ones
-          if (variablesWithSameBaseName.length > 0) {
-            // Find variables that don't match any other token in the current data
-            const matchedVariables = new Set<string>();
-            
-            // Collect all variable paths that are already matched
-            Object.keys(modeData).forEach(k => {
-              if (k === key) return; // Skip the current key
-              const v = modeData[k];
-              if (v && typeof v === 'object' && v.$value !== undefined) {
-                const path = currentPath ? `${currentPath}/${k}` : k;
-                matchedVariables.add(path);
-              }
-            });
-            
-            // Find unmatched variables
-            const unmatchedVariables = variablesWithSameBaseName.filter(v => 
-              !Array.from(matchedVariables).some(path => path === v.name)
-            );
-            
-            if (unmatchedVariables.length > 0) {
-              // Use the first unmatched variable as the one to rename
-              variable = unmatchedVariables[0];
-              isRenamed = true;
-              console.log(`Renaming variable: ${variable.name} to ${variableName}`);
-              
-              // Mark this variable as processed to prevent deletion
-              processedVariableIds.add(variable.id);
-            }
-          }
-        }
-      }
-      
-      try {
-        // Check if this is a reference value
-        const isReference = typeof value.$value === 'string' && 
-                           value.$value.startsWith('{') && 
-                           value.$value.endsWith('}');
-        
-        // Convert the value if needed
-        const processedValue = processValueForFigma(value.$value, value.$type);
-        
-        // Handle null values from unresolved references
-        if (processedValue === null && isReference) {
-          console.warn(`Could not resolve reference for variable ${variableName}: ${value.$value}`);
-          referenceErrors.push(`Could not resolve reference for ${variableName}: ${value.$value}`);
-          // Skip setting the value if reference can't be resolved
-          continue;
-        }
-        
-        // Handle variable creation or renaming
-        if (!variable) {
-          // Map DTCG type to Figma variable type
-          const figmaType = mapDTCGTypeToFigmaType(value.$type);
-          if (!figmaType) {
-            console.error(`Invalid variable type: ${value.$type}`);
-            referenceErrors.push(`Invalid variable type: ${value.$type}`);
-            continue;
-          }
-          
-          // Determine which collection ID to use
-          let targetCollectionId: string;
-          
-          if (collectionId) {
-            // Use the provided collection ID 
-            targetCollectionId = collectionId;
-          } else {
-            // Extract the collection name from the path
-            const extractedCollectionName = path.split('.')[0]; 
-            
-            // Find the collection by name
-            const collections = figma.variables.getLocalVariableCollections();
-            const collection = collections.find(c => c.name.toLowerCase() === extractedCollectionName.toLowerCase());
-            
-            if (!collection) {
-              console.error(`Collection not found: ${extractedCollectionName}`);
-              referenceErrors.push(`Collection not found: ${extractedCollectionName}`);
-              continue;
-            }
-            
-            targetCollectionId = collection.id;
-          }
-          
-          // Create the variable
-          console.log(`Creating new variable: ${variableName} of type ${figmaType}`);
-          variable = figma.variables.createVariable(variableName, targetCollectionId, figmaType);
-        } else if (isRenamed) {
-          // Handle renamed variable - we need to rename the existing variable
-          const oldName = variable.name;
-          
-          try {
-            // Update the variable name
-            variable.name = variableName;
-            console.log(`Renamed variable: ${oldName} to ${variableName}`);
-          } catch (error) {
-            console.error(`Error renaming variable ${oldName} to ${variableName}:`, error);
-            referenceErrors.push(`Error renaming variable: ${error instanceof Error ? error.message : String(error)}`);
-          }
-          
-          // Add the variable to the groups map if provided
-          if (groupsMap) {
-            // Extract group path
-            const parts = variableName.split('/');
-            if (parts.length > 1) {
-              const groupPath = parts.slice(0, parts.length - 1).join('/');
-              if (!groupsMap.has(groupPath)) {
-                groupsMap.set(groupPath, new Set());
-              }
-              groupsMap.get(groupPath)?.add(variableName);
-            } else {
-              if (!groupsMap.has('')) {
-                groupsMap.set('', new Set());
-              }
-              groupsMap.get('')?.add(variableName);
-            }
-          }
-          
-          // Add to the variables array so we can find it later
-          variables.push(variable);
-          
-          // Set description if provided
-          if (value.$description) {
-            variable.description = value.$description;
-          }
-
-          // Set scopes if provided and supported
-          if (value.$scopes && Array.isArray(value.$scopes)) {
-            try {
-              // Filter only valid scopes
-              const validScopes = value.$scopes.filter(scope => 
-                isValidVariableScope(scope)
-              );
-              
-              if (validScopes.length > 0) {
-                variable.scopes = validScopes;
-              }
-            } catch (error) {
-              console.warn(`Could not set scopes for ${variableName}:`, error);
-            }
-          }
-          
-          // Increment creation counter (this is a new variable)
-          createdCount++;
-        } else {
-          // Update description if provided and different
-          if (value.$description && variable.description !== value.$description) {
-            variable.description = value.$description;
-          }
-
-          // Update scopes if provided and supported
-          if (value.$scopes && Array.isArray(value.$scopes)) {
-            try {
-              // Filter only valid scopes
-              const validScopes = value.$scopes.filter(scope => 
-                isValidVariableScope(scope)
-              );
-              
-              // Check if scopes are different
-              if (validScopes.length > 0 && !arraysEqual(validScopes, variable.scopes)) {
-                variable.scopes = validScopes;
-              }
-            } catch (error) {
-              console.warn(`Could not update scopes for ${variableName}:`, error);
-            }
-          }
-        }
-        
-        // Update the variable value for this mode
-        await variable.setValueForMode(modeId, processedValue);
-        
-        if (isReference) {
-          console.log(`${variable ? 'Updated' : 'Created'} variable with reference: ${variableName} → ${value.$value}`);
-        } else {
-          console.log(`${variable ? 'Updated' : 'Created'} variable: ${variableName}`);
-        }
-        
-        // Mark this variable as processed
-        processedVariableIds.add(variable.id);
-        
-        updated = true;
-        updatedCount++;
-      } catch (error) {
-        console.error(`Error updating/creating variable ${variableName}:`, error);
-        referenceErrors.push(`Error with ${variableName}: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    } 
-    // If this is a nested object (not a token)
-    else if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Recursively process nested objects
-      const nestedResult = await updateVariablesInMode(
-        variables, 
-        value, 
-        modeId, 
-        path, 
-        collectionId,
-        groupsMap,
-        newPath
+    // If collection doesn't exist, check if it's a renamed collection
+    if (!collection) {
+      // Look for a collection that should be renamed
+      // We'll consider renaming collections that aren't matched in the JSON
+      const unmatchedCollections = collections.filter(c => 
+        !collectionNames.some(jsonCollection => 
+          jsonCollection.toLowerCase() === c.name.toLowerCase()
+        ) && !processedCollections.has(c.name.toLowerCase())
       );
       
-      updated = updated || nestedResult.updated;
-      updatedCount += nestedResult.updatedCount;
-      createdCount += nestedResult.createdCount;
+      // If we have unmatched collections, rename the first one
+      if (unmatchedCollections.length > 0) {
+        const oldCollection = unmatchedCollections[0];
+        console.log(`Renaming collection: ${oldCollection.name} to ${collectionName}`);
+        
+        try {
+          // Rename the collection
+          oldCollection.name = collectionName;
+          collection = oldCollection;
+          renamedCount++;
+          
+          // Mark as processed
+          processedCollections.add(oldCollection.name.toLowerCase());
+          processedCollections.add(collectionName.toLowerCase());
+        } catch (error) {
+          const errorMessage = `Error renaming collection ${oldCollection.name} to ${collectionName}: ${error instanceof Error ? error.message : String(error)}`;
+          console.error(errorMessage);
+          warnings.push(errorMessage);
+        }
+      }
       
-      // Collect any reference errors from nested calls
-      if (nestedResult.referenceErrors && nestedResult.referenceErrors.length > 0) {
-        referenceErrors.push(...nestedResult.referenceErrors);
+      // If still no collection (not a rename), create it
+      if (!collection) {
+        console.log(`Creating new collection: ${collectionName}`);
+        
+        try {
+          collection = figma.variables.createVariableCollection(collectionName);
+          collectionsCreated++;
+          
+          // Mark as processed
+          processedCollections.add(collectionName.toLowerCase());
+        } catch (error) {
+          const errorMessage = `Error creating collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`;
+          console.error(errorMessage);
+          warnings.push(errorMessage);
+          continue;
+        }
+      }
+    } else {
+      // Mark existing collection as processed
+      processedCollections.add(collectionName.toLowerCase());
+    }
+    
+    // Process modes for this collection
+    const collectionData = jsonData[collectionName];
+    const modeNames = Object.keys(collectionData);
+    
+    // Track processed mode names for this collection
+    const processedModes = new Set<string>();
+    
+    // Get current modes map for this collection
+    const modesMap = collectionModesMap.get(collection.id) || new Map<string, string>();
+    
+    // Process each mode in the collection
+    for (const modeName of modeNames) {
+      console.log(`Processing mode: ${modeName} in collection ${collectionName}`);
+      
+      // Check if the mode already exists
+      const modeExists = collection.modes.some(m => 
+        m.name.toLowerCase() === modeName.toLowerCase()
+      );
+      
+      // If mode doesn't exist, check if it should be renamed
+      if (!modeExists) {
+        // Find modes in Figma that haven't been processed and don't match any JSON mode
+        const unmatchedModes = collection.modes.filter(m => 
+          !modeNames.some(jsonMode => 
+            jsonMode.toLowerCase() === m.name.toLowerCase()
+          ) && !processedModes.has(m.name.toLowerCase())
+        );
+        
+        // If we have unmatched modes, rename the first one
+        if (unmatchedModes.length > 0) {
+          const oldMode = unmatchedModes[0];
+          console.log(`Renaming mode: ${oldMode.name} to ${modeName} in collection ${collectionName}`);
+          
+          try {
+            // Rename the mode
+            collection.renameMode(oldMode.modeId, modeName);
+            renamedCount++;
+            
+            // Mark as processed
+            processedModes.add(oldMode.name.toLowerCase());
+            processedModes.add(modeName.toLowerCase());
+          } catch (error) {
+            const errorMessage = `Error renaming mode ${oldMode.name} to ${modeName}: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(errorMessage);
+            warnings.push(errorMessage);
+          }
+        } 
+        // If not a rename, create the mode
+        else {
+          console.log(`Creating new mode: ${modeName} in collection ${collectionName}`);
+          
+          try {
+            // Add the mode to the collection
+            collection.addMode(modeName);
+            modesCreated++;
+            
+            // Mark as processed
+            processedModes.add(modeName.toLowerCase());
+          } catch (error) {
+            const errorMessage = `Error creating mode ${modeName} in collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(errorMessage);
+            warnings.push(errorMessage);
+          }
+        }
+      } else {
+        // Mark existing mode as processed
+        processedModes.add(modeName.toLowerCase());
       }
     }
   }
   
-  return { updated, updatedCount, createdCount, referenceErrors, processedVariableIds };
+  return { 
+    collectionsCreated, 
+    modesCreated, 
+    renamedCount, 
+    warnings 
+  };
+}
+
+/**
+ * Process variables from JSON data
+ * Creates, updates, or renames variables as needed
+ */
+async function processVariables(
+  jsonData: any,
+  allVariables: Variable[],
+  variableMap: Map<string, Variable>,
+  collectionNameToIdMap: Map<string, string>,
+  collectionModesMap: Map<string, Map<string, string>>,
+  collections: VariableCollection[]
+): Promise<{ 
+  created: number, 
+  updated: number, 
+  renamed: number, 
+  processingWarnings: string[] 
+}> {
+  let created = 0;
+  let updated = 0;
+  let renamed = 0;
+  const processingWarnings: string[] = [];
+  
+  // Set to track all processed variable IDs
+  const processedVariableIds = new Set<string>();
+  
+  // Track renamed variables to update our variable map
+  const renamedVariables = new Map<string, string>(); // old name -> new name
+  
+  // Process each collection in the JSON data
+  for (const [collectionName, collectionData] of Object.entries(jsonData)) {
+    if (typeof collectionData !== 'object' || collectionData === null) {
+      processingWarnings.push(`Invalid collection data for ${collectionName}`);
+      continue;
+    }
+    
+    // Get the collection ID
+    const collectionId = collectionNameToIdMap.get(collectionName.toLowerCase());
+    if (!collectionId) {
+      processingWarnings.push(`Collection not found: ${collectionName}`);
+      continue;
+    }
+    
+    // Get the collection
+    const collection = collections.find(c => c.id === collectionId);
+    if (!collection) {
+      processingWarnings.push(`Collection not found with ID: ${collectionId}`);
+      continue;
+    }
+    
+    // Get modes for this collection
+    const modesMap = collectionModesMap.get(collectionId);
+    if (!modesMap || modesMap.size === 0) {
+      processingWarnings.push(`No modes found for collection: ${collectionName}`);
+      continue;
+    }
+    
+    // Process each mode in the collection
+    for (const [modeName, modeData] of Object.entries(collectionData)) {
+      if (typeof modeData !== 'object' || modeData === null) {
+        processingWarnings.push(`Invalid mode data for ${collectionName}.${modeName}`);
+        continue;
+      }
+      
+      // Get the mode ID
+      const modeId = modesMap.get(modeName.toLowerCase());
+      if (!modeId) {
+        processingWarnings.push(`Mode not found: ${modeName} in collection ${collectionName}`);
+        continue;
+      }
+      
+      // Process variables in this mode
+      const { 
+        createdCount, 
+        updatedCount, 
+        renamedCount, 
+        warnings,
+        processedIds,
+        renamedPaths
+      } = await processVariablesInMode(
+        modeData, 
+        collectionId, 
+        modeId, 
+        allVariables, 
+        variableMap, 
+        renamedVariables,
+        ""
+      );
+      
+      // Update our metrics
+      created += createdCount;
+      updated += updatedCount;
+      renamed += renamedCount;
+      processingWarnings.push(...warnings);
+      
+      // Add processed variable IDs
+      processedIds.forEach(id => processedVariableIds.add(id));
+      
+      // Update renamed variables map
+      renamedPaths.forEach((newPath, oldPath) => 
+        renamedVariables.set(oldPath, newPath)
+      );
+    }
+  }
+  
+  return { 
+    created, 
+    updated, 
+    renamed, 
+    processingWarnings 
+  };
+}
+
+/**
+ * Process variables within a specific mode
+ * Creates, updates, or renames variables as needed
+ */
+async function processVariablesInMode(
+  modeData: any,
+  collectionId: string,
+  modeId: string,
+  allVariables: Variable[],
+  variableMap: Map<string, Variable>,
+  renamedVariables: Map<string, string>,
+  currentPath: string = ""
+): Promise<{ 
+  createdCount: number, 
+  updatedCount: number, 
+  renamedCount: number, 
+  warnings: string[],
+  processedIds: Set<string>,
+  renamedPaths: Map<string, string>
+}> {
+  let createdCount = 0;
+  let updatedCount = 0;
+  let renamedCount = 0;
+  const warnings: string[] = [];
+  const processedIds = new Set<string>();
+  const renamedPaths = new Map<string, string>();
+  
+  // Process all keys in the mode data
+  for (const [key, value] of Object.entries(modeData)) {
+    // Construct the full path for this key
+    const fullPath = currentPath ? `${currentPath}/${key}` : key;
+    
+    // If this is a token definition with $value and $type
+    if (value && typeof value === 'object' && '$value' in value && '$type' in value) {
+      try {
+        // Process this token
+        const result = await processToken(
+          fullPath,
+          value,
+          collectionId,
+          modeId,
+          allVariables,
+          variableMap,
+          renamedVariables
+        );
+        
+        // Update metrics
+        if (result.action === 'created') createdCount++;
+        if (result.action === 'updated') updatedCount++;
+        if (result.action === 'renamed') {
+          renamedCount++;
+          renamedPaths.set(result.oldPath || "", fullPath);
+        }
+        
+        // Add warnings
+        if (result.warning) warnings.push(result.warning);
+        
+        // Mark this variable as processed
+        if (result.variableId) processedIds.add(result.variableId);
+      } catch (error) {
+        const errorMessage = `Error processing token ${fullPath}: ${error instanceof Error ? error.message : String(error)}`;
+        console.error(errorMessage);
+        warnings.push(errorMessage);
+      }
+    }
+    // If this is a nested object (group), process it recursively
+    else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Check if this is a group rename
+      const potentialGroupRename = detectGroupRename(
+        fullPath, 
+        allVariables,
+        variableMap,
+        modeData
+      );
+      
+      if (potentialGroupRename.isRename) {
+        // Handle group rename
+        const { renamedCount: groupRenamedCount, warnings: groupWarnings, processedIds: groupProcessedIds } =
+          await handleGroupRename(
+            potentialGroupRename.oldPath,
+            fullPath,
+            allVariables,
+            processedIds
+          );
+        
+        renamedCount += groupRenamedCount;
+        warnings.push(...groupWarnings);
+        groupProcessedIds.forEach(id => processedIds.add(id));
+        
+        // Add all old paths to renamed paths map
+        if (potentialGroupRename.oldPath) {
+          renamedPaths.set(potentialGroupRename.oldPath, fullPath);
+        }
+      }
+      
+      // Process nested objects recursively
+      const nestedResult = await processVariablesInMode(
+        value,
+        collectionId,
+        modeId,
+        allVariables,
+        variableMap,
+        renamedVariables,
+        fullPath
+      );
+      
+      // Update metrics
+      createdCount += nestedResult.createdCount;
+      updatedCount += nestedResult.updatedCount;
+      renamedCount += nestedResult.renamedCount;
+      warnings.push(...nestedResult.warnings);
+      
+      // Add processed IDs
+      nestedResult.processedIds.forEach(id => processedIds.add(id));
+      
+      // Add renamed paths
+      nestedResult.renamedPaths.forEach((newPath, oldPath) => 
+        renamedPaths.set(oldPath, newPath)
+      );
+    }
+  }
+  
+  return { 
+    createdCount, 
+    updatedCount, 
+    renamedCount, 
+    warnings,
+    processedIds,
+    renamedPaths
+  };
+}
+
+/**
+ * Process a single token
+ * Creates, updates, or renames the variable as needed
+ */
+async function processToken(
+  variablePath: string,
+  tokenData: any,
+  collectionId: string,
+  modeId: string,
+  allVariables: Variable[],
+  variableMap: Map<string, Variable>,
+  renamedVariables: Map<string, string>
+): Promise<{ 
+  action: 'created' | 'updated' | 'renamed' | 'unchanged', 
+  variableId?: string,
+  oldPath?: string,
+  warning?: string 
+}> {
+  // Look for the variable by exact path
+  let variable = variableMap.get(variablePath.toLowerCase());
+  
+  // If not found, check if it's a renamed variable
+  let oldPath: string | undefined;
+  let isRenamed = false;
+  
+  if (!variable) {
+    // Try to find a matching variable using our renaming detection logic
+    const match = findBestMatchForRename(
+      variablePath, 
+      allVariables, 
+      variableMap,
+      renamedVariables
+    );
+    
+    if (match.variable) {
+      variable = match.variable;
+      oldPath = match.oldPath;
+      isRenamed = true;
+      console.log(`Found variable to rename: ${oldPath} → ${variablePath}`);
+    }
+  }
+  
+  try {
+    // Get the Figma variable type from DTCG type
+    const figmaType = mapDTCGTypeToFigmaType(tokenData.$type);
+    if (!figmaType) {
+      return { 
+        action: 'unchanged', 
+        warning: `Invalid variable type: ${tokenData.$type} for ${variablePath}` 
+      };
+    }
+    
+    // Process the value for Figma
+    const processedValue = processValueForFigma(tokenData.$value, tokenData.$type);
+    
+    // If this is a reference that couldn't be resolved
+    if (processedValue === null && 
+        typeof tokenData.$value === 'string' && 
+        tokenData.$value.startsWith('{') && 
+        tokenData.$value.endsWith('}')) {
+      return { 
+        action: 'unchanged', 
+        warning: `Could not resolve reference for ${variablePath}: ${tokenData.$value}` 
+      };
+    }
+    
+    // Create, rename, or update the variable
+    if (!variable) {
+      // Create a new variable
+      console.log(`Creating new variable: ${variablePath} of type ${figmaType}`);
+      variable = figma.variables.createVariable(variablePath, collectionId, figmaType);
+      
+      // Update description if provided
+      if (tokenData.$description) {
+        variable.description = tokenData.$description;
+      }
+      
+      // Update scopes if provided
+      if (tokenData.$scopes && Array.isArray(tokenData.$scopes)) {
+        const validScopes = tokenData.$scopes.filter(scope => isValidVariableScope(scope));
+        if (validScopes.length > 0) {
+          variable.scopes = validScopes;
+        }
+      }
+      
+      // Set the value for this mode
+      await variable.setValueForMode(modeId, processedValue);
+      
+      // Update our variable map
+      variableMap.set(variablePath.toLowerCase(), variable);
+      
+      return { 
+        action: 'created', 
+        variableId: variable.id 
+      };
+    } else if (isRenamed) {
+      // Handle renamed variable
+      const originalName = variable.name;
+      
+      // Update the variable name
+      variable.name = variablePath;
+      console.log(`Renamed variable: ${originalName} → ${variablePath}`);
+      
+      // Update description if provided and different
+      if (tokenData.$description && variable.description !== tokenData.$description) {
+        variable.description = tokenData.$description;
+      }
+      
+      // Update scopes if provided
+      if (tokenData.$scopes && Array.isArray(tokenData.$scopes)) {
+        const validScopes = tokenData.$scopes.filter(scope => isValidVariableScope(scope));
+        if (validScopes.length > 0 && !arraysEqual(validScopes, variable.scopes)) {
+          variable.scopes = validScopes;
+        }
+      }
+      
+      // Set the value for this mode
+      await variable.setValueForMode(modeId, processedValue);
+      
+      // Update our variable maps
+      variableMap.delete(originalName.toLowerCase());
+      variableMap.set(variablePath.toLowerCase(), variable);
+      
+      return { 
+        action: 'renamed', 
+        variableId: variable.id,
+        oldPath: originalName
+      };
+    } else {
+      // Update existing variable
+      let changed = false;
+      
+      // Update description if different
+      if (tokenData.$description && variable.description !== tokenData.$description) {
+        variable.description = tokenData.$description;
+        changed = true;
+      }
+      
+      // Update scopes if different
+      if (tokenData.$scopes && Array.isArray(tokenData.$scopes)) {
+        const validScopes = tokenData.$scopes.filter(scope => isValidVariableScope(scope));
+        if (validScopes.length > 0 && !arraysEqual(validScopes, variable.scopes)) {
+          variable.scopes = validScopes;
+          changed = true;
+        }
+      }
+      
+      // Get current value for this mode
+      const currentValue = variable.valuesByMode[modeId];
+      
+      // Check if we need to update the value
+      // For complex values like colors, we need to do a deep comparison
+      const needsValueUpdate = !areValuesEqual(currentValue, processedValue);
+      
+      if (needsValueUpdate) {
+        await variable.setValueForMode(modeId, processedValue);
+        changed = true;
+      }
+      
+      return { 
+        action: changed ? 'updated' : 'unchanged', 
+        variableId: variable.id 
+      };
+    }
+  } catch (error) {
+    return { 
+      action: 'unchanged', 
+      warning: `Error processing ${variablePath}: ${error instanceof Error ? error.message : String(error)}` 
+    };
+  }
+}
+
+/**
+ * Detects if a group path represents a renamed group
+ */
+function detectGroupRename(
+  groupPath: string,
+  allVariables: Variable[],
+  variableMap: Map<string, Variable>,
+  modeData: any
+): { 
+  isRename: boolean, 
+  oldPath?: string, 
+  confidence: number 
+} {
+  // If the group path already exists, it's not a rename
+  if (variableMap.has(groupPath.toLowerCase())) {
+    return { isRename: false, confidence: 0 };
+  }
+  
+  // Get all variables that might be in this group from the JSON
+  const tokensInGroup = countTokensInGroup(modeData);
+  
+  // If there are no tokens in this group, it can't be a rename
+  if (tokensInGroup === 0) {
+    return { isRename: false, confidence: 0 };
+  }
+  
+  // Find potential groups with similar structure
+  const potentialGroups = findPotentialGroupMatches(groupPath, allVariables, tokensInGroup);
+  
+  // If we found a good match, return it
+  if (potentialGroups.length > 0 && potentialGroups[0].confidence > 0.7) {
+    return { 
+      isRename: true, 
+      oldPath: potentialGroups[0].path, 
+      confidence: potentialGroups[0].confidence 
+    };
+  }
+  
+  return { isRename: false, confidence: 0 };
+}
+
+/**
+ * Count the number of token definitions in a group
+ */
+function countTokensInGroup(groupData: any): number {
+  let count = 0;
+  
+  // Count tokens directly in this group
+  for (const [key, value] of Object.entries(groupData)) {
+    if (value && typeof value === 'object') {
+      if ('$value' in value && '$type' in value) {
+        count++;
+      } else {
+        // Recursively count tokens in nested groups
+        count += countTokensInGroup(value);
+      }
+    }
+  }
+  
+  return count;
+}
+
+/**
+ * Find potential group matches for a rename operation
+ */
+function findPotentialGroupMatches(
+  groupPath: string, 
+  allVariables: Variable[],
+  tokenCount: number
+): Array<{ path: string, confidence: number }> {
+  // Group variables by their path prefix
+  const groupedVariables = new Map<string, Variable[]>();
+  
+  allVariables.forEach(variable => {
+    const parts = variable.name.split('/');
+    if (parts.length > 1) {
+      // For each possible prefix of the path
+      for (let i = 1; i < parts.length; i++) {
+        const prefix = parts.slice(0, i).join('/');
+        if (!groupedVariables.has(prefix)) {
+          groupedVariables.set(prefix, []);
+        }
+        groupedVariables.get(prefix)?.push(variable);
+      }
+    }
+  });
+  
+  // Calculate similarity scores for each group
+  const scores: Array<{ path: string, confidence: number }> = [];
+  
+  groupedVariables.forEach((groupVars, path) => {
+    // Skip if this is the current path
+    if (path === groupPath) return;
+    
+    // Calculate confidence based on token count similarity
+    const countDifference = Math.abs(groupVars.length - tokenCount);
+    let confidence = 1.0 - (countDifference / Math.max(groupVars.length, tokenCount));
+    
+    // Boost confidence for groups with similar token counts
+    if (countDifference <= 1) {
+      confidence += 0.2;
+    }
+    
+    // Cap confidence at 1.0
+    confidence = Math.min(confidence, 1.0);
+    
+    scores.push({ path, confidence });
+  });
+  
+  // Sort by confidence descending
+  return scores.sort((a, b) => b.confidence - a.confidence);
+}
+
+/**
+ * Handle renaming an entire group of variables
+ */
+async function handleGroupRename(
+  oldPath: string | undefined,
+  newPath: string,
+  allVariables: Variable[],
+  processedIds: Set<string>
+): Promise<{ 
+  renamedCount: number, 
+  warnings: string[],
+  processedIds: Set<string>
+}> {
+  let renamedCount = 0;
+  const warnings: string[] = [];
+  const newProcessedIds = new Set<string>();
+  
+  if (!oldPath) {
+    return { renamedCount: 0, warnings: [], processedIds: new Set() };
+  }
+  
+  // Find all variables in the old group
+  const variablesInOldGroup = allVariables.filter(variable => 
+    variable.name.startsWith(oldPath + '/')
+  );
+  
+  // Rename each variable
+  for (const variable of variablesInOldGroup) {
+    try {
+      // Get the relative path within the group
+      const relativePath = variable.name.substring(oldPath.length + 1);
+      
+      // Construct the new variable name
+      const newVariableName = `${newPath}/${relativePath}`;
+      
+      // Skip if this variable was already processed
+      if (processedIds.has(variable.id)) {
+        continue;
+      }
+      
+      console.log(`Renaming group variable: ${variable.name} → ${newVariableName}`);
+      
+      // Update the variable name
+      const originalName = variable.name;
+      variable.name = newVariableName;
+      
+      renamedCount++;
+      newProcessedIds.add(variable.id);
+    } catch (error) {
+      const errorMessage = `Error renaming variable in group: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(errorMessage);
+      warnings.push(errorMessage);
+    }
+  }
+  
+  return { renamedCount, warnings, processedIds: newProcessedIds };
+}
+
+/**
+ * Find the best match for a variable rename
+ */
+function findBestMatchForRename(
+  variablePath: string,
+  allVariables: Variable[],
+  variableMap: Map<string, Variable>,
+  renamedVariables: Map<string, string>
+): { 
+  variable?: Variable, 
+  oldPath?: string, 
+  confidence: number 
+} {
+  // Extract path parts
+  const pathParts = variablePath.split('/');
+  const variableName = pathParts[pathParts.length - 1];
+  const groupPath = pathParts.slice(0, -1).join('/');
+  
+  // Strategy 1: Check for variables in the same group with similar names
+  const variablesInSameGroup = allVariables.filter(v => {
+    const parts = v.name.split('/');
+    const vName = parts[parts.length - 1];
+    const vGroupPath = parts.slice(0, -1).join('/');
+    
+    // Must be in the same path
+    if (vGroupPath !== groupPath) return false;
+    
+    // Check if it's been processed in a rename
+    if (renamedVariables.has(v.name.toLowerCase())) return false;
+    
+    // Names should be similar
+    return areSimilarNames(vName, variableName);
+  });
+  
+  if (variablesInSameGroup.length > 0) {
+    return { 
+      variable: variablesInSameGroup[0], 
+      oldPath: variablesInSameGroup[0].name,
+      confidence: 0.9 
+    };
+  }
+  
+  // Strategy 2: Look for exact base name matches across groups
+  const variablesWithSameBaseName = allVariables.filter(v => {
+    const parts = v.name.split('/');
+    const vName = parts[parts.length - 1];
+    
+    // Check if it's been processed in a rename
+    if (renamedVariables.has(v.name.toLowerCase())) return false;
+    
+    // Must have the exact same base name
+    return vName === variableName;
+  });
+  
+  if (variablesWithSameBaseName.length > 0) {
+    return { 
+      variable: variablesWithSameBaseName[0], 
+      oldPath: variablesWithSameBaseName[0].name,
+      confidence: 0.85 
+    };
+  }
+  
+  // Strategy 3: Look for variables with similar base names in different groups
+  const variablesWithSimilarBaseNames = allVariables.filter(v => {
+    const parts = v.name.split('/');
+    const vName = parts[parts.length - 1];
+    
+    // Check if it's been processed in a rename
+    if (renamedVariables.has(v.name.toLowerCase())) return false;
+    
+    // Must have a similar base name
+    return areSimilarNames(vName, variableName);
+  });
+  
+  if (variablesWithSimilarBaseNames.length > 0) {
+    // Sort by similarity
+    variablesWithSimilarBaseNames.sort((a, b) => {
+      const aName = a.name.split('/').pop() || "";
+      const bName = b.name.split('/').pop() || "";
+      
+      const aSimilarity = calculateNameSimilarity(aName, variableName);
+      const bSimilarity = calculateNameSimilarity(bName, variableName);
+      
+      return bSimilarity - aSimilarity;
+    });
+    
+    return { 
+      variable: variablesWithSimilarBaseNames[0], 
+      oldPath: variablesWithSimilarBaseNames[0].name,
+      confidence: 0.7 
+    };
+  }
+  
+  return { confidence: 0 };
+}
+
+/**
+ * Check if two names are similar enough to be considered a rename
+ */
+function areSimilarNames(name1: string, name2: string): boolean {
+  // If one includes the other, they're similar
+  if (name1.includes(name2) || name2.includes(name1)) {
+    return true;
+  }
+  
+  // For numeric tokens, be more flexible
+  const isNumeric1 = /^\d+$/.test(name1);
+  const isNumeric2 = /^\d+$/.test(name2);
+  
+  if (isNumeric1 && isNumeric2) {
+    // For numeric names, consider them similar if they start with the same digit
+    return name1.charAt(0) === name2.charAt(0);
+  }
+  
+  // Calculate a similarity score
+  const similarity = calculateNameSimilarity(name1, name2);
+  return similarity > 0.6; // Threshold for similarity
+}
+
+/**
+ * Calculate a similarity score between two names
+ */
+function calculateNameSimilarity(name1: string, name2: string): number {
+  // Simple similarity based on longest common substring
+  let longestCommon = 0;
+  const matrix = Array(name1.length + 1).fill(0).map(() => Array(name2.length + 1).fill(0));
+  
+  for (let i = 1; i <= name1.length; i++) {
+    for (let j = 1; j <= name2.length; j++) {
+      if (name1[i - 1] === name2[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1] + 1;
+        longestCommon = Math.max(longestCommon, matrix[i][j]);
+      }
+    }
+  }
+  
+  // Calculate similarity score
+  return longestCommon / Math.max(name1.length, name2.length);
+}
+
+/**
+ * Extracts all variable paths from JSON data
+ */
+function extractVariablesFromJson(jsonData: any): Set<string> {
+  const variablePaths = new Set<string>();
+  
+  // Helper function to collect variable paths recursively
+  function collectPaths(data: any, prefix: string = '') {
+    if (!data || typeof data !== 'object') return;
+    
+    Object.entries(data).forEach(([key, value]) => {
+      const path = prefix ? `${prefix}/${key}` : key;
+      
+      if (value && typeof value === 'object') {
+        if ('$value' in value && '$type' in value) {
+          // This is a token
+          variablePaths.add(path);
+        } else {
+          // This is a group - process it recursively
+          collectPaths(value, path);
+        }
+      }
+    });
+  }
+  
+  // Process each collection and mode
+  Object.entries(jsonData).forEach(([collectionName, collectionData]) => {
+    if (typeof collectionData === 'object' && collectionData !== null) {
+      Object.entries(collectionData).forEach(([modeName, modeData]) => {
+        if (typeof modeData === 'object' && modeData !== null) {
+          collectPaths(modeData);
+        }
+      });
+    }
+  });
+  
+  return variablePaths;
+}
+
+/**
+ * Identifies variables that could be deleted but doesn't actually delete them
+ */
+function identifyDeletableVariables(
+  jsonVariables: Set<string>,
+  allVariables: Variable[],
+  collections: VariableCollection[]
+): Variable[] {
+  // Get collections that appear in the JSON
+  const jsonCollectionNames = new Set<string>();
+  
+  jsonVariables.forEach(path => {
+    const parts = path.split('/');
+    if (parts.length > 0) {
+      // First path component would be in a collection
+      jsonCollectionNames.add(parts[0].toLowerCase());
+    }
+  });
+  
+  // Filter collections that we care about
+  const relevantCollectionIds = new Set<string>();
+  
+  collections.forEach(collection => {
+    if (jsonCollectionNames.has(collection.name.toLowerCase())) {
+      relevantCollectionIds.add(collection.id);
+    }
+  });
+  
+  // Find variables that are in relevant collections but not in the JSON
+  const variablesToDelete = allVariables.filter(variable => {
+    // Only consider variables in collections we care about
+    if (!relevantCollectionIds.has(variable.variableCollectionId)) {
+      return false;
+    }
+    
+    // Check if this variable exists in the JSON
+    return !jsonVariables.has(variable.name);
+  });
+  
+  return variablesToDelete;
 }
 
 /**
@@ -894,6 +1258,36 @@ function arraysEqual(a: any[], b: any[]): boolean {
   }
   
   return true;
+}
+
+/**
+ * Check if two values are equal, handling complex objects
+ */
+function areValuesEqual(value1: any, value2: any): boolean {
+  // Handle null/undefined
+  if (value1 === value2) return true;
+  if (!value1 || !value2) return false;
+  
+  // Handle primitive types
+  if (typeof value1 !== 'object' || typeof value2 !== 'object') {
+    return value1 === value2;
+  }
+  
+  // Handle color objects
+  if ('r' in value1 && 'g' in value1 && 'b' in value1) {
+    return Math.abs(value1.r - value2.r) < 0.001 &&
+           Math.abs(value1.g - value2.g) < 0.001 &&
+           Math.abs(value1.b - value2.b) < 0.001 &&
+           Math.abs((value1.a || 1) - (value2.a || 1)) < 0.001;
+  }
+  
+  // Handle variable alias references
+  if (value1.type === 'VARIABLE_ALIAS' && value2.type === 'VARIABLE_ALIAS') {
+    return value1.id === value2.id;
+  }
+  
+  // For other objects, compare JSON strings
+  return JSON.stringify(value1) === JSON.stringify(value2);
 }
 
 /**
