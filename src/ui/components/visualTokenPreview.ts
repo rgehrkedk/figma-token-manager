@@ -105,7 +105,7 @@ export function setupVisualTokenPreview(config: TokenPreviewConfig) {
           processTokens(value, newPath);
         } else {
           // Try to infer type for non-DTCG tokens
-          const inferredType = inferTokenType(value);
+          const inferredType = inferTokenType(value, newPath);
           if (inferredType) {
             tokens.push({
               path: newPath,
@@ -173,6 +173,8 @@ export function setupVisualTokenPreview(config: TokenPreviewConfig) {
     const groups: { [key: string]: TokenGroup } = {
       color: { type: 'color', name: 'Colors', tokens: [] },
       dimension: { type: 'dimension', name: 'Dimensions', tokens: [] },
+      radius: { type: 'radius', name: 'Radius', tokens: [] },
+      spacing: { type: 'spacing', name: 'Spacing', tokens: [] },
       fontFamily: { type: 'fontFamily', name: 'Font Families', tokens: [] },
       fontWeight: { type: 'fontWeight', name: 'Font Weights', tokens: [] },
       fontSize: { type: 'fontSize', name: 'Font Sizes', tokens: [] },
@@ -319,6 +321,10 @@ export function setupVisualTokenPreview(config: TokenPreviewConfig) {
         return createColorSwatch(displayValue, isReference);
       case 'dimension':
         return createDimensionSwatch(displayValue, isReference);
+      case 'radius':
+        return createRadiusSwatch(displayValue, isReference);
+      case 'spacing':
+        return createSpacingSwatch(displayValue, isReference);
       case 'fontFamily':
         return createFontFamilySample(displayValue, isReference);
       case 'fontWeight':
@@ -584,6 +590,112 @@ export function setupVisualTokenPreview(config: TokenPreviewConfig) {
   }
   
   /**
+   * Create a radius swatch for border-radius tokens
+   */
+  function createRadiusSwatch(value: any, isReference: boolean): HTMLElement {
+    const swatch = document.createElement('div');
+    swatch.className = 'radius-swatch';
+    
+    const box = document.createElement('div');
+    box.className = 'radius-box';
+    
+    try {
+      // Extract numeric value for proper sizing
+      let radiusValue = value;
+      if (typeof value === 'string') {
+        const match = value.match(/^(\d+(\.\d+)?)/);
+        if (match) {
+          radiusValue = parseFloat(match[1]);
+        }
+      }
+      
+      // Set border radius
+      if (typeof radiusValue === 'number') {
+        box.style.borderRadius = `${Math.min(radiusValue, 24)}px`;
+      } else {
+        box.style.borderRadius = String(value);
+      }
+    } catch (error) {
+      console.warn('Invalid radius:', value);
+    }
+    
+    swatch.appendChild(box);
+    
+    // Add label showing the radius value
+    const label = document.createElement('div');
+    label.className = 'radius-label';
+    label.textContent = 'radius';
+    swatch.appendChild(label);
+    
+    // Add reference icon if needed
+    if (isReference) {
+      const refIcon = document.createElement('div');
+      refIcon.className = 'reference-icon-small';
+      refIcon.textContent = '↗';
+      swatch.appendChild(refIcon);
+    }
+    
+    return swatch;
+  }
+  
+  /**
+   * Create a spacing swatch for spacing tokens
+   */
+  function createSpacingSwatch(value: any, isReference: boolean): HTMLElement {
+    const swatch = document.createElement('div');
+    swatch.className = 'spacing-swatch';
+    
+    const spacingBox = document.createElement('div');
+    spacingBox.className = 'spacing-box';
+    
+    // Extract the value for visualization
+    let spacingValue = value;
+    let displaySize = '0px';
+    
+    if (typeof value === 'number') {
+      displaySize = `${Math.min(value, 100)}px`;
+    } else if (typeof value === 'string') {
+      const match = value.match(/^(\d+(\.\d+)?)/);
+      if (match) {
+        spacingValue = parseFloat(match[1]);
+        displaySize = `${Math.min(spacingValue, 100)}px`;
+      }
+    }
+    
+    // Create spacing visualization with two elements showing the gap
+    const element1 = document.createElement('div');
+    element1.className = 'spacing-element';
+    
+    const element2 = document.createElement('div');
+    element2.className = 'spacing-element';
+    
+    const spacingGap = document.createElement('div');
+    spacingGap.className = 'spacing-gap';
+    spacingGap.style.width = displaySize;
+    
+    // Add label for spacing
+    const label = document.createElement('div');
+    label.className = 'spacing-label';
+    label.textContent = 'spacing';
+    
+    spacingBox.appendChild(element1);
+    spacingBox.appendChild(spacingGap);
+    spacingBox.appendChild(element2);
+    swatch.appendChild(spacingBox);
+    swatch.appendChild(label);
+    
+    // Add reference icon if needed
+    if (isReference) {
+      const refIcon = document.createElement('div');
+      refIcon.className = 'reference-icon-small';
+      refIcon.textContent = '↗';
+      swatch.appendChild(refIcon);
+    }
+    
+    return swatch;
+  }
+  
+  /**
    * Create a generic swatch for other token types
    */
   function createGenericSwatch(type: string, isReference: boolean): HTMLElement {
@@ -608,9 +720,24 @@ export function setupVisualTokenPreview(config: TokenPreviewConfig) {
   }
   
   /**
-   * Infer token type from its value
+   * Infer token type from its value and path
    */
-  function inferTokenType(value: any): string | null {
+  function inferTokenType(value: any, path: string = ''): string | null {
+    // Check path for type hints
+    const pathLower = path.toLowerCase();
+    
+    // Check for radius in the path
+    if (pathLower.includes('radius') || pathLower.includes('corner') || pathLower.includes('round')) {
+      return 'radius';
+    }
+    
+    // Check for spacing in the path
+    if (pathLower.includes('spacing') || pathLower.includes('gap') || 
+        pathLower.includes('padding') || pathLower.includes('margin') || 
+        pathLower.includes('size')) {
+      return 'spacing';
+    }
+    
     if (typeof value === 'string') {
       // Reference check
       if (value.startsWith('{') && value.endsWith('}')) {

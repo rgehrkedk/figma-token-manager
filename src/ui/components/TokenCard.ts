@@ -40,10 +40,20 @@ export function createTokenCard(props: TokenCardProps): HTMLElement {
       break;
     
     case 'dimension':
+      cardContent = createDimensionTokenContent(token);
+      break;
+      
+    case 'radius':
+      cardContent = createRadiusTokenContent(token);
+      break;
+      
     case 'spacing':
     case 'size':
+      cardContent = createSpacingTokenContent(token);
+      break;
+      
     case 'borderRadius':
-      cardContent = createDimensionTokenContent(token);
+      cardContent = createRadiusTokenContent(token);
       break;
     
     case 'fontFamily':
@@ -123,6 +133,92 @@ function createDimensionTokenContent(token: TokenData): string {
       <div class="token-visual ${token.reference ? 'is-reference' : ''}">
         <div class="dimension-swatch">
           <div class="dimension-bar" style="width: ${displayWidth}"></div>
+        </div>
+        ${token.reference ? '<div class="reference-indicator">↗</div>' : ''}
+      </div>
+      <div class="token-info">
+        <div class="token-name">${token.name}</div>
+        <div class="token-value ${token.reference ? 'reference-value' : ''}">
+          ${formatTokenValue(token)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Create content for a radius token
+ */
+function createRadiusTokenContent(token: TokenData): string {
+  // Use resolved value for visualization, but show reference path as the value
+  const displayValue = token.reference && token.resolvedValue ? token.resolvedValue : token.value;
+  
+  // Try to extract a numerical value for the radius
+  let radiusValue: string | number = '0px';
+  
+  if (typeof displayValue === 'number') {
+    radiusValue = `${Math.min(displayValue, 24)}px`;
+  } else if (typeof displayValue === 'string') {
+    const match = displayValue.match(/^(\d+(\.\d+)?)/);
+    if (match) {
+      const size = parseFloat(match[1]);
+      radiusValue = `${Math.min(size, 24)}px`;
+    } else {
+      radiusValue = displayValue;
+    }
+  }
+  
+  return `
+    <div class="token-card-content">
+      <div class="token-visual ${token.reference ? 'is-reference' : ''}">
+        <div class="radius-swatch">
+          <div class="radius-box" style="border-radius: ${radiusValue}"></div>
+          <div class="radius-label">radius</div>
+        </div>
+        ${token.reference ? '<div class="reference-indicator">↗</div>' : ''}
+      </div>
+      <div class="token-info">
+        <div class="token-name">${token.name}</div>
+        <div class="token-value ${token.reference ? 'reference-value' : ''}">
+          ${formatTokenValue(token)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Create content for a spacing token
+ */
+function createSpacingTokenContent(token: TokenData): string {
+  // Use resolved value for visualization, but show reference path as the value
+  const displayValue = token.reference && token.resolvedValue ? token.resolvedValue : token.value;
+  
+  // Try to extract a numerical value for the spacing
+  let spacingValue: string | number = '0px';
+  
+  if (typeof displayValue === 'number') {
+    spacingValue = `${Math.min(displayValue, 60)}px`;
+  } else if (typeof displayValue === 'string') {
+    const match = displayValue.match(/^(\d+(\.\d+)?)/);
+    if (match) {
+      const size = parseFloat(match[1]);
+      spacingValue = `${Math.min(size, 60)}px`;
+    } else {
+      spacingValue = displayValue;
+    }
+  }
+  
+  return `
+    <div class="token-card-content">
+      <div class="token-visual ${token.reference ? 'is-reference' : ''}">
+        <div class="spacing-swatch">
+          <div class="spacing-box">
+            <div class="spacing-element"></div>
+            <div class="spacing-gap" style="width: ${spacingValue}"></div>
+            <div class="spacing-element"></div>
+          </div>
+          <div class="spacing-label">spacing</div>
         </div>
         ${token.reference ? '<div class="reference-indicator">↗</div>' : ''}
       </div>

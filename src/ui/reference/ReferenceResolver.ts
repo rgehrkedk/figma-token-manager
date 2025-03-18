@@ -695,12 +695,27 @@ export function extractTokenList(tokenData: any): TokenData[] {
     
     // Handle DTCG format tokens
     if (obj.$value !== undefined) {
+      // Infer token type from path if not explicitly set
+      let tokenType = obj.$type || 'unknown';
+      const pathLower = basePath.toLowerCase();
+      
+      // Check for radius in the path
+      if (pathLower.includes('radius') || pathLower.includes('corner') || pathLower.includes('round')) {
+        tokenType = 'radius';
+      }
+      // Check for spacing in the path
+      else if (pathLower.includes('spacing') || pathLower.includes('gap') || 
+          pathLower.includes('padding') || pathLower.includes('margin') || 
+          pathLower.includes('size')) {
+        tokenType = 'spacing';
+      }
+      
       const token: TokenData = {
         id: basePath,
         name: name || basePath.split('.').pop() || '',
         path: basePath,
         value: obj.$value,
-        type: obj.$type || 'unknown',
+        type: tokenType,
         reference: isReference(obj.$value)
       };
       
