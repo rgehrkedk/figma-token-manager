@@ -1,30 +1,137 @@
 # Figma Token Manager
 
-A powerful Figma plugin for exporting design variables as standardized design tokens, featuring advanced reference resolution and visual previews.
+A powerful Figma plugin for managing design variables as standardized design tokens, featuring bidirectional synchronization, advanced reference resolution, and comprehensive export options.
 
 ## Overview
 
-Figma Token Manager extracts variables from your Figma document and exports them as structured design tokens, compatible with the Design Tokens Community Group (DTCG) format specification. The plugin provides robust reference resolution inspired by Style Dictionary, visual token previews, and comprehensive diagnostic tools.
+Figma Token Manager bridges the gap between Figma Variables and design token systems. It allows designers and developers to extract Figma variables as standardized design tokens, edit them using a JSON interface, and synchronize changes back to Figma. The plugin supports the Design Tokens Community Group (DTCG) format specification, providing robust reference resolution and visual token previews.
 
-## Features
+## Key Features
 
-### Core Functionality
-- **DTCG-Compliant Format**: Export tokens that follow the Design Token Community Group specification
-- **Enhanced Reference Resolution**: Powerful reference handling with dot and slash notation support
-- **Visual Token Preview**: See your tokens visually categorized by type (colors, dimensions, typography, etc.)
-- **Collection & Mode Management**: Hierarchical organization of tokens by collection and mode
+### Variable Management
+- **Bidirectional Sync**: Extract Figma variables to JSON and update Figma from edited JSON
+- **Smart Rename Detection**: Intelligently detect renamed tokens, collections, and groups
+- **Collection & Mode Management**: Organize tokens hierarchically by collection and mode
+- **Reference Resolution**: Support for token references with dot and slash notation
+
+### Visual Interface
+- **Dual View Mode**: Switch between visual preview and JSON editor interfaces
+- **Interactive Token Grid**: Browse tokens organized by categories with visual previews
+- **Token Details Panel**: View comprehensive information about selected tokens
 - **Reference Diagnostics**: Identify and fix broken token references
 
-### Export Options
-- **Multiple Color Formats**: Export colors in HEX, RGB, RGBA, HSL, or HSLA formats
-- **Export Flexibility**: Generate a combined file or separate files by collection/mode
-- **Flat Structure Option**: Generate simplified token structures for easier integration
+### Export Capabilities
+- **ZIP Export**: Download all tokens as a ZIP file with organized JSON files
+- **Structured Output**: Export separate files for each collection and mode
+- **Multiple Color Formats**: Choose between HEX, RGB, RGBA, HSL, or HSLA formats
+- **Metadata Inclusion**: Optional metadata with export timestamps and document info
 
-### User Interface
-- **Dual-Mode Preview**: Toggle between visual representation and JSON code view
-- **Tabbed Interface**: Navigate between collections and modes easily
-- **Interactive Token Details**: Click on tokens to see detailed information and usage examples
-- **Copy to Clipboard**: One-click copying of token values in various formats
+## Getting Started
+
+### Installation
+
+1. Open Figma and navigate to the "Plugins" menu
+2. Click "Development" > "Import plugin from manifest"
+3. Select the `manifest.json` file from this repository
+
+### Basic Usage
+
+1. **Extract Variables**: When you first run the plugin, it automatically extracts all Figma variables
+2. **Browse Tokens**: Use the visual interface to explore your design tokens by collection and category
+3. **Edit Tokens**: Switch to JSON view to make detailed edits to token structures and values
+4. **Save to Figma**: Click the "Save to Figma" button to update your Figma variables
+
+### Working with the JSON Editor
+
+The JSON editor provides a powerful interface for editing your design tokens:
+
+1. Switch to JSON view using the toggle in the header
+2. Edit the JSON structure directly with syntax highlighting and line numbers
+3. The editor validates your JSON as you type, highlighting errors
+4. Click "Save to Figma" to synchronize your changes back to Figma variables
+
+### Exporting Tokens
+
+To export your tokens as a ZIP file:
+
+1. Click the "Export" button in the sidebar
+2. The plugin generates a ZIP file containing:
+   - A complete `tokens.json` file with all tokens
+   - Individual collection files (e.g., `colors.json`, `spacing.json`)
+   - Individual mode files within folders (e.g., `colors/light.json`, `colors/dark.json`)
+   - A metadata file with export information
+
+## Token Format
+
+### DTCG-Compliant Format (Default)
+
+```json
+{
+  "colors": {
+    "primary": {
+      "500": {
+        "$value": "#0366D6",
+        "$type": "color",
+        "$description": "Primary brand color"
+      }
+    }
+  }
+}
+```
+
+### Supported Token Types
+
+- `color`: Color values in various formats
+- `number`: Numeric values
+- `dimension`: Measurements with units
+- `fontFamily`: Font family names
+- `fontWeight`: Font weight values
+- `spacing`: Spacing and layout measurements
+- `borderRadius`: Corner radius values
+- `borderWidth`: Border width values
+- `opacity`: Opacity values
+- `lineHeight`: Line height values
+- `string`: Text strings
+
+### Token References
+
+The plugin supports referencing tokens using either dot or slash notation:
+
+```json
+{
+  "colors": {
+    "primary": {
+      "500": {
+        "$value": "#0366D6",
+        "$type": "color"
+      },
+      "300": {
+        "$value": "{colors.primary.500}",
+        "$type": "color"
+      }
+    }
+  }
+}
+```
+
+## Advanced Features
+
+### Smart Rename Detection
+
+The plugin includes sophisticated algorithms to detect renamed tokens:
+
+- **Token Renaming**: Detect when a token has been renamed (e.g., "50" to "500")
+- **Group Renaming**: Identify when a token group path has changed (e.g., "colors/primary" to "colors/brand")
+- **Collection Renaming**: Handle renamed collections without data loss
+
+### Metadata Support
+
+The export includes a metadata file with:
+
+- Export date and time
+- Document name and ID
+- Plugin version
+- Export settings
 
 ## Project Structure
 
@@ -38,56 +145,32 @@ figma-token-manager/
 ├── src/                   # Source code directory
 │   ├── code/              # Main plugin logic
 │   │   ├── index.ts       # Plugin entry point 
+│   │   ├── updateVariablesHandler.ts  # Handler for updating Figma variables
+│   │   ├── exportHandler.ts  # Handler for exporting tokens
 │   │   ├── extractors/    # Token extraction modules
 │   │   ├── formatters/    # Value formatting utilities
 │   │   └── types.ts       # TypeScript type definitions
 │   ├── ui/                # UI components
 │   │   ├── index.ts       # UI entry point
 │   │   ├── components/    # UI component modules
-│   │   └── styles.css     # Lightweight CSS styles
+│   │   │   ├── header.ts       # Header with view toggle
+│   │   │   ├── sidebarPanel.ts # Sidebar navigation and controls
+│   │   │   ├── TokenGrid.ts    # Visual token display grid
+│   │   │   ├── jsonViewIntegration.ts # JSON editor integration
+│   │   │   └── tokenDetailsPanel.ts   # Token details display
+│   │   ├── styles/        # CSS styles
+│   │   └── utilities/     # Helper functions
 │   └── ui.html            # User interface HTML structure
 └── dist/                  # Build output directory
 ```
 
-## Design Decisions
-
-The plugin is built with specific constraints in mind to ensure optimal performance in Figma's plugin environment:
-
-- **Lightweight**: Minimal dependencies and optimized bundle size
-- **Vanilla Implementation**: Custom CSS and JavaScript without heavy frameworks
-- **Figma-Native Feel**: UI that follows Figma's design patterns and expectations
-- **Performance First**: Optimized for speed in Figma's sandboxed environment
-
-## Token Export Format
-
-### DTCG Format (Default)
-
-```json
-{
-  "colors": {
-    "primary": {
-      "base": {
-        "$value": "#0366D6",
-        "$type": "color"
-      }
-    }
-  }
-}
-```
-
-### Legacy Format
-
-```json
-{
-  "colors": {
-    "primary": {
-      "base": "#0366D6"
-    }
-  }
-}
-```
-
 ## Development
+
+### Prerequisites
+
+- Node.js (v14 or later)
+- npm (v6 or later)
+- Figma desktop app
 
 ### Setup
 
@@ -96,53 +179,52 @@ The plugin is built with specific constraints in mind to ensure optimal performa
    ```bash
    npm install
    ```
-3. Build the plugin:
-   ```bash
-   npm run build
-   ```
-
-### Development Workflow
-
-1. Start the development server with hot reloading:
+3. Start the development server:
    ```bash
    npm run dev
    ```
-2. Import the plugin in Figma (Plugins > Development > Import plugin from manifest)
-3. Select the `manifest.json` file from your project
+4. Import the plugin in Figma (Plugins > Development > Import plugin from manifest)
+5. Select the `manifest.json` file from your project
 
-### Building for Distribution
+### Building for Production
 
 ```bash
 npm run build
 ```
 
-This will create optimized production files in the `dist/` directory.
+This creates optimized production files in the `dist/` directory.
 
-## Deployment
+## Troubleshooting
 
-To package the plugin for distribution:
+### Common Issues
 
-```bash
-mkdir -p plugin-export
-cp manifest.json plugin-export/
-cp -r dist plugin-export/
-cd plugin-export
-zip -r ../figma-token-manager.zip .
-```
+**The plugin is slow with large variable sets**
+- The performance depends on the number of variables in your document
+- Consider working with smaller subsets of variables if possible
 
-## Limitations
+**JSON references aren't resolving correctly**
+- Check that references use the correct format: `{collection.group.token}` or `{collection/group/token}`
+- Ensure the referenced token exists and is correctly defined
 
-- Figma plugin environment restrictions apply (sandbox limitations)
-- Limited network access (domains must be specified in manifest)
-- Performance depends on the size and complexity of the Figma document
+**Changes aren't being applied to Figma**
+- Review the warning/error messages in the interface
+- Check that your JSON is valid with no syntax errors
+- Ensure you're targeting the correct collections and modes
 
 ## Future Enhancements
 
+- Import from external token files (JSON, YAML)
 - Additional export formats (CSS variables, SCSS, etc.)
-- Token importing capabilities
-- Enhanced visual token preview options
+- Token version history and change tracking
 - Performance optimizations for large token sets
+- Visual token creation and editing interface
 
 ## License
 
 MIT
+
+## Credits
+
+Developed by [Your Name/Organization]
+
+Inspired by the Design Tokens Community Group (DTCG) specification.

@@ -530,6 +530,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         break;
         
+      case 'download-file':
+        // Handle file download from plugin
+        console.log('Received file for download:', message.fileName);
+        
+        try {
+          // Convert array back to Uint8Array
+          const uint8Array = new Uint8Array(message.buffer);
+          
+          // Create a blob from the data
+          const blob = new Blob([uint8Array], { type: 'application/zip' });
+          
+          // Create a URL for the blob
+          const url = URL.createObjectURL(blob);
+          
+          // Create a link element to trigger the download
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = message.fileName;
+          a.style.display = 'none';
+          
+          // Add link to document, click, and remove
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          
+          // Clean up the URL object
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          
+          // Show a temporary notification
+          const notification = document.createElement('div');
+          notification.className = 'export-notification';
+          notification.textContent = 'Export completed! ZIP file downloaded.';
+          notification.style.position = 'fixed';
+          notification.style.bottom = '20px';
+          notification.style.right = '20px';
+          notification.style.backgroundColor = '#4CAF50';
+          notification.style.color = 'white';
+          notification.style.padding = '10px 20px';
+          notification.style.borderRadius = '4px';
+          notification.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+          notification.style.zIndex = '1000';
+          document.body.appendChild(notification);
+          
+          // Remove notification after a delay
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 3000);
+          
+          console.log('File download initiated');
+        } catch (error) {
+          console.error('Error downloading file:', error);
+          alert(`Error downloading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        break;
+        
       case 'error':
         // Handle error message
         console.error('Error from plugin:', message.message);

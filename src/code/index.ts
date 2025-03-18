@@ -1,6 +1,7 @@
 import { extractDTCGVariables } from './extractors/dtcgVariables';
 import { formatAllColors, ColorFormat } from './formatters/colorUtils';
 import { handleUpdateVariables } from './updateVariablesHandler'; // Import the update handler
+import { exportVariablesToZip } from './exportHandler'; // Import the export handler
 
 // Flag to track if we should extract on startup
 let shouldExtractOnStartup = true;
@@ -119,6 +120,36 @@ figma.ui.onmessage = async (msg) => {
         type: 'update-variables-result',
         success: false,
         error: `Error handling variable update: ${error instanceof Error ? error.message : "Unknown error"}`
+      });
+    }
+  } else if (msg.type === 'export-tokens') {
+    try {
+      console.log("Received export tokens request");
+      
+      // If we don't have token data, extract it first
+      if (!originalTokenData) {
+        originalTokenData = await extractDTCGVariables();
+      }
+      
+      // Apply current color format if needed
+      const dataToExport = formatAllColors(
+        JSON.parse(JSON.stringify(originalTokenData)),
+        currentColorFormat
+      );
+      
+      // Generate and download a zip file with exported tokens
+      await exportVariablesToZip(dataToExport);
+      
+      // Notify UI that export completed successfully
+      figma.ui.postMessage({
+        type: 'export-complete',
+        success: true
+      });
+    } catch (error: unknown) {
+      console.error("Error exporting tokens:", error);
+      figma.ui.postMessage({
+        type: 'error',
+        message: `Error exporting tokens: ${error instanceof Error ? error.message : "Unknown error"}`
       });
     }
   } else if (msg.type === 'close') {
