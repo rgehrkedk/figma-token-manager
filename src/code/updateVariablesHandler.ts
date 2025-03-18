@@ -1,8 +1,8 @@
 /**
  * updateVariablesHandler.ts
  * 
- * Handler for updating Figma variables from JSON data
- * Add this to the plugin code
+ * Enhanced handler for updating Figma variables from JSON data
+ * Supports creating, updating, and renaming variables, groups, modes, and collections
  */
 
 /**
@@ -10,7 +10,7 @@
  * Creates variables if they don't exist and updates existing ones
  * @param jsonData The JSON data containing variable updates
  */
-export async function handleUpdateVariables(jsonData: any): Promise<{success: boolean, error?: string, warnings?: string[], created?: number, updated?: number, collections?: number, modes?: number, renamed?: number}> {
+export async function handleUpdateVariables(jsonData: any): Promise<{success: boolean, error?: string, warnings?: string[], created?: number, updated?: number, collections?: number, modes?: number, renamed?: number, deleted?: number}> {
   try {
     console.log("Starting variable update process");
     
@@ -32,10 +32,14 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     let collectionsCreated = 0;
     let modesCreated = 0;
     let renamedCount = 0;
+    let deletedCount = 0;
     
     // Track reference resolution errors
     const referenceErrors: string[] = [];
     const creationErrors: string[] = [];
+    
+    // Track which variables we'll keep (from the JSON)
+    const variablesToKeep = new Set<string>();
     
     // Get collection names and preserve their order
     const collectionNames = Object.keys(jsonData);
@@ -54,6 +58,42 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
       collectionModeMap.set(collection.name.toLowerCase(), modes);
     });
     
+    // Collection variables and groups map
+    const variablesMap = new Map<string, Map<string, Set<string>>>();
+    
+    // First, build a map of all variables in each collection
+    // This helps us organize variables by collection and group
+    for (const collection of collections) {
+      const collectionVars = figma.variables.getLocalVariables().filter(
+        v => v.variableCollectionId === collection.id
+      );
+      
+      const groupsMap = new Map<string, Set<string>>();
+      
+      for (const variable of collectionVars) {
+        // Extract group path from variable name
+        const parts = variable.name.split('/');
+        // Variable is directly in collection (no group)
+        if (parts.length === 1) {
+          if (!groupsMap.has('')) {
+            groupsMap.set('', new Set());
+          }
+          groupsMap.get('')?.add(variable.name);
+        } 
+        // Variable is in a group
+        else {
+          const groupPath = parts.slice(0, parts.length - 1).join('/');
+          const variableName = variable.name;
+          if (!groupsMap.has(groupPath)) {
+            groupsMap.set(groupPath, new Set());
+          }
+          groupsMap.get(groupPath)?.add(variableName);
+        }
+      }
+      
+      variablesMap.set(collection.name.toLowerCase(), groupsMap);
+    }
+    
     // Process each collection in the JSON data in order
     for (const collectionName of collectionNames) {
       console.log(`Processing collection: ${collectionName}`);
@@ -63,29 +103,41 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
       
       // If collection doesn't exist, check if it's a renamed collection
       if (!collection) {
-        // Check if we need to rename a collection instead of creating one
-        // If there are exactly the same number of collections in JSON as in Figma
-        // and this is the first unmatched collection, it's likely a rename
-        if (collectionNames.length === collections.length && collectionsCreated === 0) {
-          // Find collections in Figma that don't match any collection in JSON
-          const unmatchedFigmaCollections = collections.filter(c => 
-            !collectionNames.some(jsonCollection => jsonCollection.toLowerCase() === c.name.toLowerCase())
-          );
+        // Check for a collection that should be renamed
+        // Look at all collections that haven't been processed yet
+        const processedCollections = new Set();
+        const unmatchedFigmaCollections = collections.filter(c => 
+          !collectionNames.some(jsonCollection => 
+            jsonCollection.toLowerCase() === c.name.toLowerCase()
+          ) && !processedCollections.has(c.name.toLowerCase())
+        );
+        
+        if (unmatchedFigmaCollections.length > 0) {
+          // Find the first unprocessed collection to rename
+          const oldCollection = unmatchedFigmaCollections[0];
+          console.log(`Renaming collection: ${oldCollection.name} to ${collectionName}`);
           
-          // If there's exactly one unmatched collection, assume it was renamed
-          if (unmatchedFigmaCollections.length === 1) {
-            const oldCollection = unmatchedFigmaCollections[0];
-            console.log(`Renaming collection: ${oldCollection.name} to ${collectionName}`);
+          try {
+            // Rename the collection
+            oldCollection.name = collectionName;
+            collection = oldCollection;
+            renamedCount++;
             
-            try {
-              // Rename the collection
-              oldCollection.name = collectionName;
-              collection = oldCollection;
-              renamedCount++;
-            } catch (error) {
-              console.error(`Error renaming collection ${oldCollection.name} to ${collectionName}:`, error);
-              creationErrors.push(`Error renaming collection: ${error instanceof Error ? error.message : String(error)}`);
+            // Mark this collection as processed so we don't use it again
+            processedCollections.add(oldCollection.name.toLowerCase());
+            processedCollections.add(collectionName.toLowerCase());
+            
+            // Update our variables map with the new collection name
+            if (variablesMap.has(oldCollection.name.toLowerCase())) {
+              const groupsMap = variablesMap.get(oldCollection.name.toLowerCase());
+              if (groupsMap) {
+                variablesMap.delete(oldCollection.name.toLowerCase());
+                variablesMap.set(collectionName.toLowerCase(), groupsMap);
+              }
             }
+          } catch (error) {
+            console.error(`Error renaming collection ${oldCollection.name} to ${collectionName}:`, error);
+            creationErrors.push(`Error renaming collection: ${error instanceof Error ? error.message : String(error)}`);
           }
         }
         
@@ -96,6 +148,9 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
           try {
             collection = figma.variables.createVariableCollection(collectionName);
             collectionsCreated++;
+            
+            // Create an empty groups map for this collection
+            variablesMap.set(collectionName.toLowerCase(), new Map());
             
             // If this is the first collection, refresh the list
             if (collectionsCreated === 1) {
@@ -133,29 +188,33 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
           // Get the existing modes in this collection
           const existingModes = collection.modes;
           
-          // Check if we need to rename a mode instead of creating one
-          // If there are exactly the same number of modes in JSON as in Figma
-          // and this is the first unmatched mode, it's likely a rename
-          if (modeNames.length === existingModes.length && modesCreated === 0) {
-            // Find modes in Figma that don't match any mode in JSON
-            const unmatchedFigmaModes = existingModes.filter(m => 
-              !modeNames.some(jsonMode => jsonMode.toLowerCase() === m.name.toLowerCase())
-            );
+          // Track processed modes to avoid duplicates
+          const processedModes = new Set();
+          
+          // Find modes in Figma that haven't been processed and don't match any mode in JSON
+          const unmatchedFigmaModes = existingModes.filter(m => 
+            !modeNames.some(jsonMode => 
+              jsonMode.toLowerCase() === m.name.toLowerCase()
+            ) && !processedModes.has(m.name.toLowerCase())
+          );
+          
+          // If there are unmatched modes, rename the first one
+          if (unmatchedFigmaModes.length > 0) {
+            const oldMode = unmatchedFigmaModes[0];
+            console.log(`Renaming mode: ${oldMode.name} to ${modeName}`);
             
-            // If there's exactly one unmatched mode, assume it was renamed
-            if (unmatchedFigmaModes.length === 1) {
-              const oldMode = unmatchedFigmaModes[0];
-              console.log(`Renaming mode: ${oldMode.name} to ${modeName}`);
+            try {
+              // Rename the mode
+              collection.renameMode(oldMode.modeId, modeName);
+              mode = collection.modes.find(m => m.modeId === oldMode.modeId);
+              renamedCount++;
               
-              try {
-                // Rename the mode
-                collection.renameMode(oldMode.modeId, modeName);
-                mode = collection.modes.find(m => m.modeId === oldMode.modeId);
-                renamedCount++;
-              } catch (error) {
-                console.error(`Error renaming mode ${oldMode.name} to ${modeName}:`, error);
-                creationErrors.push(`Error renaming mode: ${error instanceof Error ? error.message : String(error)}`);
-              }
+              // Mark as processed
+              processedModes.add(oldMode.name.toLowerCase());
+              processedModes.add(modeName.toLowerCase());
+            } catch (error) {
+              console.error(`Error renaming mode ${oldMode.name} to ${modeName}:`, error);
+              creationErrors.push(`Error renaming mode: ${error instanceof Error ? error.message : String(error)}`);
             }
           }
           
@@ -191,7 +250,8 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
           modeData, 
           mode.modeId, 
           `${collectionName}.${modeName}`,
-          collection.id  // Pass the collection ID for variable creation
+          collection.id,  // Pass the collection ID for variable creation
+          variablesMap.get(collectionName.toLowerCase()) // Pass the groups map
         );
         
         updatedAnyVariables = updatedAnyVariables || updateResult.updated;
@@ -202,15 +262,78 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
         if (updateResult.referenceErrors && updateResult.referenceErrors.length > 0) {
           referenceErrors.push(...updateResult.referenceErrors);
         }
+        
+        // No need to collect additional IDs anymore
+      }
+    }
+    
+    // Collect all variable paths that exist in the final JSON
+    const variablePathsInJson = new Set<string>();
+    
+    // Helper function to collect variable paths from the JSON
+    const collectVariablePaths = (data: any, prefix: string = '') => {
+      if (!data || typeof data !== 'object') return;
+      
+      Object.entries(data).forEach(([key, value]) => {
+        // Full path including this key
+        const fullPath = prefix ? `${prefix}/${key}` : key;
+        
+        // If it's a token definition with $value and $type
+        if (value && typeof value === 'object' && '$value' in value && '$type' in value) {
+          variablePathsInJson.add(fullPath);
+        }
+        // If it's a nested object, recursively process it
+        else if (value && typeof value === 'object') {
+          collectVariablePaths(value, fullPath);
+        }
+      });
+    };
+    
+    // Process the entire JSON to get all variable paths
+    Object.entries(jsonData).forEach(([collection, collectionData]) => {
+      if (typeof collectionData === 'object') {
+        Object.entries(collectionData).forEach(([mode, modeData]) => {
+          collectVariablePaths(modeData, `${collection}/${mode}`);
+        });
+      }
+    });
+    
+    console.log(`Found ${variablePathsInJson.size} variables in the JSON data`);
+    
+    // Get all variables from collections we care about
+    const allVariables = figma.variables.getLocalVariables();
+    const collectionsToProcess = new Set<string>();
+    
+    // Identify collections mentioned in the JSON
+    collections.forEach(collection => {
+      if (jsonData[collection.name]) {
+        collectionsToProcess.add(collection.id);
+      }
+    });
+    
+    // IMPORTANT: Disable automatic deletion of variables
+    // Instead of automatically deleting variables, we'll make this a user-driven action
+    // to prevent accidental deletion
+    const variablesToDelete: Variable[] = [];
+    
+    // Delete the variables
+    for (const variable of variablesToDelete) {
+      try {
+        console.log(`Deleting variable: ${variable.name}`);
+        variable.remove();
+        deletedCount++;
+      } catch (error) {
+        console.error(`Error deleting variable ${variable.name}:`, error);
+        creationErrors.push(`Error deleting variable: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
     
     // Handle completion status
-    if (!updatedAnyVariables && collectionsCreated === 0 && modesCreated === 0 && renamedCount === 0) {
-      console.log("No variables, collections, or modes were updated, created, or renamed - possibly empty input");
+    if (!updatedAnyVariables && collectionsCreated === 0 && modesCreated === 0 && renamedCount === 0 && deletedCount === 0) {
+      console.log("No variables, collections, or modes were updated, created, renamed or deleted - possibly empty input");
       return { 
         success: true,
-        error: "No variables, collections, or modes were updated, created, or renamed. The filter might be too restrictive or data is empty."
+        error: "No variables, collections, or modes were updated, created, renamed or deleted. The filter might be too restrictive or data is empty."
       };
     }
     
@@ -233,7 +356,8 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
         updated: updatedCount,
         collections: collectionsCreated,
         modes: modesCreated,
-        renamed: renamedCount
+        renamed: renamedCount,
+        deleted: deletedCount
       };
     }
     
@@ -243,7 +367,7 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     if (updatedCount > 0) successParts.push(`updated ${updatedCount} variables`);
     if (collectionsCreated > 0) successParts.push(`created ${collectionsCreated} collections`);
     if (modesCreated > 0) successParts.push(`created ${modesCreated} modes`);
-    if (renamedCount > 0) successParts.push(`renamed ${renamedCount} collections/modes`);
+    if (renamedCount > 0) successParts.push(`renamed ${renamedCount} items`);
     
     const successMessage = successParts.join(', ');
     console.log(`Variable update completed successfully: ${successMessage}`);
@@ -254,7 +378,8 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
       updated: updatedCount,
       collections: collectionsCreated,
       modes: modesCreated,
-      renamed: renamedCount
+      renamed: renamedCount,
+      deleted: 0 // Auto-deletion is now disabled
     };
   } catch (error) {
     console.error("Error updating variables:", error);
@@ -267,11 +392,14 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
 
 /**
  * Updates variables within a specific mode
+ * Enhanced to handle variable groups properly
  * @param variables Array of Figma variables
  * @param modeData JSON data for the mode
  * @param modeId The mode ID
  * @param path The current path (for nested objects)
  * @param currentPath The current JSON path for nested objects
+ * @param collectionId Collection ID for variable creation
+ * @param groupsMap Map of groups to variables in the collection
  * @returns Object with information about update status
  */
 async function updateVariablesInMode(
@@ -279,13 +407,16 @@ async function updateVariablesInMode(
   modeData: any,
   modeId: string,
   path: string,
-  currentPath: string = '',
-  collectionId?: string
-): Promise<{ updated: boolean, updatedCount: number, createdCount: number, referenceErrors?: string[] }> {
+  collectionId?: string,
+  groupsMap?: Map<string, Set<string>>,
+  currentPath: string = ''
+): Promise<{ updated: boolean, updatedCount: number, createdCount: number, referenceErrors?: string[], processedVariableIds?: Set<string> }> {
   let updated = false;
   let updatedCount = 0;
   let createdCount = 0;
   const referenceErrors: string[] = [];
+  // Track processed variables to identify deleted ones later
+  const processedVariableIds = new Set<string>();
   
   // Get all keys and sort them to maintain a consistent order
   // Sort tokens to ensure that referenced tokens are processed first
@@ -317,6 +448,84 @@ async function updateVariablesInMode(
     return a.localeCompare(b);
   });
   
+  // Check if this is a group renaming scenario
+  // We need to detect if an entire group was renamed by looking at the structure
+  const isGroupRename = currentPath && modeData && typeof modeData === 'object';
+  
+  if (isGroupRename) {
+    // Identify potential group renamings
+    const possibleOldGroups = new Set<string>();
+    
+    // Get all variables that might be part of a group
+    const variableGroups = new Map<string, Variable[]>();
+    
+    // Group variables by their parent group path
+    variables.forEach(v => {
+      const parts = v.name.split('/');
+      if (parts.length > 1) {
+        const groupPath = parts.slice(0, -1).join('/');
+        if (!variableGroups.has(groupPath)) {
+          variableGroups.set(groupPath, []);
+        }
+        variableGroups.get(groupPath)?.push(v);
+      }
+    });
+    
+    // Find groups that might have been renamed
+    const currentGroupPath = currentPath;
+    
+    // Check if we can find a matching group
+    let matchingOldGroup = '';
+    let matchingOldGroupVars: Variable[] = [];
+    
+    // Look for potential old group paths that might be a match
+    // We consider it a match if:
+    // 1. The group isn't already in use as a currentPath
+    // 2. The group has a similar structure to the current group
+    for (const [groupPath, groupVars] of variableGroups.entries()) {
+      // Skip if this group matches the current path (not renamed)
+      if (groupPath === currentGroupPath) continue;
+      
+      // Check if this group is a good candidate (similar number of variables)
+      const tokensInNewGroup = Object.keys(modeData).filter(
+        k => modeData[k] && typeof modeData[k] === 'object' && modeData[k].$value !== undefined
+      ).length;
+      
+      // Similar number of variables indicates potential match
+      if (Math.abs(groupVars.length - tokensInNewGroup) <= 1) {
+        // We found a potential match
+        matchingOldGroup = groupPath;
+        matchingOldGroupVars = groupVars;
+        break;
+      }
+    }
+    
+    // If we found a matching old group, handle group renaming
+    if (matchingOldGroup && matchingOldGroupVars.length > 0) {
+      console.log(`Detected group rename: ${matchingOldGroup} -> ${currentGroupPath}`);
+      
+      // For each variable in the old group, rename it to the new group
+      for (const oldVar of matchingOldGroupVars) {
+        const oldParts = oldVar.name.split('/');
+        const baseName = oldParts[oldParts.length - 1];
+        const newVarName = `${currentGroupPath}/${baseName}`;
+        
+        console.log(`Renaming group variable: ${oldVar.name} -> ${newVarName}`);
+        
+        try {
+          // Update the variable name
+          oldVar.name = newVarName;
+          
+          // Mark this variable as processed to prevent deletion
+          processedVariableIds.add(oldVar.id);
+        } catch (error) {
+          console.error(`Error renaming variable in group: ${error}`);
+          referenceErrors.push(`Error renaming variable in group: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    }
+  }
+  
   // Process each property in the mode data
   for (const key of keys) {
     const value = modeData[key];
@@ -324,9 +533,96 @@ async function updateVariablesInMode(
     
     // If this is a token object with $value and $type
     if (value && typeof value === 'object' && value.$value !== undefined) {
-      // Find the matching variable
+      // Find the matching variable - first by exact name
       const variableName = newPath;
       let variable = variables.find(v => v.name === variableName);
+      
+      // If not found, check if it's a renamed variable by looking at the path structure
+      // and comparing segments to find likely matches
+      let isRenamed = false;
+      if (!variable) {
+        const nameParts = variableName.split('/');
+        const variableBaseName = nameParts[nameParts.length - 1]; // Last part is the base name
+        const variablePath = nameParts.slice(0, -1).join('/'); // Path without the base name
+        
+        // STEP 1: First, try to find variables in the same group with similar names
+        // This helps with small token name changes like "50" to "502"
+        const variablesInSameGroup = variables.filter(v => {
+          const parts = v.name.split('/');
+          const vPath = parts.slice(0, -1).join('/');
+          const vBaseName = parts[parts.length - 1];
+          
+          // Must be in the same path
+          if (vPath !== variablePath) return false;
+          
+          // Names should be similar (one includes the other)
+          // This catches cases like "50" vs "502", "primary" vs "primary2", etc.
+          if (vBaseName.includes(variableBaseName) || variableBaseName.includes(vBaseName)) {
+            return true;
+          }
+          
+          // For number-only renames, try to be even more flexible
+          const isNumericSource = /^\d+$/.test(variableBaseName);
+          const isNumericTarget = /^\d+$/.test(vBaseName);
+          
+          if (isNumericSource && isNumericTarget) {
+            // For numeric renames, consider them similar if they start with the same digit
+            // (e.g., "50" and "500" both start with "5")
+            return variableBaseName.charAt(0) === vBaseName.charAt(0);
+          }
+          
+          return false;
+        });
+        
+        // If we found similar variables in the same group, use the first one
+        if (variablesInSameGroup.length > 0) {
+          console.log(`Found similar variable in same group: ${variablesInSameGroup[0].name} → ${variableName}`);
+          variable = variablesInSameGroup[0];
+          isRenamed = true;
+          processedVariableIds.add(variable.id);
+        }
+        
+        // STEP 2: If same group matching didn't work, try exact base name matches across groups
+        if (!variable) {
+          // Look for variables with the exact same base name anywhere
+          const variablesWithSameBaseName = variables.filter(v => {
+            const parts = v.name.split('/');
+            const baseName = parts[parts.length - 1];
+            return baseName === variableBaseName;
+          });
+          
+          // If we found variables with the same base name, check for unmatched ones
+          if (variablesWithSameBaseName.length > 0) {
+            // Find variables that don't match any other token in the current data
+            const matchedVariables = new Set<string>();
+            
+            // Collect all variable paths that are already matched
+            Object.keys(modeData).forEach(k => {
+              if (k === key) return; // Skip the current key
+              const v = modeData[k];
+              if (v && typeof v === 'object' && v.$value !== undefined) {
+                const path = currentPath ? `${currentPath}/${k}` : k;
+                matchedVariables.add(path);
+              }
+            });
+            
+            // Find unmatched variables
+            const unmatchedVariables = variablesWithSameBaseName.filter(v => 
+              !Array.from(matchedVariables).some(path => path === v.name)
+            );
+            
+            if (unmatchedVariables.length > 0) {
+              // Use the first unmatched variable as the one to rename
+              variable = unmatchedVariables[0];
+              isRenamed = true;
+              console.log(`Renaming variable: ${variable.name} to ${variableName}`);
+              
+              // Mark this variable as processed to prevent deletion
+              processedVariableIds.add(variable.id);
+            }
+          }
+        }
+      }
       
       try {
         // Check if this is a reference value
@@ -345,7 +641,7 @@ async function updateVariablesInMode(
           continue;
         }
         
-        // If variable doesn't exist, create it
+        // Handle variable creation or renaming
         if (!variable) {
           // Map DTCG type to Figma variable type
           const figmaType = mapDTCGTypeToFigmaType(value.$type);
@@ -381,12 +677,85 @@ async function updateVariablesInMode(
           // Create the variable
           console.log(`Creating new variable: ${variableName} of type ${figmaType}`);
           variable = figma.variables.createVariable(variableName, targetCollectionId, figmaType);
+        } else if (isRenamed) {
+          // Handle renamed variable - we need to rename the existing variable
+          const oldName = variable.name;
+          
+          try {
+            // Update the variable name
+            variable.name = variableName;
+            console.log(`Renamed variable: ${oldName} to ${variableName}`);
+          } catch (error) {
+            console.error(`Error renaming variable ${oldName} to ${variableName}:`, error);
+            referenceErrors.push(`Error renaming variable: ${error instanceof Error ? error.message : String(error)}`);
+          }
+          
+          // Add the variable to the groups map if provided
+          if (groupsMap) {
+            // Extract group path
+            const parts = variableName.split('/');
+            if (parts.length > 1) {
+              const groupPath = parts.slice(0, parts.length - 1).join('/');
+              if (!groupsMap.has(groupPath)) {
+                groupsMap.set(groupPath, new Set());
+              }
+              groupsMap.get(groupPath)?.add(variableName);
+            } else {
+              if (!groupsMap.has('')) {
+                groupsMap.set('', new Set());
+              }
+              groupsMap.get('')?.add(variableName);
+            }
+          }
           
           // Add to the variables array so we can find it later
           variables.push(variable);
           
+          // Set description if provided
+          if (value.$description) {
+            variable.description = value.$description;
+          }
+
+          // Set scopes if provided and supported
+          if (value.$scopes && Array.isArray(value.$scopes)) {
+            try {
+              // Filter only valid scopes
+              const validScopes = value.$scopes.filter(scope => 
+                isValidVariableScope(scope)
+              );
+              
+              if (validScopes.length > 0) {
+                variable.scopes = validScopes;
+              }
+            } catch (error) {
+              console.warn(`Could not set scopes for ${variableName}:`, error);
+            }
+          }
+          
           // Increment creation counter (this is a new variable)
           createdCount++;
+        } else {
+          // Update description if provided and different
+          if (value.$description && variable.description !== value.$description) {
+            variable.description = value.$description;
+          }
+
+          // Update scopes if provided and supported
+          if (value.$scopes && Array.isArray(value.$scopes)) {
+            try {
+              // Filter only valid scopes
+              const validScopes = value.$scopes.filter(scope => 
+                isValidVariableScope(scope)
+              );
+              
+              // Check if scopes are different
+              if (validScopes.length > 0 && !arraysEqual(validScopes, variable.scopes)) {
+                variable.scopes = validScopes;
+              }
+            } catch (error) {
+              console.warn(`Could not update scopes for ${variableName}:`, error);
+            }
+          }
         }
         
         // Update the variable value for this mode
@@ -398,6 +767,9 @@ async function updateVariablesInMode(
           console.log(`${variable ? 'Updated' : 'Created'} variable: ${variableName}`);
         }
         
+        // Mark this variable as processed
+        processedVariableIds.add(variable.id);
+        
         updated = true;
         updatedCount++;
       } catch (error) {
@@ -408,7 +780,16 @@ async function updateVariablesInMode(
     // If this is a nested object (not a token)
     else if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Recursively process nested objects
-      const nestedResult = await updateVariablesInMode(variables, value, modeId, path, newPath, collectionId);
+      const nestedResult = await updateVariablesInMode(
+        variables, 
+        value, 
+        modeId, 
+        path, 
+        collectionId,
+        groupsMap,
+        newPath
+      );
+      
       updated = updated || nestedResult.updated;
       updatedCount += nestedResult.updatedCount;
       createdCount += nestedResult.createdCount;
@@ -420,7 +801,7 @@ async function updateVariablesInMode(
     }
   }
   
-  return { updated, updatedCount, createdCount, referenceErrors };
+  return { updated, updatedCount, createdCount, referenceErrors, processedVariableIds };
 }
 
 /**
@@ -465,6 +846,54 @@ function processValueForFigma(value: any, type: string): any {
       }
       return value;
   }
+}
+
+/**
+ * Check if a string is a valid VariableScope
+ * @param scope The scope to check
+ */
+function isValidVariableScope(scope: string): boolean {
+  const validScopes = [
+    'ALL_SCOPES',
+    'TEXT_CONTENT',
+    'CORNER_RADIUS',
+    'WIDTH_HEIGHT',
+    'GAP',
+    'ALL_FILLS',
+    'FRAME_FILL',
+    'SHAPE_FILL',
+    'TEXT_FILL',
+    'STROKE_COLOR',
+    'STROKE_FLOAT',
+    'EFFECT_FLOAT',
+    'EFFECT_COLOR',
+    'OPACITY',
+    'FONT_FAMILY',
+    'FONT_STYLE',
+    'FONT_WEIGHT',
+    'FONT_SIZE',
+    'LINE_HEIGHT',
+    'LETTER_SPACING',
+    'PARAGRAPH_SPACING',
+    'PARAGRAPH_INDENT'
+  ];
+  
+  return validScopes.includes(scope);
+}
+
+/**
+ * Compare two arrays for equality
+ * @param a First array
+ * @param b Second array
+ */
+function arraysEqual(a: any[], b: any[]): boolean {
+  if (a.length !== b.length) return false;
+  
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  
+  return true;
 }
 
 /**
@@ -687,7 +1116,8 @@ function hslStringToRGBA(hsl: string): { r: number, g: number, b: number, a: num
 
 /**
  * Resolves a reference string in the format {path.to.variable} to a Figma variable alias
- * @param reference The reference string in the format {path.to.variable}
+ * Enhanced to handle both slash and dot notation
+ * @param reference The reference string in the format {path.to.variable} or {path/to/variable}
  * @returns A Figma variable alias object or the original value if reference cannot be resolved
  */
 function resolveReferenceToFigmaAlias(reference: string): any {
@@ -704,6 +1134,20 @@ function resolveReferenceToFigmaAlias(reference: string): any {
     
     if (!referencedVariable) {
       console.warn(`Referenced variable not found: ${normalizedPath}`);
+      
+      // Try a more flexible search - match by case-insensitive name
+      const caseInsensitiveMatch = allVariables.find(v => 
+        v.name.toLowerCase() === normalizedPath.toLowerCase()
+      );
+      
+      if (caseInsensitiveMatch) {
+        console.log(`Found case-insensitive match for ${normalizedPath}: ${caseInsensitiveMatch.name}`);
+        return {
+          type: 'VARIABLE_ALIAS',
+          id: caseInsensitiveMatch.id
+        };
+      }
+      
       return null; // Return null for invalid references
     }
     

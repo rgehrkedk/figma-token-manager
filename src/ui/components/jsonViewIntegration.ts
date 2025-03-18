@@ -1,82 +1,38 @@
 /**
  * jsonViewIntegration.ts
  * 
- * Integrates the enhanced JSON viewer with the main UI
- * Updated to use the editable implementation with line numbers
- * and improved validation feedback
+ * Integrates the enhanced JSON editor with the main UI
+ * Updated to support full variable management functionality
  */
 
-import { createJsonViewer, JsonViewerInterface } from './JsonViewer';
+import { createJsonEditor } from './JsonEditor';
 import { updateFigmaVariables } from '../utilities/updateFigmaVariables';
 
-// Store the JSON viewer instance
-let jsonViewer: JsonViewerInterface | null = null;
+// Store the JSON editor instance
+let jsonEditor: any = null;
 
 /**
- * Initialize the JSON viewer in the specified container
- */
-export function initJsonViewer(
-  containerId: string, 
-  initialJson: any = {}, 
-  editable: boolean = false
-): JsonViewerInterface {
-  // Create JSON viewer
-  jsonViewer = createJsonViewer({
-    containerId,
-    initialJson,
-    editable,
-    lineNumbers: true,
-    maxHeight: '650px',
-    onChange: handleJsonChange
-  });
-  
-  return jsonViewer;
-}
-
-/**
- * Handle changes to the JSON content
- */
-function handleJsonChange(jsonContent: string): void {
-  try {
-    // Parse JSON to validate
-    JSON.parse(jsonContent);
-    
-    // Enable save button if valid
-    const saveButton = document.querySelector('.json-save-btn') as HTMLButtonElement;
-    if (saveButton) {
-      saveButton.disabled = false;
-    }
-  } catch (error) {
-    // Disable save button if invalid
-    const saveButton = document.querySelector('.json-save-btn') as HTMLButtonElement;
-    if (saveButton) {
-      saveButton.disabled = true;
-    }
-  }
-}
-
-/**
- * Update the JSON viewer with new data
+ * Update the JSON editor with new data
  */
 export function updateJsonViewer(json: any): void {
-  if (jsonViewer) {
-    jsonViewer.setJson(json);
+  if (jsonEditor) {
+    jsonEditor.setJson(json);
   }
 }
 
 /**
- * Get the current JSON from the viewer
+ * Get the current JSON from the editor
  */
 export function getJsonFromViewer(): any {
-  if (jsonViewer) {
-    return jsonViewer.getJson();
+  if (jsonEditor) {
+    return jsonEditor.getJson();
   }
   return null;
 }
 
 /**
- * Setup the JSON editor panel with action buttons
- * Updated to provide visual feedback during validation
+ * Setup the JSON editor panel with enhanced features
+ * Provides full Figma variables editing capability
  */
 export function setupJsonEditorPanel(containerId: string, initialJson: any = {}): void {
   const container = document.getElementById(containerId);
@@ -85,147 +41,26 @@ export function setupJsonEditorPanel(containerId: string, initialJson: any = {})
     return;
   }
   
-  // Create editor panel UI
-  container.innerHTML = `
-    <div class="json-editor-container">
-      <div class="json-editor-header">
-        <div class="json-status">
-          <span class="status-indicator valid">Valid JSON</span>
-        </div>
-        <div class="json-editor-actions">
-          <button class="json-validate-btn">Validate</button>
-          <button class="json-save-btn">Save to Figma</button>
-        </div>
-      </div>
-      <div class="json-viewer-container" id="json-viewer-content"></div>
-      <div class="json-editor-footer">
-        <div class="json-editor-message success">JSON is valid and ready to be saved.</div>
-      </div>
-    </div>
-  `;
+  // Create JSON editor
+  jsonEditor = createJsonEditor({
+    containerId,
+    initialJson,
+    onSave: saveJsonToFigma
+  });
   
-  // Initialize JSON viewer
-  const jsonViewer = initJsonViewer('json-viewer-content', initialJson, true);
-  
-  // Add event listeners
-  const validateBtn = container.querySelector('.json-validate-btn') as HTMLButtonElement;
-  const saveBtn = container.querySelector('.json-save-btn') as HTMLButtonElement;
-  const statusIndicator = container.querySelector('.status-indicator') as HTMLElement;
-  const messageArea = container.querySelector('.json-editor-message') as HTMLElement;
-  const editorContainer = container.querySelector('.json-editor-container') as HTMLElement;
-  
-  if (validateBtn) {
-    validateBtn.addEventListener('click', () => {
-      // Add validating class for visual effect
-      editorContainer.classList.add('validating');
-      validateBtn.disabled = true;
-      
-      // Use setTimeout to allow the UI to update before validation
-      setTimeout(() => {
-        const isValid = validateJson(statusIndicator, messageArea);
-        
-        // Update save button state based on validation
-        if (saveBtn) {
-          saveBtn.disabled = !isValid;
-        }
-        
-        // Remove validating class
-        editorContainer.classList.remove('validating');
-        validateBtn.disabled = false;
-      }, 300);
-    });
-  }
-  
-  if (saveBtn) {
-    saveBtn.addEventListener('click', () => {
-      saveJsonToFigma(messageArea);
-    });
-  }
-  
-  // Set initial state - validate on load
-  setTimeout(() => {
-    if (validateBtn) {
-      validateBtn.click();
-    }
-  }, 500);
-}
-
-/**
- * Validate the current JSON
- * Updated to properly show success messages
- */
-function validateJson(
-  statusIndicator: HTMLElement | null, 
-  messageArea: HTMLElement | null
-): boolean {
-  if (!jsonViewer) {
-    if (messageArea) {
-      messageArea.textContent = 'JSON viewer not initialized';
-      messageArea.className = 'json-editor-message error';
-    }
-    return false;
-  }
-  
-  const json = jsonViewer.getJson();
-  let isValid = false;
-  
-  try {
-    // Attempt to stringify and re-parse the JSON to validate it
-    // This ensures even complex nested objects are properly validated
-    JSON.parse(JSON.stringify(json));
-    isValid = true;
-  } catch (error) {
-    isValid = false;
-  }
-  
-  // Update status indicator
-  if (statusIndicator) {
-    if (isValid) {
-      statusIndicator.textContent = 'Valid JSON';
-      statusIndicator.className = 'status-indicator valid';
-    } else {
-      statusIndicator.textContent = 'Invalid JSON';
-      statusIndicator.className = 'status-indicator invalid';
-    }
-  }
-  
-  // Update message area
-  if (messageArea) {
-    if (isValid) {
-      messageArea.textContent = 'JSON validation successful. The JSON is valid and can be saved.';
-      messageArea.className = 'json-editor-message success';
-    } else {
-      messageArea.textContent = 'The JSON contains syntax errors that need to be fixed before saving.';
-      messageArea.className = 'json-editor-message error';
-    }
-  }
-  
-  return isValid;
+  // Display helpful intro message
+  jsonEditor.showMessage(
+    'This editor allows you to edit and add Figma variables. Click the "?" button for help.',
+    'info'
+  );
 }
 
 /**
  * Save the current JSON to Figma variables
+ * Enhanced to provide detailed feedback from the server
  */
-async function saveJsonToFigma(messageArea: HTMLElement | null): Promise<void> {
-  if (!jsonViewer) {
-    if (messageArea) {
-      messageArea.textContent = 'JSON viewer not initialized';
-      messageArea.className = 'json-editor-message error';
-    }
-    return;
-  }
-  
-  const json = jsonViewer.getJson();
-  const isValid = validateJson(
-    document.querySelector('.status-indicator') as HTMLElement, 
-    messageArea
-  );
-  
-  if (!isValid) {
-    if (messageArea) {
-      messageArea.textContent = 'Cannot save invalid JSON. Please validate first.';
-      messageArea.className = 'json-editor-message error';
-    }
+async function saveJsonToFigma(json: any): Promise<void> {
+  if (!jsonEditor) {
     return;
   }
   
@@ -235,27 +70,27 @@ async function saveJsonToFigma(messageArea: HTMLElement | null): Promise<void> {
                    !Object.values(json).some(val => typeof val === 'object' && Object.keys(val).length > 0);
     
     if (isEmpty) {
-      if (messageArea) {
-        messageArea.textContent = 'Cannot save empty JSON data. No variables would be updated.';
-        messageArea.className = 'json-editor-message error';
-      }
+      jsonEditor.showMessage(
+        'Cannot save empty JSON data. No variables would be updated.',
+        'error'
+      );
       return;
     }
     
-    // Show saving message with clear explanation that only filtered variables will be updated
-    if (messageArea) {
-      messageArea.textContent = 'Saving changes to filtered Figma variables (non-filtered variables will be preserved)...';
-      messageArea.className = 'json-editor-message pending';
-    }
+    // Show saving message
+    jsonEditor.showMessage(
+      'Saving changes to Figma variables (existing variables outside this view will be preserved)...',
+      'pending'
+    );
     
     // Update Figma variables
     await updateFigmaVariables(json);
     
     // Show success message
-    if (messageArea) {
-      messageArea.textContent = 'Filtered variables updated successfully!';
-      messageArea.className = 'json-editor-message success';
-    }
+    jsonEditor.showMessage(
+      'Variables updated successfully! Refreshing data...',
+      'success'
+    );
     
     // Request fresh extraction after a delay
     if (window.extractionTimeout) {
@@ -269,9 +104,48 @@ async function saveJsonToFigma(messageArea: HTMLElement | null): Promise<void> {
     }, 1000);
   } catch (error) {
     // Show error message
-    if (messageArea) {
-      messageArea.textContent = `Error updating variables: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      messageArea.className = 'json-editor-message error';
-    }
+    jsonEditor.showMessage(
+      `Error updating variables: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'error'
+    );
   }
 }
+
+// Handle responses from the plugin
+window.addEventListener('message', (event) => {
+  const message = event.data.pluginMessage;
+  if (!message || !jsonEditor) return;
+  
+  // Handle variable update results
+  if (message.type === 'update-variables-result') {
+    if (message.success) {
+      // Format the success message with details
+      const counts = [];
+      if (message.created > 0) counts.push(`created ${message.created} variables`);
+      if (message.updated > 0) counts.push(`updated ${message.updated} variables`);
+      if (message.collections > 0) counts.push(`created ${message.collections} collections`);
+      if (message.modes > 0) counts.push(`created ${message.modes} modes`);
+      if (message.renamed > 0) counts.push(`renamed ${message.renamed} items`);
+      
+      const successDetails = counts.length > 0 
+        ? `Success! ${counts.join(', ')}.` 
+        : 'Success! No changes needed.';
+      
+      // Check for warnings
+      if (message.warnings && message.warnings.length > 0) {
+        jsonEditor.showMessage(
+          `${successDetails} With ${message.warnings.length} warning(s).`,
+          'warning'
+        );
+      } else {
+        jsonEditor.showMessage(successDetails, 'success');
+      }
+    } else {
+      // Show error message
+      jsonEditor.showMessage(
+        `Error: ${message.error || 'Unknown error updating variables'}`,
+        'error'
+      );
+    }
+  }
+});

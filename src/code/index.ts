@@ -110,7 +110,8 @@ figma.ui.onmessage = async (msg) => {
         updated: result.updated,
         collections: result.collections,
         modes: result.modes,
-        renamed: result.renamed
+        renamed: result.renamed,
+        deleted: result.deleted
       });
     } catch (error: unknown) {
       console.error("Error handling variable update:", error);

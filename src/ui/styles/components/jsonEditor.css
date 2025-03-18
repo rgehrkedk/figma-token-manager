@@ -1,183 +1,302 @@
 /* src/ui/styles/components/jsonEditor.css */
 /**
- * Styles for the JSON editor component
+ * Styles for the enhanced JSON editor component with variable management
  */
 
- .json-editor-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-md);
-    background-color: var(--color-white);
-    overflow: hidden;
-  }
-  
-  .json-editor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background-color: var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-300);
-  }
-  
-  .json-status {
-    font-size: 12px;
-  }
-  
-  .status-indicator {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-  }
-  
-  .status-indicator::before {
-    content: "";
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-  
-  .status-indicator.valid {
-    background-color: rgba(40, 167, 69, 0.1);
-    color: var(--color-success);
-  }
-  
-  .status-indicator.valid::before {
-    background-color: var(--color-success);
-  }
-  
-  .status-indicator.invalid {
-    background-color: rgba(220, 53, 69, 0.1);
-    color: var(--color-danger);
-  }
-  
-  .status-indicator.invalid::before {
-    background-color: var(--color-danger);
-  }
-  
-  .status-indicator.pending {
-    background-color: rgba(255, 193, 7, 0.1);
-    color: var(--color-warning);
-  }
-  
-  .status-indicator.pending::before {
-    background-color: var(--color-warning);
-  }
-  
+.json-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  background-color: var(--color-white);
+  overflow: hidden;
+  position: relative; /* For absolute positioned help panel */
+}
+
+.json-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--color-gray-100);
+  border-bottom: 1px solid var(--color-gray-300);
+}
+
+.json-status {
+  font-size: 12px;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.status-indicator::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.status-indicator.valid {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--color-success, #28a745);
+}
+
+.status-indicator.valid::before {
+  background-color: var(--color-success, #28a745);
+}
+
+.status-indicator.invalid {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--color-danger, #dc3545);
+}
+
+.status-indicator.invalid::before {
+  background-color: var(--color-danger, #dc3545);
+}
+
+.status-indicator.pending {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--color-warning, #ffc107);
+}
+
+.status-indicator.pending::before {
+  background-color: var(--color-warning, #ffc107);
+}
+
+.status-indicator.warning {
+  background-color: rgba(255, 153, 0, 0.1);
+  color: var(--color-warning, #ff9900);
+}
+
+.status-indicator.warning::before {
+  background-color: var(--color-warning, #ff9900);
+}
+
+.json-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.json-validate-btn,
+.json-save-btn,
+.json-format-btn,
+.json-help-btn,
+.json-help-close-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.json-validate-btn,
+.json-format-btn {
+  background-color: var(--color-gray-200, #e9ecef);
+  color: var(--color-gray-700, #495057);
+}
+
+.json-validate-btn:hover,
+.json-format-btn:hover {
+  background-color: var(--color-gray-300, #dee2e6);
+}
+
+.json-save-btn {
+  background-color: var(--color-primary, #0066ff);
+  color: var(--color-white, #ffffff);
+}
+
+.json-save-btn:hover:not(:disabled) {
+  background-color: var(--color-primary-dark, #0052cc);
+}
+
+.json-save-btn:disabled {
+  background-color: var(--color-gray-400, #ced4da);
+  color: var(--color-gray-200, #e9ecef);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.json-help-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  padding: 0;
+  font-weight: bold;
+  background-color: var(--color-gray-300, #dee2e6);
+  color: var(--color-gray-700, #495057);
+}
+
+.json-help-btn:hover {
+  background-color: var(--color-gray-400, #ced4da);
+}
+
+.json-help-close-btn {
+  background-color: var(--color-gray-300, #dee2e6);
+  color: var(--color-gray-700, #495057);
+  margin-top: 12px;
+}
+
+.json-help-close-btn:hover {
+  background-color: var(--color-gray-400, #ced4da);
+}
+
+.json-editor-body {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  min-height: 200px;
+}
+
+.json-editor-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  border: none;
+  resize: none;
+  font-family: var(--font-family-monospace, 'Menlo', 'Monaco', 'Consolas', monospace);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-gray-800, #343a40);
+  background-color: var(--color-white, #ffffff);
+  overflow: auto;
+  box-sizing: border-box;
+  tab-size: 2;
+}
+
+.json-editor-textarea:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(0, 102, 255, 0.1);
+}
+
+.json-editor-footer {
+  padding: 8px 12px;
+  background-color: var(--color-gray-100, #f8f9fa);
+  border-top: 1px solid var(--color-gray-300, #dee2e6);
+}
+
+.json-editor-message {
+  font-size: 12px;
+  color: var(--color-gray-600, #6c757d);
+  line-height: 1.4;
+}
+
+.json-editor-message.error {
+  color: var(--color-danger, #dc3545);
+}
+
+.json-editor-message.success {
+  color: var(--color-success, #28a745);
+}
+
+.json-editor-message.info {
+  color: var(--color-info, #0077cc);
+}
+
+.json-editor-message.pending {
+  color: var(--color-warning, #ffc107);
+}
+
+.json-editor-message.warning {
+  color: var(--color-warning, #ff9900);
+}
+
+.message-details {
+  margin-top: 4px;
+  font-size: 11px;
+  padding-left: 10px;
+  border-left: 2px solid currentColor;
+  opacity: 0.9;
+}
+
+/* JSON Editor Help Panel */
+.json-editor-help {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid var(--color-gray-300, #dee2e6);
+  border-radius: 4px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-width: 500px;
+  width: 90%;
+}
+
+.json-editor-help h4 {
+  margin-top: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-gray-200, #e9ecef);
+  color: var(--color-gray-800, #343a40);
+}
+
+.json-editor-help ul {
+  padding-left: 20px;
+  margin: 12px 0;
+}
+
+.json-editor-help li {
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-gray-700, #495057);
+}
+
+.json-editor-help li strong {
+  color: var(--color-gray-900, #212529);
+}
+
+.json-editor-help code {
+  background: var(--color-gray-100, #f8f9fa);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: var(--font-family-monospace, 'Menlo', 'Monaco', 'Consolas', monospace);
+  font-size: 0.9em;
+  color: var(--color-primary, #0066ff);
+  word-break: break-all;
+}
+
+.json-editor-help p {
+  margin: 8px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-gray-700, #495057);
+}
+
+/* Fix for Chrome autofill background */
+.json-editor-textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-gray-800, #343a40);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* CSS for small screens */
+@media (max-width: 768px) {
   .json-editor-actions {
-    display: flex;
-    gap: 8px;
+    flex-wrap: wrap;
   }
   
   .json-validate-btn,
-  .json-save-btn {
-    padding: 4px 12px;
-    font-size: 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: none;
-  }
-  
-  .json-validate-btn {
-    background-color: var(--color-gray-200);
-    color: var(--color-gray-700);
-  }
-  
-  .json-validate-btn:hover {
-    background-color: var(--color-gray-300);
-  }
-  
-  .json-save-btn {
-    background-color: var(--color-primary);
-    color: var(--color-white);
-  }
-  
-  .json-save-btn:hover:not(:disabled) {
-    background-color: var(--color-primary-dark);
-  }
-  
-  .json-save-btn:disabled {
-    background-color: var(--color-gray-400);
-    color: var(--color-gray-200);
-    cursor: not-allowed;
-  }
-  
-  .json-editor-body {
-    flex: 1;
-    position: relative;
-    height: 100%;
-    min-height: 200px;
-  }
-  
-  .json-editor-textarea {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    padding: 12px;
-    border: none;
-    resize: none;
-    font-family: var(--font-family-monospace);
-    font-size: 12px;
-    line-height: 1.4;
-    color: var(--color-gray-800);
-    background-color: var(--color-white);
-    overflow: auto;
-    box-sizing: border-box;
-  }
-  
-  .json-editor-textarea:focus {
-    outline: none;
-  }
-  
-  .json-editor-footer {
-    padding: 8px 12px;
-    background-color: var(--color-gray-100);
-    border-top: 1px solid var(--color-gray-300);
-  }
-  
-  .json-editor-message {
-    font-size: 12px;
-    color: var(--color-gray-600);
-  }
-  
-  .json-editor-message.error {
-    color: var(--color-danger);
-  }
-  
-  .json-editor-message.success {
-    color: var(--color-success);
-  }
-  
-  .json-editor-message.info {
-    color: var(--color-info, #0077cc);
-  }
-  
-  .json-editor-message.pending {
-    color: var(--color-warning);
-  }
-  
-  .json-editor-message.warning {
-    color: var(--color-warning, #e6a700);
-  }
-  
-  .message-details {
-    margin-top: 4px;
+  .json-save-btn,
+  .json-format-btn {
+    padding: 3px 8px;
     font-size: 11px;
-    padding-left: 10px;
-    border-left: 2px solid currentColor;
-    opacity: 0.9;
   }
   
-  /* Fix for Chrome autofill background */
-  .json-editor-textarea:-webkit-autofill {
-    -webkit-text-fill-color: var(--color-gray-800);
-    transition: background-color 5000s ease-in-out 0s;
+  .json-editor-help {
+    width: 95%;
+    max-width: 400px;
   }
+}

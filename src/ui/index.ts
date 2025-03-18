@@ -12,7 +12,7 @@ import { TokenData } from './reference/ReferenceResolver';
 import { createTokenGrid } from './components/TokenGrid';
 import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 import { CollectionSelector } from './components/collectionSelector';
-import { initJsonViewer, updateJsonViewer, setupJsonEditorPanel, getJsonFromViewer } from './components/jsonViewIntegration';
+import { updateJsonViewer, setupJsonEditorPanel, getJsonFromViewer } from './components/jsonViewIntegration';
 import { updateFigmaVariables } from './utilities/updateFigmaVariables'; // Import update handler
 
 // Import reference handling utilities
@@ -427,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const collectionsCount = message.collections || 0;
           const modesCount = message.modes || 0;
           const renamedCount = message.renamed || 0;
+          const deletedCount = message.deleted || 0;
           const totalCount = createdCount + updatedCount;
           
           // Check if there are warnings about reference resolution
@@ -504,6 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
               if (renamedCount > 0) {
                 changes.push(`${renamedCount} item${renamedCount > 1 ? 's' : ''} renamed`);
               }
+              
+              // No longer showing deletion counts as auto-deletion is disabled
               
               if (changes.length > 0) {
                 successMessage = `Successfully updated ${changes.join(', ')}! Other items were preserved.`;
