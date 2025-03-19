@@ -55,11 +55,22 @@ The JSON editor provides a powerful interface for editing your design tokens:
 To export your tokens as a ZIP file:
 
 1. Click the "Export" button in the sidebar
-2. The plugin generates a ZIP file containing:
-   - A complete `tokens.json` file with all tokens
+2. Select the collections and modes you want to export
+3. Choose your preferred export format:
+   - **DTCG (Design Tokens Community Group)** - Default format
+   - **Legacy** - Simple key-value format
+   - **Style Dictionary** - Multi-platform design token system
+
+4. Configure additional export options:
+   - Include complete file with all tokens
+   - Use flat structure (no nested directories)
+   
+5. The plugin generates a ZIP file containing:
+   - A complete `tokens.json` file with all tokens (if selected)
    - Individual collection files (e.g., `colors.json`, `spacing.json`)
    - Individual mode files within folders (e.g., `colors/light.json`, `colors/dark.json`)
    - A metadata file with export information
+   - Platform-specific files when using Style Dictionary export
 
 ## Token Format
 
@@ -211,10 +222,46 @@ This creates optimized production files in the `dist/` directory.
 - Check that your JSON is valid with no syntax errors
 - Ensure you're targeting the correct collections and modes
 
+## Style Dictionary Export
+
+Style Dictionary is a powerful tool for transforming design tokens into various platform-specific formats. When selecting the Style Dictionary export format, you can configure the following options:
+
+### Platforms
+- **Web (CSS, SCSS, JS)** - Generate web-focused output formats
+- **iOS (Swift)** - Generate Swift files for iOS development
+- **Android (XML)** - Generate XML resource files for Android
+
+### Web Formats
+- **CSS Variables** - CSS custom properties (variables)
+- **SCSS Variables** - SASS/SCSS variables
+- **JavaScript** - JavaScript module exporting token objects
+- **JSON** - Structured JSON format
+
+### Options
+- **Convert pixel values to REM** - Transform dimension values from pixels to relative em units
+- **REM Base Size** - Base font size for REM calculations (default: 16)
+- **Color Format** - Choose between HEX, RGB, RGBA, or HSL color formats
+- **Include Documentation** - Generate comprehensive documentation in HTML and Markdown
+
+### Output Structure
+
+The Style Dictionary export generates the following files for each collection and mode:
+
+```
+collection_mode.css            # CSS variables
+collection_mode.scss           # SCSS variables
+collection_mode.js             # JavaScript module
+collection_mode.json           # JSON format
+collection_mode.swift          # iOS Swift file
+collection_mode_colors.xml     # Android colors XML
+collection_mode_dimens.xml     # Android dimensions XML
+collection_mode_documentation.md  # Markdown docs
+collection_mode_documentation.html # HTML docs
+```
+
 ## Future Enhancements
 
 - Import from external token files (JSON, YAML)
-- Additional export formats (CSS variables, SCSS, etc.)
 - Token version history and change tracking
 - Performance optimizations for large token sets
 - Visual token creation and editing interface
