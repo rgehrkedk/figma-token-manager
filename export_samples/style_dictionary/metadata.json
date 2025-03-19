@@ -1,0 +1,29 @@
+{
+  "exportDate": "2025-03-19T19:52:18.972Z",
+  "documentName": "e-Boks Design System (New)",
+  "documentId": "0:0",
+  "pluginVersion": "1.0.0",
+  "exportOptions": {
+    "format": "style-dictionary",
+    "flattenStructure": false,
+    "selectedCollections": [
+      "brand",
+      "theme",
+      "globals"
+    ],
+    "styleDictionary": {
+      "platforms": [
+        "web"
+      ],
+      "formats": [
+        "css",
+        "scss",
+        "js"
+      ],
+      "useRem": false,
+      "remBaseFontSize": 16,
+      "colorFormat": "hex",
+      "includeDocumentation": true
+    }
+  }
+}

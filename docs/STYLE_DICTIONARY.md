@@ -6,6 +6,75 @@ This document explains how the Figma Token Manager integrates with [Style Dictio
 
 Style Dictionary is a build system that allows you to define design tokens once and export them to multiple platforms and formats. The Figma Token Manager's Style Dictionary integration transforms Figma variables into a format that can be used by Style Dictionary, enabling you to export your design tokens for use across web, iOS, and Android platforms.
 
+## Known Issues and Improvement Areas
+
+The following issues have been identified in the current implementation and their status:
+
+### Documentation Issues
+
+1. **Missing iOS Swift Color Implementation**: The Swift code generation assumes the existence of a `UIColor(hex:)` extension that isn't provided in the documentation, which would cause Swift compilation errors.
+
+2. **Inconsistency in Platform Format Options**: There are inconsistencies in how format types are defined between different files (`index.ts` vs `transformer.ts`).
+
+3. **No Example Implementation of UIColor Extensions**: The Swift code references non-standard initializers without providing the required extensions.
+
+### Implementation Gaps
+
+1. **Missing JavaScript Module Export Type**: No TypeScript type generation for better type safety in TypeScript projects.
+
+2. **Limited Android Support**: Android XML generation is limited to colors and dimensions, with no support for other resource types.
+
+3. **Incomplete Swift Implementation**: The Swift color code generation uses placeholder values instead of properly converting colors.
+
+### User Experience Issues
+
+1. **Style Dictionary Platforms vs. Formats Confusion**: ✅ FIXED - The redesigned UI now clearly shows which formats belong to which platforms.
+
+2. **Missing Documentation Examples**: There aren't clear visual examples of what the generated documentation looks like.
+
+3. **Compact and Difficult UI**: ✅ FIXED - The export dialog has been completely redesigned with a more user-friendly interface that features a step-by-step workflow, better organization, and clearer visual hierarchy.
+
+### Technical Issues
+
+1. **Redundant Code**: Duplicate implementations for generating platform outputs exist in different files.
+
+2. **Incomplete Code References**: Some function parameters aren't properly documented.
+
+3. **No Error Handling for Invalid Color Values**: Color transformation functions lack comprehensive error handling.
+
+## Redesigned Export Dialog
+
+A new, improved export dialog has been created to address the user experience issues:
+
+### Key Improvements
+
+1. **Tabbed Interface**: Organizes the export process into three clear steps:
+   - Content Selection: Choose collections and modes to export
+   - Format Selection: Select between DTCG, Legacy, or Style Dictionary formats
+   - Advanced Options: Configure format-specific options
+
+2. **Token Counter**: Shows exactly how many tokens will be exported based on your selections.
+
+3. **Better Format Descriptions**: Visual examples and tag-based benefits for each format.
+
+4. **Platform-Specific Options**: Clear organization of platform selection and associated formats.
+
+5. **Improved Collection Browsing**: Search functionality and expandable collection cards with mode selection.
+
+6. **Responsive Design**: Adapts to various screen sizes.
+
+### Using the Redesigned Dialog
+
+To use the redesigned export dialog, import from the redesign package:
+
+```typescript
+// Instead of
+import { showExportDialog } from '../components/exportDialog';
+
+// Use
+import { showExportDialog } from '../components/redesign';
+```
+
 ## Export Options
 
 When exporting tokens using the Style Dictionary format, you can configure the following options:
