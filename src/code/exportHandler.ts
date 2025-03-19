@@ -2,18 +2,21 @@
  * exportHandler.ts
  * 
  * Handles exporting token data to various formats, including generating 
- * separate JSON files for each collection and mode with enhanced selection options
+ * separate JSON files for each collection and mode with enhanced selection options.
+ * Now includes Style Dictionary integration for platform-specific transformations.
  */
 
 import JSZip from 'jszip';
+import { processWithStyleDictionary, StyleDictionaryExportOptions, StyleDictionaryOutput } from './styleDictionary';
 
 interface ExportOptions {
-  format?: 'dtcg' | 'legacy';
+  format?: 'dtcg' | 'legacy' | 'style-dictionary';
   flattenStructure?: boolean;
   includeCompleteFile?: boolean;
   includeMetadata?: boolean;
   selectedCollections?: Record<string, boolean>;
   selectedModes?: Record<string, Record<string, boolean>>;
+  styleDictionary?: StyleDictionaryExportOptions;
 }
 
 /**
@@ -45,6 +48,18 @@ export async function exportVariablesToZip(
       selectedModes: options.selectedModes
     });
     
+    // Separately log Style Dictionary options for better debugging
+    if (options.format === 'style-dictionary') {
+      console.log('Style Dictionary export options:', {
+        platforms: options.styleDictionary?.platforms,
+        formats: options.styleDictionary?.formats,
+        useRem: options.styleDictionary?.useRem,
+        remBaseFontSize: options.styleDictionary?.remBaseFontSize,
+        colorFormat: options.styleDictionary?.colorFormat,
+        includeDocumentation: options.styleDictionary?.includeDocumentation
+      });
+    }
+    
     // Get document name to use in filenames
     const documentName = figma.root.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     
@@ -62,7 +77,9 @@ export async function exportVariablesToZip(
           format: options.format,
           flattenStructure: options.flattenStructure,
           selectedCollections: Object.keys(options.selectedCollections || {})
-            .filter(coll => options.selectedCollections?.[coll])
+            .filter(coll => options.selectedCollections?.[coll]),
+          // Add Style Dictionary options if applicable
+          styleDictionary: options.format === 'style-dictionary' ? options.styleDictionary : undefined
         }
       };
       
@@ -122,23 +139,73 @@ export async function exportVariablesToZip(
         
         // Format the data based on the selected format
         let formattedData = modeData;
+        
         if (options.format === 'legacy') {
           // Transform to legacy format if needed
           console.log(`Applying legacy format for ${collectionName}/${modeName}`);
           formattedData = transformToLegacyFormat(modeData);
+          
+          // Create filename based on collection and mode
+          if (options.flattenStructure === true) {
+            // Use flat structure
+            console.log(`Using flat structure for ${collectionName}/${modeName}`);
+            const flatFilename = `${safeCollectionName}_${safeModeName}.json`;
+            zip.file(flatFilename, JSON.stringify(formattedData, null, 2));
+          } else {
+            // Use nested structure
+            console.log(`Using nested structure for ${collectionName}/${modeName}`);
+            const filename = `${safeCollectionName}/${safeModeName}.json`;
+            zip.file(filename, JSON.stringify(formattedData, null, 2));
+          }
+        } 
+        else if (options.format === 'style-dictionary' && options.styleDictionary) {
+          // Process with Style Dictionary
+          console.log(`Processing with Style Dictionary: ${collectionName}/${modeName}`);
+          console.log('Style Dictionary options:', JSON.stringify(options.styleDictionary));
+          
+          try {
+            // Process the tokens with Style Dictionary
+            const styleDictionaryOutputs = processWithStyleDictionary(
+              { [collectionName]: { [modeName]: modeData } },
+              collectionName,
+              modeName,
+              options.styleDictionary
+            );
+            
+            // Create a directory for the style dictionary outputs
+            const sdDir = options.flattenStructure 
+              ? '' 
+              : `${safeCollectionName}/${safeModeName}/`;
+            
+            // Add each output to the zip
+            styleDictionaryOutputs.forEach((output: StyleDictionaryOutput) => {
+              const sdFilename = `${sdDir}${output.fileName}`;
+              zip.file(sdFilename, output.content);
+              console.log(`Added Style Dictionary output: ${sdFilename}`);
+            });
+          } catch (sdError) {
+            console.error('Error processing with Style Dictionary:', sdError);
+            // Fallback to regular JSON in case of error
+            const filename = options.flattenStructure
+              ? `${safeCollectionName}_${safeModeName}.json`
+              : `${safeCollectionName}/${safeModeName}.json`;
+            zip.file(filename, JSON.stringify(formattedData, null, 2));
+          }
         }
-        
-        // Create filename based on collection and mode
-        if (options.flattenStructure === true) {
-          // Use flat structure
-          console.log(`Using flat structure for ${collectionName}/${modeName}`);
-          const flatFilename = `${safeCollectionName}_${safeModeName}.json`;
-          zip.file(flatFilename, JSON.stringify(formattedData, null, 2));
-        } else {
-          // Use nested structure
-          console.log(`Using nested structure for ${collectionName}/${modeName}`);
-          const filename = `${safeCollectionName}/${safeModeName}.json`;
-          zip.file(filename, JSON.stringify(formattedData, null, 2));
+        else {
+          // Default DTCG format
+          // Create filename based on collection and mode
+          if (options.flattenStructure === true) {
+            // Use flat structure
+            console.log(`Using flat structure for ${collectionName}/${modeName}`);
+            const flatFilename = `${safeCollectionName}_${safeModeName}.json`;
+            zip.file(flatFilename, JSON.stringify(formattedData, null, 2));
+          } else {
+            // Use nested structure
+            console.log(`Using nested structure for ${collectionName}/${modeName}`);
+            const filename = `${safeCollectionName}/${safeModeName}.json`;
+            zip.file(filename, JSON.stringify(formattedData, null, 2));
+          }
         }
       });
     });

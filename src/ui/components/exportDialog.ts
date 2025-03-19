@@ -22,7 +22,15 @@ export interface ExportOptions {
   selectedModes: Record<string, Record<string, boolean>>;
   includeCompleteFile: boolean;
   flattenStructure: boolean;
-  format: 'dtcg' | 'legacy';
+  format: 'dtcg' | 'legacy' | 'style-dictionary';
+  styleDictionary?: {
+    platforms: string[];
+    formats: string[];
+    useRem?: boolean;
+    remBaseFontSize?: number;
+    colorFormat?: 'hex' | 'rgb' | 'rgba' | 'hsl';
+    includeDocumentation?: boolean;
+  };
 }
 
 /**
@@ -61,7 +69,15 @@ export function showExportDialog(options: ExportDialogOptions): void {
     selectedModes: {},
     includeCompleteFile: true,
     flattenStructure: false,
-    format: 'dtcg'
+    format: 'dtcg',
+    styleDictionary: {
+      platforms: ['web'],
+      formats: ['css', 'scss', 'js'],
+      useRem: false,
+      remBaseFontSize: 16,
+      colorFormat: 'hex',
+      includeDocumentation: true
+    }
   };
 
   // Populate collections and modes sections
@@ -163,6 +179,76 @@ export function showExportDialog(options: ExportDialogOptions): void {
           <input type="radio" id="format-legacy" name="format">
           <label for="format-legacy">Legacy Format</label>
         </div>
+        <div class="export-option">
+          <input type="radio" id="format-style-dictionary" name="format">
+          <label for="format-style-dictionary">Style Dictionary</label>
+        </div>
+      </div>
+      
+      <!-- Style Dictionary Options (hidden by default) -->
+      <div id="style-dictionary-options" class="style-dictionary-options" style="display: none; margin-top: 15px; padding: 10px; border: 1px solid #eee; border-radius: 4px;">
+        <h4>Style Dictionary Options</h4>
+        
+        <div class="sd-option-group">
+          <h5>Platforms</h5>
+          <div class="export-option">
+            <input type="checkbox" id="platform-web" checked>
+            <label for="platform-web">Web (CSS, SCSS, JS)</label>
+          </div>
+          <div class="export-option">
+            <input type="checkbox" id="platform-ios">
+            <label for="platform-ios">iOS (Swift)</label>
+          </div>
+          <div class="export-option">
+            <input type="checkbox" id="platform-android">
+            <label for="platform-android">Android (XML)</label>
+          </div>
+        </div>
+        
+        <div class="sd-option-group">
+          <h5>Web Formats</h5>
+          <div class="export-option">
+            <input type="checkbox" id="format-css" checked>
+            <label for="format-css">CSS Variables</label>
+          </div>
+          <div class="export-option">
+            <input type="checkbox" id="format-scss" checked>
+            <label for="format-scss">SCSS Variables</label>
+          </div>
+          <div class="export-option">
+            <input type="checkbox" id="format-js" checked>
+            <label for="format-js">JavaScript</label>
+          </div>
+          <div class="export-option">
+            <input type="checkbox" id="format-json">
+            <label for="format-json">JSON</label>
+          </div>
+        </div>
+        
+        <div class="sd-option-group">
+          <h5>Options</h5>
+          <div class="export-option">
+            <input type="checkbox" id="use-rem">
+            <label for="use-rem">Convert pixel values to REM</label>
+          </div>
+          <div class="export-option" style="display: flex; align-items: center;">
+            <label for="rem-base-size" style="margin-right: 10px;">REM Base Size:</label>
+            <input type="number" id="rem-base-size" value="16" min="1" max="32" style="width: 50px;">
+          </div>
+          <div class="export-option">
+            <label for="color-format" style="margin-right: 10px;">Color Format:</label>
+            <select id="color-format">
+              <option value="hex">HEX</option>
+              <option value="rgb">RGB</option>
+              <option value="rgba">RGBA</option>
+              <option value="hsl">HSL</option>
+            </select>
+          </div>
+          <div class="export-option">
+            <input type="checkbox" id="include-documentation" checked>
+            <label for="include-documentation">Include Documentation</label>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -181,16 +267,87 @@ export function showExportDialog(options: ExportDialogOptions): void {
 
   const formatDtcgRadio = optionsSection.querySelector('#format-dtcg') as HTMLInputElement;
   const formatLegacyRadio = optionsSection.querySelector('#format-legacy') as HTMLInputElement;
+  const formatStyleDictionaryRadio = optionsSection.querySelector('#format-style-dictionary') as HTMLInputElement;
+  const styleDictionaryOptions = optionsSection.querySelector('#style-dictionary-options') as HTMLDivElement;
+  
+  // Format selection event listeners
   formatDtcgRadio.addEventListener('change', () => {
     if (formatDtcgRadio.checked) {
       exportOptions.format = 'dtcg';
+      styleDictionaryOptions.style.display = 'none';
     }
   });
+  
   formatLegacyRadio.addEventListener('change', () => {
     if (formatLegacyRadio.checked) {
       exportOptions.format = 'legacy';
+      styleDictionaryOptions.style.display = 'none';
     }
   });
+  
+  formatStyleDictionaryRadio.addEventListener('change', () => {
+    if (formatStyleDictionaryRadio.checked) {
+      exportOptions.format = 'style-dictionary';
+      styleDictionaryOptions.style.display = 'block';
+      updateStyleDictionaryOptions();
+    }
+  });
+  
+  // Style Dictionary platform checkboxes
+  const platformWeb = optionsSection.querySelector('#platform-web') as HTMLInputElement;
+  const platformIOS = optionsSection.querySelector('#platform-ios') as HTMLInputElement;
+  const platformAndroid = optionsSection.querySelector('#platform-android') as HTMLInputElement;
+  
+  // Style Dictionary format checkboxes
+  const formatCSS = optionsSection.querySelector('#format-css') as HTMLInputElement;
+  const formatSCSS = optionsSection.querySelector('#format-scss') as HTMLInputElement;
+  const formatJS = optionsSection.querySelector('#format-js') as HTMLInputElement;
+  const formatJSON = optionsSection.querySelector('#format-json') as HTMLInputElement;
+  
+  // Style Dictionary options
+  const useRem = optionsSection.querySelector('#use-rem') as HTMLInputElement;
+  const remBaseSize = optionsSection.querySelector('#rem-base-size') as HTMLInputElement;
+  const colorFormat = optionsSection.querySelector('#color-format') as HTMLSelectElement;
+  const includeDocumentation = optionsSection.querySelector('#include-documentation') as HTMLInputElement;
+  
+  // Add event listeners for Style Dictionary options
+  [platformWeb, platformIOS, platformAndroid, formatCSS, formatSCSS, formatJS, formatJSON, 
+   useRem, includeDocumentation].forEach(input => {
+    input.addEventListener('change', updateStyleDictionaryOptions);
+  });
+  
+  // Add event listeners for numeric and select inputs
+  [remBaseSize, colorFormat].forEach(input => {
+    input.addEventListener('change', updateStyleDictionaryOptions);
+  });
+  
+  // Function to update Style Dictionary options in the export options object
+  function updateStyleDictionaryOptions() {
+    // Get selected platforms
+    const platforms: string[] = [];
+    if (platformWeb.checked) platforms.push('web');
+    if (platformIOS.checked) platforms.push('ios');
+    if (platformAndroid.checked) platforms.push('android');
+    
+    // Get selected formats
+    const formats: string[] = [];
+    if (formatCSS.checked) formats.push('css');
+    if (formatSCSS.checked) formats.push('scss');
+    if (formatJS.checked) formats.push('js');
+    if (formatJSON.checked) formats.push('json');
+    
+    // Update Style Dictionary options
+    exportOptions.styleDictionary = {
+      platforms,
+      formats,
+      useRem: useRem.checked,
+      remBaseFontSize: parseInt(remBaseSize.value, 10) || 16,
+      colorFormat: colorFormat.value as 'hex' | 'rgb' | 'rgba' | 'hsl',
+      includeDocumentation: includeDocumentation.checked
+    };
+    
+    console.log('Updated Style Dictionary options:', exportOptions.styleDictionary);
+  }
 
   // Add dialog footer with buttons
   const footer = document.createElement('div');
@@ -217,7 +374,16 @@ export function showExportDialog(options: ExportDialogOptions): void {
   cancelButton?.addEventListener('click', closeDialog);
   exportButton?.addEventListener('click', () => {
     // Capture the latest state directly from the form elements
-    exportOptions.format = formatLegacyRadio.checked ? 'legacy' : 'dtcg';
+    if (formatLegacyRadio.checked) {
+      exportOptions.format = 'legacy';
+    } else if (formatStyleDictionaryRadio.checked) {
+      exportOptions.format = 'style-dictionary';
+      // Make sure Style Dictionary options are up to date
+      updateStyleDictionaryOptions();
+    } else {
+      exportOptions.format = 'dtcg';
+    }
+    
     exportOptions.flattenStructure = flattenStructureCheckbox.checked;
     exportOptions.includeCompleteFile = includeCompleteFileCheckbox.checked;
     
@@ -227,7 +393,8 @@ export function showExportDialog(options: ExportDialogOptions): void {
       flattenStructure: exportOptions.flattenStructure,
       includeCompleteFile: exportOptions.includeCompleteFile,
       selectedCollections: exportOptions.selectedCollections,
-      selectedModes: exportOptions.selectedModes
+      selectedModes: exportOptions.selectedModes,
+      styleDictionary: exportOptions.styleDictionary
     });
     
     // Send the options to the handler

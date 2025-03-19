@@ -147,12 +147,14 @@ figma.ui.onmessage = async (msg) => {
       // Generate and download a zip file with exported tokens
       // Now passing the user-selected options from the export dialog
       await exportVariablesToZip(dataToExport, {
-        format: msg.options.format === 'legacy' ? 'legacy' : 'dtcg',
+        format: msg.options.format, // Pass the exact format from options
         flattenStructure: Boolean(msg.options.flattenStructure),
         includeCompleteFile: Boolean(msg.options.includeCompleteFile),
         includeMetadata: true,
         selectedCollections: msg.options.selectedCollections || {},
-        selectedModes: msg.options.selectedModes || {}
+        selectedModes: msg.options.selectedModes || {},
+        // Pass style dictionary options if available
+        styleDictionary: msg.options.styleDictionary
       });
       
       // Notify UI that export completed successfully
