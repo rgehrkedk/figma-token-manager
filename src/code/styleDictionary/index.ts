@@ -149,17 +149,23 @@ export function processWithStyleDictionary(
     
     // Generate documentation if requested
     if (includeDocumentation) {
+      // Create documentation options object with selected formats
+      const docOptions = {
+        title: `${collectionName} Design Tokens`,
+        selectedFormats: formats
+      };
+      
       // Generate markdown documentation
       outputs.push({
-        fileName: `${collectionName}_${modeName}_documentation.md`,
-        content: generateMarkdownDocumentation(transformedTokens, collectionName, modeName),
+        fileName: `${collectionName}_documentation.md`,
+        content: generateMarkdownDocumentation(transformedTokens, collectionName, docOptions, platforms),
         format: 'md'
       });
       
       // Generate HTML documentation
       outputs.push({
-        fileName: `${collectionName}_${modeName}_documentation.html`,
-        content: generateHtmlDocumentation(transformedTokens, collectionName, modeName),
+        fileName: `${collectionName}_documentation.html`,
+        content: generateHtmlDocumentation(transformedTokens, collectionName, docOptions),
         format: 'html'
       });
     }

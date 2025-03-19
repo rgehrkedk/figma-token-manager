@@ -14,6 +14,7 @@ export interface DocumentationOptions {
   includeCode?: boolean;
   includeTables?: boolean;
   includePreview?: boolean;
+  selectedFormats?: string[];
 }
 
 /**
@@ -21,25 +22,26 @@ export interface DocumentationOptions {
  * 
  * @param tokens The tokens to document
  * @param collectionName The name of the collection
- * @param modeName The name of the mode
  * @param options Documentation options
+ * @param platforms Selected platforms for documentation based on user selection
  * @returns Markdown documentation
  */
 export function generateMarkdownDocumentation(
   tokens: Record<string, StyleDictionaryToken>,
   collectionName: string,
-  modeName: string,
-  options: DocumentationOptions = {}
+  options: DocumentationOptions = {},
+  platforms: string[] = ['web', 'ios', 'android']
 ): string {
   const { 
-    title = `${collectionName} - ${modeName} Design Tokens`, 
+    title = `${collectionName} Design Tokens`, 
     includeCode = true,
     includeTables = true,
-    includePreview = true
+    includePreview = true,
+    selectedFormats = ['css', 'scss', 'js', 'ios', 'android']
   } = options;
   
   let markdown = `# ${title}\n\n`;
-  markdown += `Generated design tokens from Figma for collection "${collectionName}" and mode "${modeName}".\n\n`;
+  markdown += `Generated design tokens from Figma for collection "${collectionName}".\n\n`;
   
   // Group tokens by type
   const tokensByType: Record<string, Record<string, StyleDictionaryToken>> = {};
@@ -54,16 +56,15 @@ export function generateMarkdownDocumentation(
     tokensByType[type][path] = token;
   });
   
-  // Document each type
-  Object.entries(tokensByType).forEach(([type, typeTokens]) => {
-    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
-    markdown += `## ${capitalizedType} Tokens\n\n`;
+  // Document all tokens in tables without type headers
+  if (includeTables) {
+    // Create a combined reference table for all tokens
+    markdown += `## Token Reference\n\n`;
+    markdown += `| Token Name | Type | Value | Description |\n`;
+    markdown += `|------------|------|-------|-------------|\n`;
     
-    if (includeTables) {
-      // Create a reference table
-      markdown += `| Token Name | Value | Description |\n`;
-      markdown += `|------------|-------|-------------|\n`;
-      
+    // Process each type
+    Object.entries(tokensByType).forEach(([type, typeTokens]) => {
       Object.entries(typeTokens).forEach(([path, token]) => {
         const formattedPath = path.replace(/\./g, '-');
         const value = typeof token.value === 'object' 
@@ -71,114 +72,197 @@ export function generateMarkdownDocumentation(
           : token.value;
         const description = token.description || '';
         
-        markdown += `| \`${formattedPath}\` | \`${value}\` | ${description} |\n`;
+        markdown += `| \`${formattedPath}\` | ${type} | \`${value}\` | ${description} |\n`;
       });
-      
-      markdown += '\n';
-    }
+    });
     
-    if (includeCode && type === 'color') {
-      // Add CSS variable usage example for colors
-      markdown += `### CSS Variables Usage Example\n\n`;
-      markdown += '```css\n';
-      markdown += `.my-element {\n`;
-      
-      Object.entries(typeTokens).forEach(([path, token], index) => {
-        if (index < 5) { // Limit to 5 examples to avoid overly long docs
-          const formattedPath = path.replace(/\./g, '-');
-          markdown += `  color: var(--${formattedPath});\n`;
-        }
-      });
-      
-      markdown += `}\n`;
-      markdown += '```\n\n';
+    markdown += '\n';
+  }
+  
+  // Implementation guide - only show examples for selected formats
+  markdown += `## Implementation Guide\n\n`;
+  
+  // Extract real token examples for usage
+  let colorExample = 'color-primary';
+  let dimensionExample = 'spacing-medium';
+  let borderRadiusExample = 'border-radius-medium';
+  let backgroundExample = 'color-background';
+  
+  // Find real tokens for examples
+  Object.entries(tokens).forEach(([path, token]) => {
+    const formattedPath = path.replace(/\./g, '-');
+    // Find primary color
+    if (token.type === 'color' && (path.includes('primary') || path.includes('brand'))) {
+      colorExample = formattedPath;
     }
-    
-    if (includePreview && type === 'color') {
-      // Add color preview section
-      markdown += `### Color Preview\n\n`;
-      markdown += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">\n';
-      
-      Object.entries(typeTokens).forEach(([path, token]) => {
-        const formattedPath = path.replace(/\./g, '-');
-        const colorValue = token.value;
-        
-        markdown += `  <div style="border: 1px solid #ccc; border-radius: 4px; padding: 10px; display: flex; flex-direction: column;">\n`;
-        markdown += `    <div style="background-color: ${colorValue}; height: 40px; border-radius: 4px;"></div>\n`;
-        markdown += `    <div style="margin-top: 10px; font-family: monospace;">${formattedPath}</div>\n`;
-        markdown += `    <div style="color: #666; font-size: 12px;">${colorValue}</div>\n`;
-        markdown += `  </div>\n`;
-      });
-      
-      markdown += '</div>\n\n';
+    // Find spacing
+    if (token.type === 'dimension' && path.includes('spacing')) {
+      dimensionExample = formattedPath;
     }
-    
-    if (includeCode && type === 'dimension') {
-      // Add CSS variable usage example for dimensions
-      markdown += `### Dimension Usage Example\n\n`;
-      markdown += '```css\n';
-      markdown += `.my-element {\n`;
-      
-      let exampleCount = 0;
-      const exampleProperties = ['padding', 'margin', 'gap', 'border-radius', 'font-size'];
-      
-      Object.entries(typeTokens).forEach(([path, token]) => {
-        if (exampleCount < exampleProperties.length) {
-          const formattedPath = path.replace(/\./g, '-');
-          markdown += `  ${exampleProperties[exampleCount]}: var(--${formattedPath});\n`;
-          exampleCount++;
-        }
-      });
-      
-      markdown += `}\n`;
-      markdown += '```\n\n';
+    // Find border radius
+    if (token.type === 'dimension' && path.includes('radius')) {
+      borderRadiusExample = formattedPath;
+    }
+    // Find background color
+    if (token.type === 'color' && path.includes('background')) {
+      backgroundExample = formattedPath;
     }
   });
   
-  // Add a general usage section
-  markdown += `## Usage Information\n\n`;
+  // Web formats
+  if ((platforms.includes('web') || platforms.includes('all')) && selectedFormats.includes('css')) {
+    markdown += `### CSS Custom Properties (Variables)\n\n`;
+    markdown += '```css\n';
+    markdown += `/* Import the CSS variables file */\n`;
+    markdown += `@import 'path/to/${collectionName}.css';\n\n`;
+    markdown += `/* Use the variables in your CSS */\n`;
+    markdown += `.my-element {\n`;
+    markdown += `  color: var(--${colorExample});\n`;
+    markdown += `  background-color: var(--${backgroundExample});\n`;
+    markdown += `  padding: var(--${dimensionExample});\n`;
+    markdown += `  border-radius: var(--${borderRadiusExample});\n`;
+    markdown += `}\n`;
+    markdown += '```\n\n';
+  }
   
-  markdown += `### CSS Custom Properties (Variables)\n\n`;
-  markdown += '```css\n';
-  markdown += `/* Import the CSS variables file */\n`;
-  markdown += `@import 'path/to/${collectionName}_${modeName}.css';\n\n`;
-  markdown += `/* Use the variables in your CSS */\n`;
-  markdown += `.my-element {\n`;
-  markdown += `  color: var(--color-primary);\n`;
-  markdown += `  background-color: var(--color-background);\n`;
-  markdown += `  padding: var(--spacing-medium);\n`;
-  markdown += `  border-radius: var(--border-radius-medium);\n`;
-  markdown += `}\n`;
-  markdown += '```\n\n';
+  if ((platforms.includes('web') || platforms.includes('all')) && selectedFormats.includes('scss')) {
+    markdown += `### SCSS Variables\n\n`;
+    markdown += '```scss\n';
+    markdown += `// Import the SCSS variables file\n`;
+    markdown += `@import 'path/to/${collectionName}.scss';\n\n`;
+    markdown += `// Use the variables in your SCSS\n`;
+    markdown += `.my-element {\n`;
+    markdown += `  color: $${colorExample};\n`;
+    markdown += `  background-color: $${backgroundExample};\n`;
+    markdown += `  padding: $${dimensionExample};\n`;
+    markdown += `  border-radius: $${borderRadiusExample};\n`;
+    markdown += `}\n`;
+    markdown += '```\n\n';
+  }
   
-  // Add SCSS usage
-  markdown += `### SCSS Variables\n\n`;
-  markdown += '```scss\n';
-  markdown += `// Import the SCSS variables file\n`;
-  markdown += `@import 'path/to/${collectionName}_${modeName}.scss';\n\n`;
-  markdown += `// Use the variables in your SCSS\n`;
-  markdown += `.my-element {\n`;
-  markdown += `  color: $color-primary;\n`;
-  markdown += `  background-color: $color-background;\n`;
-  markdown += `  padding: $spacing-medium;\n`;
-  markdown += `  border-radius: $border-radius-medium;\n`;
-  markdown += `}\n`;
-  markdown += '```\n\n';
+  if ((platforms.includes('web') || platforms.includes('all')) && selectedFormats.includes('js')) {
+    markdown += `### JavaScript Usage\n\n`;
+    markdown += '```javascript\n';
+    markdown += `// Import the tokens\n`;
+    markdown += `import { tokens } from 'path/to/${collectionName}.js';\n\n`;
+    markdown += `// Use the tokens in your JavaScript\n`;
+    const jsColorPath = colorExample.split('-').join('.');
+    const jsSpacingPath = dimensionExample.split('-').join('.');
+    const jsBackgroundPath = backgroundExample.split('-').join('.');
+    
+    markdown += `// Access tokens by their path\n`;
+    markdown += `const primaryColor = tokens.${jsColorPath}; // ${tokenValueByPath(tokens, jsColorPath)}\n`;
+    markdown += `const mediumSpacing = tokens.${jsSpacingPath}; // ${tokenValueByPath(tokens, jsSpacingPath)}\n\n`;
+    markdown += `// Create a dynamic style\n`;
+    markdown += `element.style.backgroundColor = tokens.${jsBackgroundPath}; // ${tokenValueByPath(tokens, jsBackgroundPath)}\n`;
+    markdown += '```\n\n';
+  }
   
-  // Add JavaScript usage
-  markdown += `### JavaScript Usage\n\n`;
-  markdown += '```javascript\n';
-  markdown += `// Import the tokens\n`;
-  markdown += `import { tokens } from 'path/to/${collectionName}_${modeName}.js';\n\n`;
-  markdown += `// Use the tokens in your JavaScript\n`;
-  markdown += `const primaryColor = tokens.color.primary;\n`;
-  markdown += `const mediumSpacing = tokens.spacing.medium;\n\n`;
-  markdown += `// Create a dynamic style\n`;
-  markdown += `element.style.backgroundColor = tokens.color.background;\n`;
-  markdown += `element.style.padding = tokens.spacing.large;\n`;
-  markdown += '```\n';
+  // iOS implementation examples
+  if ((platforms.includes('ios') || platforms.includes('all')) && selectedFormats.includes('ios')) {
+    markdown += `### iOS (Swift) Implementation\n\n`;
+    
+    let colorExamplePath = '';
+    let dimensionExamplePath = '';
+    
+    // Find real tokens for examples
+    Object.entries(tokens).forEach(([path, token]) => {
+      if (token.type === 'color' && !colorExamplePath) {
+        colorExamplePath = path;
+      }
+      if (token.type === 'dimension' && !dimensionExamplePath) {
+        dimensionExamplePath = path;
+      }
+    });
+    
+    // Format the paths for Swift
+    const swiftColorPath = colorExamplePath.split('.').map(part => {
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    }).join('.');
+    
+    const swiftDimensionPath = dimensionExamplePath.split('.').map(part => {
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    }).join('.');
+    
+    markdown += '```swift\n';
+    markdown += `// Import the generated Swift file\n`;
+    markdown += `import ${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}Tokens\n\n`;
+    markdown += `// Use the color tokens in your Swift code\n`;
+    if (colorExamplePath) {
+      markdown += `let myColor = TokenColors.${swiftColorPath} // ${tokenValueByPath(tokens, colorExamplePath)}\n`;
+    }
+    if (dimensionExamplePath) {
+      markdown += `let mySize = TokenDimensions.${swiftDimensionPath} // ${tokenValueByPath(tokens, dimensionExamplePath)}\n`;
+    }
+    markdown += `\n// Use in SwiftUI\n`;
+    markdown += `Text("Hello World")\n`;
+    if (colorExamplePath) {
+      markdown += `  .foregroundColor(TokenColors.${swiftColorPath})\n`;
+    }
+    if (dimensionExamplePath) {
+      markdown += `  .padding(TokenDimensions.${swiftDimensionPath})\n`;
+    }
+    markdown += '```\n\n';
+  }
+  
+  // Android implementation examples
+  if ((platforms.includes('android') || platforms.includes('all')) && selectedFormats.includes('android')) {
+    markdown += `### Android Implementation\n\n`;
+    
+    // Find real tokens for examples
+    let colorRef = '@color/color_primary';
+    let dimensionRef = '@dimen/spacing_medium';
+    
+    Object.entries(tokens).forEach(([path, token]) => {
+      const name = path.replace(/\./g, '_');
+      if (token.type === 'color' && (path.includes('primary') || path.includes('brand'))) {
+        colorRef = `@color/${name}`;
+      }
+      if (token.type === 'dimension' && path.includes('spacing')) {
+        dimensionRef = `@dimen/${name}`;
+      }
+    });
+    
+    markdown += '```xml\n';
+    markdown += `<!-- In your layout XML -->\n`;
+    markdown += `<TextView\n`;
+    markdown += `    android:layout_width="match_parent"\n`;
+    markdown += `    android:layout_height="wrap_content"\n`;
+    markdown += `    android:textColor="${colorRef}"\n`;
+    markdown += `    android:padding="${dimensionRef}" />\n\n`;
+    
+    markdown += `<!-- Using in styles -->\n`;
+    markdown += `<style name="AppTheme" parent="Theme.MaterialComponents.Light">\n`;
+    markdown += `    <item name="colorPrimary">${colorRef}</item>\n`;
+    markdown += `    <item name="android:textSize">${dimensionRef}</item>\n`;
+    markdown += `</style>\n`;
+    markdown += '```\n\n';
+  }
   
   return markdown;
+}
+
+/**
+ * Helper function to safely get a token value by path
+ */
+function tokenValueByPath(tokens: Record<string, StyleDictionaryToken>, path: string): string {
+  try {
+    const token = tokens[path];
+    if (token && token.value !== undefined) {
+      return String(token.value);
+    }
+    
+    // Try with dashes
+    const dashPath = path.replace(/\./g, '-');
+    const dashToken = tokens[dashPath];
+    if (dashToken && dashToken.value !== undefined) {
+      return String(dashToken.value);
+    }
+    
+    return '[value not found]';
+  } catch (err) {
+    return '[value not found]';
+  }
 }
 
 /**
@@ -186,21 +270,20 @@ export function generateMarkdownDocumentation(
  * 
  * @param tokens The tokens to document
  * @param collectionName The name of the collection
- * @param modeName The name of the mode 
  * @param options Documentation options
  * @returns HTML documentation
  */
 export function generateHtmlDocumentation(
   tokens: Record<string, StyleDictionaryToken>,
   collectionName: string,
-  modeName: string,
   options: DocumentationOptions = {}
 ): string {
   const { 
-    title = `${collectionName} - ${modeName} Design Tokens`, 
+    title = `${collectionName} Design Tokens`, 
     includeCode = true,
     includeTables = true,
-    includePreview = true
+    includePreview = true,
+    selectedFormats = ['css', 'scss', 'js', 'ios', 'android']
   } = options;
   
   // Start with an HTML template
@@ -334,7 +417,7 @@ export function generateHtmlDocumentation(
 </head>
 <body>
   <h1>${title}</h1>
-  <p>Generated design tokens from Figma for collection "${collectionName}" and mode "${modeName}".</p>
+  <p>Generated design tokens from Figma for collection "${collectionName}".</p>
 `;
   
   // Group tokens by type
@@ -416,23 +499,17 @@ export function generateHtmlDocumentation(
     html += `</div></div>`;
   });
   
-  // Add a general usage section with tabs
-  html += `<div class="token-section">
-  <div class="token-section-header">
-    <h2>Usage Information</h2>
-  </div>
-  <div class="usage-tabs">
-    <div class="usage-tab active" onclick="showTab('css')">CSS</div>
-    <div class="usage-tab" onclick="showTab('scss')">SCSS</div>
-    <div class="usage-tab" onclick="showTab('js')">JavaScript</div>
-    ${tokensByType['color'] ? '<div class="usage-tab" onclick="showTab(\'swift\')">iOS (Swift)</div>' : ''}
-    ${tokensByType['dimension'] ? '<div class="usage-tab" onclick="showTab(\'android\')">Android</div>' : ''}
-  </div>
+  // Build tabs based on selected formats
+  const tabsHtml = [];
+  const tabContentsHtml = [];
   
-  <div id="css" class="usage-content active">
+  if (selectedFormats.includes('css')) {
+    tabsHtml.push(`<div class="usage-tab ${tabsHtml.length === 0 ? 'active' : ''}" onclick="showTab('css')">CSS</div>`);
+    tabContentsHtml.push(`
+  <div id="css" class="usage-content ${tabsHtml.length === 1 ? 'active' : ''}">
     <h3>CSS Custom Properties (Variables)</h3>
     <pre><code>/* Import the CSS variables file */
-@import 'path/to/${collectionName}_${modeName}.css';
+@import 'path/to/${collectionName}.css';
 
 /* Use the variables in your CSS */
 .my-element {
@@ -441,12 +518,16 @@ export function generateHtmlDocumentation(
   padding: var(--spacing-medium);
   border-radius: var(--border-radius-medium);
 }</code></pre>
-  </div>
+  </div>`);
+  }
   
-  <div id="scss" class="usage-content">
+  if (selectedFormats.includes('scss')) {
+    tabsHtml.push(`<div class="usage-tab ${tabsHtml.length === 0 ? 'active' : ''}" onclick="showTab('scss')">SCSS</div>`);
+    tabContentsHtml.push(`
+  <div id="scss" class="usage-content ${tabsHtml.length === 1 ? 'active' : ''}">
     <h3>SCSS Variables</h3>
     <pre><code>// Import the SCSS variables file
-@import 'path/to/${collectionName}_${modeName}.scss';
+@import 'path/to/${collectionName}.scss';
 
 // Use the variables in your SCSS
 .my-element {
@@ -455,12 +536,16 @@ export function generateHtmlDocumentation(
   padding: $spacing-medium;
   border-radius: $border-radius-medium;
 }</code></pre>
-  </div>
+  </div>`);
+  }
   
-  <div id="js" class="usage-content">
+  if (selectedFormats.includes('js')) {
+    tabsHtml.push(`<div class="usage-tab ${tabsHtml.length === 0 ? 'active' : ''}" onclick="showTab('js')">JavaScript</div>`);
+    tabContentsHtml.push(`
+  <div id="js" class="usage-content ${tabsHtml.length === 1 ? 'active' : ''}">
     <h3>JavaScript Usage</h3>
     <pre><code>// Import the tokens
-import { tokens } from 'path/to/${collectionName}_${modeName}.js';
+import { tokens } from 'path/to/${collectionName}.js';
 
 // Use the tokens in your JavaScript
 const primaryColor = tokens.color.primary;
@@ -469,10 +554,13 @@ const mediumSpacing = tokens.spacing.medium;
 // Create a dynamic style
 element.style.backgroundColor = tokens.color.background;
 element.style.padding = tokens.spacing.large;</code></pre>
-  </div>`;
+  </div>`);
+  }
 
-  if (tokensByType['color']) {
-    html += `<div id="swift" class="usage-content">
+  if (tokensByType['color'] && selectedFormats.includes('ios')) {
+    tabsHtml.push(`<div class="usage-tab ${tabsHtml.length === 0 ? 'active' : ''}" onclick="showTab('swift')">iOS (Swift)</div>`);
+    tabContentsHtml.push(`
+  <div id="swift" class="usage-content ${tabsHtml.length === 1 ? 'active' : ''}">
     <h3>iOS (Swift) Usage</h3>
     <pre><code>// Import the generated Swift file
 import StyleDictionary
@@ -483,11 +571,13 @@ let backgroundColor = StyleDictionary.Color.background
 
 // Apply to a UIView
 myView.backgroundColor = StyleDictionary.Color.background</code></pre>
-  </div>`;
+  </div>`);
   }
 
-  if (tokensByType['dimension']) {
-    html += `<div id="android" class="usage-content">
+  if (tokensByType['dimension'] && selectedFormats.includes('android')) {
+    tabsHtml.push(`<div class="usage-tab ${tabsHtml.length === 0 ? 'active' : ''}" onclick="showTab('android')">Android</div>`);
+    tabContentsHtml.push(`
+  <div id="android" class="usage-content ${tabsHtml.length === 1 ? 'active' : ''}">
     <h3>Android Usage</h3>
     <pre><code>&lt;!-- In your layout XML --&gt;
 &lt;TextView
@@ -495,11 +585,23 @@ myView.backgroundColor = StyleDictionary.Color.background</code></pre>
     android:layout_height="wrap_content"
     android:textColor="@color/color_primary"
     android:padding="@dimen/spacing_medium" /&gt;</code></pre>
-  </div>`;
+  </div>`);
   }
 
-  html += `</div>
+  // Only add the implementation section if there are formats to show
+  if (tabsHtml.length > 0) {
+    html += `<div class="token-section">
+  <div class="token-section-header">
+    <h2>Implementation Guide</h2>
+  </div>
+  <div class="usage-tabs">
+    ${tabsHtml.join('\n    ')}
+  </div>
+  ${tabContentsHtml.join('\n  ')}
+</div>`;
+  }
 
+  html += `
 <script>
 function showTab(tabId) {
   // Hide all content sections
