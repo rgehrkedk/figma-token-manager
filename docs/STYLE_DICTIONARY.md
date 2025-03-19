@@ -30,9 +30,7 @@ The following issues have been identified in the current implementation and thei
 
 1. **Style Dictionary Platforms vs. Formats Confusion**: ✅ FIXED - The redesigned UI now clearly shows which formats belong to which platforms.
 
-2. **Missing Documentation Examples**: There aren't clear visual examples of what the generated documentation looks like.
-
-3. **Compact and Difficult UI**: ✅ FIXED - The export dialog has been completely redesigned with a more user-friendly interface that features a step-by-step workflow, better organization, and clearer visual hierarchy.
+2. **Compact and Difficult UI**: ✅ FIXED - The export dialog has been completely redesigned with a more user-friendly interface that features a step-by-step workflow, better organization, and clearer visual hierarchy.
 
 ### Technical Issues
 

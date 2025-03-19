@@ -14,9 +14,7 @@ import { setupTokenDetailsPanel } from './components/tokenDetailsPanel';
 import { CollectionSelector } from './components/collectionSelector';
 import { updateJsonViewer, setupJsonEditorPanel, getJsonFromViewer } from './components/jsonViewIntegration';
 import { updateFigmaVariables } from './utilities/updateFigmaVariables'; // Import update handler
-import { showExportDialog as showOriginalExportDialog, ExportOptions } from './components/exportDialog'; // Import original export dialog
-import { showExportDialog as showRedesignedExportDialog } from './components/redesign/exportDialog'; // Import redesigned export dialog
-import { isRedesignedExportDialogEnabled } from './utilities/testRedesign'; // Import redesign toggle
+import { showExportDialog, ExportOptions } from './components/exportDialog'; // Import export dialog
 
 // Import reference handling utilities
 import { processTokensWithReferences, extractTokenList } from './reference/ReferenceResolver';
@@ -368,12 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function exportTokens(): void {
     if (!tokenData || !sidebarInterface) return;
     
-    // Determine which export dialog to show based on the toggle
-    const showExportDialog = isRedesignedExportDialogEnabled() 
-      ? showRedesignedExportDialog
-      : showOriginalExportDialog;
-    
-    // Show the selected export dialog
+    // Show the export dialog
     showExportDialog({
       tokenData,
       onExport: (exportOptions: ExportOptions) => {
