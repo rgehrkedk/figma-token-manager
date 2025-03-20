@@ -55,24 +55,6 @@ export function createSidebarTemplate(): string {
           </div>
         </div>
         
-        <!-- Export Options -->
-        <div class="settings-section">
-          <h3 class="settings-heading">Export Options</h3>
-          <div class="settings-options">
-            <div class="settings-option">
-              <input type="checkbox" id="separate-files" checked>
-              <label for="separate-files">Export separate files</label>
-            </div>
-            <div class="settings-option">
-              <input type="checkbox" id="validate-references" checked>
-              <label for="validate-references">Validate references</label>
-            </div>
-            <div class="settings-option">
-              <input type="checkbox" id="flat-structure">
-              <label for="flat-structure">Flat structure</label>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
     

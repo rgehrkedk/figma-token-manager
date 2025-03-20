@@ -14,9 +14,6 @@ interface SidebarState {
   activeSidebarTab: 'collections' | 'settings';
   colorFormat: ColorFormat;
   exportFormat: 'dtcg' | 'legacy';
-  separateFiles: boolean;
-  validateReferences: boolean;
-  flatStructure: boolean;
 }
 
 export interface SidebarCallbacks {
@@ -49,10 +46,7 @@ export function setupSidebarPanel(
     selectedModes: new Map(),
     activeSidebarTab: 'collections',
     colorFormat: 'hex',
-    exportFormat: 'dtcg',
-    separateFiles: true,
-    validateReferences: true,
-    flatStructure: false
+    exportFormat: 'dtcg'
   };
 
   // Reference counts for status display
@@ -143,31 +137,7 @@ export function setupSidebarPanel(
       });
     });
     
-    // Checkbox options
-    const separateFilesCheckbox = container.querySelector('#separate-files') as HTMLInputElement;
-    const validateReferencesCheckbox = container.querySelector('#validate-references') as HTMLInputElement;
-    const flatStructureCheckbox = container.querySelector('#flat-structure') as HTMLInputElement;
-    
-    if (separateFilesCheckbox) {
-      separateFilesCheckbox.addEventListener('change', () => {
-        state.separateFiles = separateFilesCheckbox.checked;
-        callbacks.onSettingsChange('separateFiles', separateFilesCheckbox.checked);
-      });
-    }
-    
-    if (validateReferencesCheckbox) {
-      validateReferencesCheckbox.addEventListener('change', () => {
-        state.validateReferences = validateReferencesCheckbox.checked;
-        callbacks.onSettingsChange('validateReferences', validateReferencesCheckbox.checked);
-      });
-    }
-    
-    if (flatStructureCheckbox) {
-      flatStructureCheckbox.addEventListener('change', () => {
-        state.flatStructure = flatStructureCheckbox.checked;
-        callbacks.onSettingsChange('flatStructure', flatStructureCheckbox.checked);
-      });
-    }
+    // No checkbox options needed after removing export options section
   }
 
   /**
@@ -244,10 +214,7 @@ function createEmptySidebarInterface(): SidebarInterface {
       selectedModes: new Map(),
       activeSidebarTab: 'collections',
       colorFormat: 'hex' as ColorFormat,
-      exportFormat: 'dtcg',
-      separateFiles: true,
-      validateReferences: true,
-      flatStructure: false
+      exportFormat: 'dtcg'
     }),
     setReferenceCounts: () => {},
     updateTokenData: () => {}
