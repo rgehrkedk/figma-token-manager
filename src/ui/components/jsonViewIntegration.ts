@@ -5,7 +5,7 @@
  * Updated to support full variable management functionality
  */
 
-import { createJsonEditor } from './JsonEditor';
+import { createJsonEditor } from './JsonViewer';
 import { updateFigmaVariables } from '../utilities/updateFigmaVariables';
 
 // Store the JSON editor instance

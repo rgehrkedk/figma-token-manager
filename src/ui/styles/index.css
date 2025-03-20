@@ -21,11 +21,10 @@
 @import './components/diagnostics.css';
 @import './components/forms.css';
 @import './components/collectionSelector.css';
-@import './components/statusIndicator.css';
-@import './components/jsonPreview.css';
+@import './components/status.css';
 @import './components/actionButtons.css';
 @import './components/categoryNavigation.css';
-@import './components/jsonViewer.css'; /* Added JSON viewer styles */
+@import './components/jsonEditor.css'; /* Combined JSON editor/viewer styles */
 @import './components/exportDialog.css'; /* Added export dialog styles */
 
 /* Add the import for reference tokens styles */

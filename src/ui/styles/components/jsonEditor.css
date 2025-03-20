@@ -1,19 +1,172 @@
-/* src/ui/styles/components/jsonEditor.css */
 /**
- * Styles for the enhanced JSON editor component with variable management
+ * JSON Editor and Viewer Components
+ * Combined styles for JSON editing, viewing, and preview components
  */
 
-.json-editor-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+/* Common styles for JSON containers */
+.json-container,
+.json-editor-container,
+.json-viewer-wrapper {
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
   background-color: var(--color-white);
   overflow: hidden;
+}
+
+/* JSON Editor Container */
+.json-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   position: relative; /* For absolute positioned help panel */
 }
 
+/* JSON Viewer Wrapper */
+.json-viewer-wrapper {
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  overflow: auto;
+  position: relative;
+}
+
+/* Editor content container with line numbers */
+.json-editor-content {
+  display: flex;
+  position: relative;
+  min-height: 100px;
+}
+
+/* Line numbers gutter */
+.line-numbers-gutter,
+.line-numbers {
+  flex: 0 0 auto;
+  width: 40px;
+  background-color: var(--color-gray-200);
+  border-right: 1px solid var(--color-gray-300);
+  padding: 10px 0;
+  user-select: none;
+  overflow: hidden;
+  text-align: right;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-monospace);
+}
+
+.line-number {
+  padding: 0 8px 0 0;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
+}
+
+/* Editable textarea */
+.json-editor-textarea {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background-color: transparent;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  padding: 10px;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+  color: var(--color-gray-900);
+  caret-color: var(--color-primary);
+  z-index: 1; /* Above the highlight layer */
+}
+
+/* For read-only mode */
+.json-editor-textarea[readonly] {
+  cursor: default;
+  color: var(--color-gray-800);
+}
+
+/* When there's an error */
+.json-editor-textarea.json-error {
+  color: var(--color-danger);
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Syntax highlighting layer */
+.syntax-highlight-layer {
+  position: absolute;
+  top: 0;
+  left: 40px; /* Same as gutter width */
+  right: 0;
+  bottom: 0;
+  padding: 10px;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  pointer-events: none;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+  background-color: transparent;
+  color: transparent; /* Make text invisible */
+  z-index: 0; /* Below the textarea */
+}
+
+.with-line-numbers .json-editor-textarea {
+  margin-left: 0;
+  border-left: none;
+}
+
+/* Token styles for syntax highlighting */
+.token.property {
+  color: #0066cc;
+  font-weight: 500;
+}
+
+.token.string {
+  color: #009900;
+}
+
+.token.number {
+  color: #cc6600;
+}
+
+.token.boolean {
+  color: #0099cc;
+}
+
+.token.null {
+  color: #cc0000;
+}
+
+.token.punctuation {
+  color: #555555;
+}
+
+/* Enhanced scrollbar for better UX */
+.json-viewer-wrapper::-webkit-scrollbar,
+.json-editor-textarea::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.json-viewer-wrapper::-webkit-scrollbar-track,
+.json-editor-textarea::-webkit-scrollbar-track {
+  background: var(--color-gray-200);
+  border-radius: 4px;
+}
+
+.json-viewer-wrapper::-webkit-scrollbar-thumb,
+.json-editor-textarea::-webkit-scrollbar-thumb {
+  background: var(--color-gray-400);
+  border-radius: 4px;
+}
+
+.json-viewer-wrapper::-webkit-scrollbar-thumb:hover,
+.json-editor-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-500);
+}
+
+/* JSON editor header */
 .json-editor-header {
   display: flex;
   justify-content: space-between;
@@ -24,60 +177,8 @@
 }
 
 .json-status {
+  flex: 1;
   font-size: 12px;
-}
-
-.status-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-}
-
-.status-indicator::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.status-indicator.valid {
-  background-color: rgba(40, 167, 69, 0.1);
-  color: var(--color-success, #28a745);
-}
-
-.status-indicator.valid::before {
-  background-color: var(--color-success, #28a745);
-}
-
-.status-indicator.invalid {
-  background-color: rgba(220, 53, 69, 0.1);
-  color: var(--color-danger, #dc3545);
-}
-
-.status-indicator.invalid::before {
-  background-color: var(--color-danger, #dc3545);
-}
-
-.status-indicator.pending {
-  background-color: rgba(255, 193, 7, 0.1);
-  color: var(--color-warning, #ffc107);
-}
-
-.status-indicator.pending::before {
-  background-color: var(--color-warning, #ffc107);
-}
-
-.status-indicator.warning {
-  background-color: rgba(255, 153, 0, 0.1);
-  color: var(--color-warning, #ff9900);
-}
-
-.status-indicator.warning::before {
-  background-color: var(--color-warning, #ff9900);
 }
 
 .json-editor-actions {
@@ -85,6 +186,7 @@
   gap: 8px;
 }
 
+/* Button styling */
 .json-validate-btn,
 .json-save-btn,
 .json-format-btn,
@@ -100,27 +202,32 @@
 
 .json-validate-btn,
 .json-format-btn {
-  background-color: var(--color-gray-200, #e9ecef);
-  color: var(--color-gray-700, #495057);
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
 }
 
 .json-validate-btn:hover,
 .json-format-btn:hover {
-  background-color: var(--color-gray-300, #dee2e6);
+  background-color: var(--color-gray-300);
 }
 
 .json-save-btn {
-  background-color: var(--color-primary, #0066ff);
-  color: var(--color-white, #ffffff);
+  background-color: var(--color-primary);
+  color: white;
 }
 
 .json-save-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-dark, #0052cc);
+  background-color: var(--color-primary-dark);
+}
+
+.json-save-btn:active {
+  background-color: var(--color-primary-dark);
+  transform: translateY(1px);
 }
 
 .json-save-btn:disabled {
-  background-color: var(--color-gray-400, #ced4da);
-  color: var(--color-gray-200, #e9ecef);
+  background-color: var(--color-gray-400);
+  color: var(--color-gray-200);
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -131,85 +238,80 @@
   border-radius: 50%;
   padding: 0;
   font-weight: bold;
-  background-color: var(--color-gray-300, #dee2e6);
-  color: var(--color-gray-700, #495057);
+  margin-right: 8px;
+  background-color: var(--color-gray-300);
+  color: var(--color-gray-700);
 }
 
 .json-help-btn:hover {
-  background-color: var(--color-gray-400, #ced4da);
+  background-color: var(--color-gray-400);
 }
 
 .json-help-close-btn {
-  background-color: var(--color-gray-300, #dee2e6);
-  color: var(--color-gray-700, #495057);
+  background-color: var(--color-gray-300);
+  color: var(--color-gray-700);
   margin-top: 12px;
 }
 
 .json-help-close-btn:hover {
-  background-color: var(--color-gray-400, #ced4da);
+  background-color: var(--color-gray-400);
 }
 
-.json-editor-body {
-  flex: 1;
+/* Add a visual animation when validating */
+.validating .json-validate-btn {
   position: relative;
-  height: 100%;
-  min-height: 200px;
+  overflow: hidden;
 }
 
-.json-editor-textarea {
+.validating .json-validate-btn::after {
+  content: "";
   position: absolute;
   top: 0;
-  left: 0;
+  left: -100%;
   width: 100%;
   height: 100%;
-  padding: 12px;
-  border: none;
-  resize: none;
-  font-family: var(--font-family-monospace, 'Menlo', 'Monaco', 'Consolas', monospace);
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--color-gray-800, #343a40);
-  background-color: var(--color-white, #ffffff);
-  overflow: auto;
-  box-sizing: border-box;
-  tab-size: 2;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent
+  );
+  animation: validation-shine 1s infinite;
 }
 
-.json-editor-textarea:focus {
-  outline: none;
-  box-shadow: inset 0 0 0 2px rgba(0, 102, 255, 0.1);
+@keyframes validation-shine {
+  100% {
+    left: 100%;
+  }
 }
 
+/* JSON editor footer and messages */
 .json-editor-footer {
   padding: 8px 12px;
-  background-color: var(--color-gray-100, #f8f9fa);
-  border-top: 1px solid var(--color-gray-300, #dee2e6);
+  border-top: 1px solid var(--color-gray-300);
+  background-color: var(--color-gray-100);
 }
 
 .json-editor-message {
   font-size: 12px;
-  color: var(--color-gray-600, #6c757d);
+  color: var(--color-gray-600);
   line-height: 1.4;
 }
 
-.json-editor-message.error {
-  color: var(--color-danger, #dc3545);
-}
-
 .json-editor-message.success {
-  color: var(--color-success, #28a745);
+  color: var(--color-success);
 }
 
-.json-editor-message.info {
-  color: var(--color-info, #0077cc);
+.json-editor-message.error {
+  color: var(--color-danger);
 }
 
 .json-editor-message.pending {
-  color: var(--color-warning, #ffc107);
+  color: var(--color-warning);
 }
 
 .json-editor-message.warning {
-  color: var(--color-warning, #ff9900);
+  color: var(--color-warning);
 }
 
 .message-details {
@@ -227,7 +329,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   background: white;
-  border: 1px solid var(--color-gray-300, #dee2e6);
+  border: 1px solid var(--color-gray-300);
   border-radius: 4px;
   padding: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -239,8 +341,8 @@
 .json-editor-help h4 {
   margin-top: 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-gray-200, #e9ecef);
-  color: var(--color-gray-800, #343a40);
+  border-bottom: 1px solid var(--color-gray-200);
+  color: var(--color-gray-800);
 }
 
 .json-editor-help ul {
@@ -252,20 +354,20 @@
   margin-bottom: 6px;
   font-size: 12px;
   line-height: 1.4;
-  color: var(--color-gray-700, #495057);
+  color: var(--color-gray-700);
 }
 
 .json-editor-help li strong {
-  color: var(--color-gray-900, #212529);
+  color: var(--color-gray-900);
 }
 
 .json-editor-help code {
-  background: var(--color-gray-100, #f8f9fa);
+  background: var(--color-gray-100);
   padding: 2px 4px;
   border-radius: 3px;
-  font-family: var(--font-family-monospace, 'Menlo', 'Monaco', 'Consolas', monospace);
+  font-family: var(--font-family-monospace);
   font-size: 0.9em;
-  color: var(--color-primary, #0066ff);
+  color: var(--color-primary);
   word-break: break-all;
 }
 
@@ -273,12 +375,65 @@
   margin: 8px 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--color-gray-700, #495057);
+  color: var(--color-gray-700);
+}
+
+/* JSON Preview Section */
+.preview-section {
+  margin-top: var(--space-4);
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.preview-header h2 {
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+#preview-container {
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: max-height var(--transition-normal) var(--transition-timing);
+}
+
+#preview-container.collapsed {
+  max-height: 0;
+}
+
+#preview-content {
+  height: 300px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-2);
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-xs);
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-800);
+  white-space: pre-wrap;
+}
+
+#toggle-preview {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-gray-600);
+  font-size: var(--font-size-xs);
+}
+
+#toggle-preview:hover {
+  color: var(--color-gray-800);
 }
 
 /* Fix for Chrome autofill background */
 .json-editor-textarea:-webkit-autofill {
-  -webkit-text-fill-color: var(--color-gray-800, #343a40);
+  -webkit-text-fill-color: var(--color-gray-800);
   transition: background-color 5000s ease-in-out 0s;
 }
 

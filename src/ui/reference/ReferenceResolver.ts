@@ -65,98 +65,139 @@ export function formatReferenceDisplay(reference: string): string {
 }
 
 /**
+ * Processes a token object and adds it to the token map with various path formats.
+ * Extracted as a helper function to reduce code duplication.
+ */
+function addTokenToMap(
+  tokenMap: TokenMap, 
+  path: string, 
+  originalPath: string, 
+  value: any, 
+  type: string, 
+  isPriority: boolean = false
+): void {
+  // 1. Store with exact path using dots (Style Dictionary format)
+  const dotPath = path.replace(/\//g, '.');
+  tokenMap[dotPath] = {
+    value,
+    type,
+    originalPath,
+    isPriority
+  };
+  
+  // 2. Store with exact path using slashes
+  tokenMap[path] = {
+    value,
+    type,
+    originalPath,
+    isPriority
+  };
+  
+  // 3. Store path segments for partial references
+  const pathParts = dotPath.split('.');
+  
+  // Store progressively more specific paths
+  for (let i = pathParts.length; i > 0; i--) {
+    const partialPath = pathParts.slice(pathParts.length - i).join('.');
+    if (!tokenMap[partialPath] || isPriority) { // Override with priority tokens
+      tokenMap[partialPath] = {
+        value,
+        type,
+        originalPath,
+        isPriority
+      };
+    }
+    
+    // Also store with slashes for compatibility
+    const partialSlashPath = pathParts.slice(pathParts.length - i).join('/');
+    if (!tokenMap[partialSlashPath] || isPriority) { // Override with priority tokens
+      tokenMap[partialSlashPath] = {
+        value,
+        type,
+        originalPath,
+        isPriority
+      };
+    }
+  }
+  
+  // 4. Store just the token name for simplest references
+  const tokenName = pathParts[pathParts.length - 1];
+  if (!tokenMap[tokenName] || isPriority) { // Override with priority tokens
+    tokenMap[tokenName] = {
+      value,
+      type,
+      originalPath,
+      isPriority
+    };
+  }
+}
+
+/**
+ * Helper function to process tokens in a collection or mode
+ */
+function processTokensForMap(
+  obj: any, 
+  path: string = '', 
+  originalPath: string = '', 
+  isPriority: boolean = false,
+  tokenMap: TokenMap = {}
+): TokenMap {
+  if (!obj || typeof obj !== 'object') return tokenMap;
+  
+  // Process DTCG-format tokens with $value
+  if (obj.$value !== undefined && obj.$type !== undefined) {
+    // Add token to map in various formats
+    addTokenToMap(
+      tokenMap, 
+      path, 
+      originalPath, 
+      obj.$value, 
+      obj.$type, 
+      isPriority
+    );
+    
+    return tokenMap;
+  }
+  
+  // Process nested objects
+  for (const key in obj) {
+    const newPath = path ? `${path}/${key}` : key;
+    const newOriginalPath = originalPath ? `${originalPath}.${key}` : key;
+    
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      processTokensForMap(obj[key], newPath, newOriginalPath, isPriority, tokenMap);
+    }
+  }
+  
+  return tokenMap;
+}
+
+/**
  * Creates a flattened map of all tokens for resolution.
  * Includes multiple path formats (dots, slashes) for better resolution.
  */
 export function buildTokenMap(tokenData: any): TokenMap {
   const tokenMap: TokenMap = {};
   
-  // Process all tokens in the data structure
-  function processTokens(obj: any, path: string = '', originalPath: string = '') {
-    if (!obj || typeof obj !== 'object') return;
-    
-    // Process DTCG-format tokens with $value
-    if (obj.$value !== undefined && obj.$type !== undefined) {
-      // Store in the flat map with various path formats to improve resolution
-      
-      // 1. Store with exact path using dots (Style Dictionary format)
-      const dotPath = path.replace(/\//g, '.');
-      tokenMap[dotPath] = {
-        value: obj.$value,
-        type: obj.$type,
-        originalPath
-      };
-      
-      // 2. Store with exact path using slashes
-      tokenMap[path] = {
-        value: obj.$value,
-        type: obj.$type,
-        originalPath
-      };
-      
-      // 3. Store path segments for partial references
-      const pathParts = dotPath.split('.');
-      
-      // Store progressively more specific paths
-      for (let i = pathParts.length; i > 0; i--) {
-        const partialPath = pathParts.slice(pathParts.length - i).join('.');
-        if (!tokenMap[partialPath] && partialPath !== dotPath) {
-          tokenMap[partialPath] = {
-            value: obj.$value,
-            type: obj.$type,
-            originalPath
-          };
-        }
-        
-        // Also store with slashes for compatibility
-        const partialSlashPath = pathParts.slice(pathParts.length - i).join('/');
-        if (!tokenMap[partialSlashPath] && partialSlashPath !== path) {
-          tokenMap[partialSlashPath] = {
-            value: obj.$value,
-            type: obj.$type,
-            originalPath
-          };
-        }
-      }
-      
-      // 4. Store just the token name for simplest references
-      const tokenName = pathParts[pathParts.length - 1];
-      if (!tokenMap[tokenName]) {
-        tokenMap[tokenName] = {
-          value: obj.$value,
-          type: obj.$type,
-          originalPath
-        };
-      }
-      
-      return;
-    }
-    
-    // Process nested objects
-    for (const key in obj) {
-      const newPath = path ? `${path}/${key}` : key;
-      const newOriginalPath = originalPath ? `${originalPath}.${key}` : key;
-      
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
-        processTokens(obj[key], newPath, newOriginalPath);
-      }
-    }
-  }
-  
   // Process each collection and mode
   for (const collection in tokenData) {
     for (const mode in tokenData[collection]) {
-      processTokens(
+      // Process with collection and mode paths
+      processTokensForMap(
         tokenData[collection][mode], 
         `${collection}/${mode}`, 
-        `${collection}.${mode}`
+        `${collection}.${mode}`,
+        false,
+        tokenMap
       );
       
       // Also add entries without collection and mode for better resolution
-      processTokens(
+      processTokensForMap(
         tokenData[collection][mode],
         '',
-        ''
+        '',
+        false,
+        tokenMap
       );
     }
   }
@@ -175,83 +216,6 @@ export function buildPrioritizedTokenMap(
 ): TokenMap {
   const tokenMap: TokenMap = {};
   
-  // Process all tokens in the data structure
-  function processTokens(obj: any, path: string = '', originalPath: string = '', isPriority: boolean = false) {
-    if (!obj || typeof obj !== 'object') return;
-    
-    // Process DTCG-format tokens with $value
-    if (obj.$value !== undefined && obj.$type !== undefined) {
-      // Store in the flat map with various path formats to improve resolution
-      
-      // 1. Store with exact path using dots (Style Dictionary format)
-      const dotPath = path.replace(/\//g, '.');
-      tokenMap[dotPath] = {
-        value: obj.$value,
-        type: obj.$type,
-        originalPath,
-        isPriority
-      };
-      
-      // 2. Store with exact path using slashes
-      tokenMap[path] = {
-        value: obj.$value,
-        type: obj.$type,
-        originalPath,
-        isPriority
-      };
-      
-      // 3. Store path segments for partial references
-      const pathParts = dotPath.split('.');
-      
-      // Store progressively more specific paths
-      for (let i = pathParts.length; i > 0; i--) {
-        const partialPath = pathParts.slice(pathParts.length - i).join('.');
-        if (!tokenMap[partialPath] || isPriority) { // Override with priority tokens
-          tokenMap[partialPath] = {
-            value: obj.$value,
-            type: obj.$type,
-            originalPath,
-            isPriority
-          };
-        }
-        
-        // Also store with slashes for compatibility
-        const partialSlashPath = pathParts.slice(pathParts.length - i).join('/');
-        if (!tokenMap[partialSlashPath] || isPriority) { // Override with priority tokens
-          tokenMap[partialSlashPath] = {
-            value: obj.$value,
-            type: obj.$type,
-            originalPath,
-            isPriority
-          };
-        }
-      }
-      
-      // 4. Store just the token name for simplest references
-      const tokenName = pathParts[pathParts.length - 1];
-      if (!tokenMap[tokenName] || isPriority) { // Override with priority tokens
-        tokenMap[tokenName] = {
-          value: obj.$value,
-          type: obj.$type,
-          originalPath,
-          isPriority
-        };
-      }
-      
-      return;
-    }
-    
-    // Process nested objects
-    for (const key in obj) {
-      const newPath = path ? `${path}/${key}` : key;
-      const newOriginalPath = originalPath ? `${originalPath}.${key}` : key;
-      
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
-        processTokens(obj[key], newPath, newOriginalPath, isPriority);
-      }
-    }
-  }
-  
   // First, process selected collections and modes (priority tokens)
   for (const collection of selectedCollections) {
     if (tokenData[collection]) {
@@ -259,19 +223,22 @@ export function buildPrioritizedTokenMap(
       
       for (const mode of modesForCollection) {
         if (tokenData[collection][mode]) {
-          processTokens(
+          // Process with collection and mode paths (priority)
+          processTokensForMap(
             tokenData[collection][mode], 
             `${collection}/${mode}`, 
             `${collection}.${mode}`,
-            true // These are priority tokens
+            true,
+            tokenMap
           );
           
-          // Also add entries without collection and mode for better resolution
-          processTokens(
+          // Also add entries without collection and mode for better resolution (priority)
+          processTokensForMap(
             tokenData[collection][mode],
             '',
             '',
-            true
+            true,
+            tokenMap
           );
         }
       }
@@ -287,25 +254,99 @@ export function buildPrioritizedTokenMap(
         (selectedModes.get(collection) || []).includes(mode);
       
       if (!isAlreadyProcessed) {
-        processTokens(
+        // Process with collection and mode paths
+        processTokensForMap(
           tokenData[collection][mode], 
           `${collection}/${mode}`, 
           `${collection}.${mode}`,
-          false // These are non-priority tokens
+          false,
+          tokenMap
         );
         
         // Also add entries without collection and mode for better resolution
-        processTokens(
+        processTokensForMap(
           tokenData[collection][mode],
           '',
           '',
-          false
+          false,
+          tokenMap
         );
       }
     }
   }
   
   return tokenMap;
+}
+
+/**
+ * Helper function to find token matches with given reference path
+ * Used to reduce duplication in finding matches in different scenarios
+ */
+function findTokenMatches(
+  referenceMap: TokenMap,
+  refPath: string, 
+  matchCondition: (path: string, refPath: string) => boolean
+): string[] {
+  const priorityMatches: string[] = [];
+  const standardMatches: string[] = [];
+  
+  // Find all matches and sort by priority
+  for (const path in referenceMap) {
+    if (matchCondition(path, refPath)) {
+      if (referenceMap[path].isPriority) {
+        priorityMatches.push(path);
+      } else {
+        standardMatches.push(path);
+      }
+    }
+  }
+  
+  // Return priority matches first, then standard matches
+  return [...priorityMatches, ...standardMatches];
+}
+
+/**
+ * Process a found reference match to get the final resolved value
+ */
+function processReferenceMatch(
+  matchPath: string,
+  tokenMap: TokenMap,
+  reference: string,
+  refPath: string,
+  visited: Set<string>,
+  currentChain: string[]
+): ResolvedReference {
+  const resolved = tokenMap[matchPath];
+  
+  // Check if the resolved value is also a reference
+  if (typeof resolved.value === 'string' && isReference(resolved.value)) {
+    // Recursively resolve nested reference
+    const nestedResult = resolveReference(
+      resolved.value,
+      tokenMap,
+      visited,
+      currentChain
+    );
+    
+    return {
+      ...nestedResult,
+      originalReference: reference,
+      referencePath: refPath,
+      resolvedFrom: resolved.originalPath,
+      chain: currentChain.concat(nestedResult.chain || [])
+    };
+  }
+  
+  // Return the resolved value
+  return {
+    value: resolved.value,
+    type: resolved.type,
+    originalReference: reference,
+    referencePath: refPath,
+    isResolved: true,
+    resolvedFrom: resolved.originalPath,
+    chain: currentChain
+  };
 }
 
 /**
@@ -350,58 +391,15 @@ export function resolveReference(
   // Add current path to visited set for circular reference detection
   visited.add(refPath);
 
-  // Sort all potential matches by priority
-  const priorityMatches: string[] = [];
-  const standardMatches: string[] = [];
+  // Try direct matches first
+  const exactMatches = findTokenMatches(
+    tokenMap, 
+    refPath, 
+    (path, refPath) => path === refPath || path.endsWith(`.${refPath}`) || path.endsWith(`/${refPath}`)
+  );
   
-  // Find matches and sort by priority
-  for (const path in tokenMap) {
-    if (path === refPath || path.endsWith(`.${refPath}`) || path.endsWith(`/${refPath}`)) {
-      if (tokenMap[path].isPriority) {
-        priorityMatches.push(path);
-      } else {
-        standardMatches.push(path);
-      }
-    }
-  }
-  
-  // Process priority matches first, then standard matches
-  const allMatches = [...priorityMatches, ...standardMatches];
-  
-  if (allMatches.length > 0) {
-    // Use the first match (priority matches come first)
-    const matchPath = allMatches[0];
-    const resolved = tokenMap[matchPath];
-    
-    // Check if the resolved value is also a reference
-    if (typeof resolved.value === 'string' && isReference(resolved.value)) {
-      // Recursively resolve nested reference
-      const nestedResult = resolveReference(
-        resolved.value,
-        tokenMap,
-        visited,
-        currentChain
-      );
-      
-      return {
-        ...nestedResult,
-        originalReference: reference,
-        referencePath: refPath,
-        resolvedFrom: resolved.originalPath,
-        chain: currentChain.concat(nestedResult.chain || [])
-      };
-    }
-    
-    // Return the resolved value
-    return {
-      value: resolved.value,
-      type: resolved.type,
-      originalReference: reference,
-      referencePath: refPath,
-      isResolved: true,
-      resolvedFrom: resolved.originalPath,
-      chain: currentChain
-    };
+  if (exactMatches.length > 0) {
+    return processReferenceMatch(exactMatches[0], tokenMap, reference, refPath, visited, currentChain);
   }
   
   // If no direct matches, try with alternative separators (slash vs dot)
@@ -409,139 +407,34 @@ export function resolveReference(
     ? refPath.replace(/\//g, '.') 
     : refPath.replace(/\./g, '/');
     
-  // Try alternative path with priority sorting
-  const altPriorityMatches: string[] = [];
-  const altStandardMatches: string[] = [];
+  const altMatches = findTokenMatches(
+    tokenMap, 
+    alternativePath, 
+    (path, altPath) => path === altPath || path.endsWith(`.${altPath}`) || path.endsWith(`/${altPath}`)
+  );
   
-  for (const path in tokenMap) {
-    if (path === alternativePath || path.endsWith(`.${alternativePath}`) || path.endsWith(`/${alternativePath}`)) {
-      if (tokenMap[path].isPriority) {
-        altPriorityMatches.push(path);
-      } else {
-        altStandardMatches.push(path);
-      }
-    }
-  }
-  
-  const allAltMatches = [...altPriorityMatches, ...altStandardMatches];
-  
-  if (allAltMatches.length > 0) {
-    const matchPath = allAltMatches[0];
-    const resolved = tokenMap[matchPath];
-    
-    // Check for nested reference
-    if (typeof resolved.value === 'string' && isReference(resolved.value)) {
-      const nestedResult = resolveReference(
-        resolved.value,
-        tokenMap,
-        visited,
-        currentChain
-      );
-      
-      return {
-        ...nestedResult,
-        originalReference: reference,
-        referencePath: refPath,
-        resolvedFrom: resolved.originalPath,
-        chain: currentChain.concat(nestedResult.chain || [])
-      };
-    }
-    
-    return {
-      value: resolved.value,
-      type: resolved.type,
-      originalReference: reference,
-      referencePath: refPath,
-      isResolved: true,
-      resolvedFrom: resolved.originalPath,
-      chain: currentChain
-    };
+  if (altMatches.length > 0) {
+    return processReferenceMatch(altMatches[0], tokenMap, reference, refPath, visited, currentChain);
   }
   
   // Try the last part of the path as a fallback
   const simplePath = refPath.split(/[\/\.]/).pop() || '';
   if (simplePath !== refPath) {
-    const simplePriorityMatches: string[] = [];
-    const simpleStandardMatches: string[] = [];
+    const simpleMatches = findTokenMatches(
+      tokenMap, 
+      simplePath, 
+      (path, simplePath) => path === simplePath
+    );
     
-    for (const path in tokenMap) {
-      if (path === simplePath) {
-        if (tokenMap[path].isPriority) {
-          simplePriorityMatches.push(path);
-        } else {
-          simpleStandardMatches.push(path);
-        }
-      }
-    }
-    
-    const allSimpleMatches = [...simplePriorityMatches, ...simpleStandardMatches];
-    
-    if (allSimpleMatches.length > 0) {
-      const matchPath = allSimpleMatches[0];
-      const resolved = tokenMap[matchPath];
-      
-      // Check for nested reference
-      if (typeof resolved.value === 'string' && isReference(resolved.value)) {
-        const nestedResult = resolveReference(
-          resolved.value,
-          tokenMap,
-          visited,
-          currentChain
-        );
-        
-        return {
-          ...nestedResult,
-          originalReference: reference,
-          referencePath: refPath,
-          resolvedFrom: resolved.originalPath,
-          chain: currentChain.concat(nestedResult.chain || [])
-        };
-      }
-      
-      return {
-        value: resolved.value,
-        type: resolved.type,
-        originalReference: reference,
-        referencePath: refPath,
-        isResolved: true,
-        resolvedFrom: resolved.originalPath,
-        chain: currentChain
-      };
+    if (simpleMatches.length > 0) {
+      return processReferenceMatch(simpleMatches[0], tokenMap, reference, refPath, visited, currentChain);
     }
   }
   
   // Try fuzzy matching as a last resort
   const bestMatchPath = findBestTokenPathMatch(refPath, tokenMap);
   if (bestMatchPath) {
-    const resolved = tokenMap[bestMatchPath];
-    
-    // Check for nested reference
-    if (typeof resolved.value === 'string' && isReference(resolved.value)) {
-      const nestedResult = resolveReference(
-        resolved.value,
-        tokenMap,
-        visited,
-        currentChain
-      );
-      
-      return {
-        ...nestedResult,
-        originalReference: reference,
-        referencePath: refPath,
-        resolvedFrom: resolved.originalPath,
-        chain: currentChain.concat(nestedResult.chain || [])
-      };
-    }
-    
-    return {
-      value: resolved.value,
-      type: resolved.type,
-      originalReference: reference,
-      referencePath: refPath,
-      isResolved: true,
-      resolvedFrom: resolved.originalPath,
-      chain: currentChain
-    };
+    return processReferenceMatch(bestMatchPath, tokenMap, reference, refPath, visited, currentChain);
   }
   
   // Reference couldn't be resolved
