@@ -19,6 +19,8 @@
   flex-direction: column;
   height: 100%;
   position: relative; /* For absolute positioned help panel */
+  max-height: 70vh; /* Limit height and ensure it's scrollable */
+  overflow: hidden; /* Hide overflow to prevent double scrollbars */
 }
 
 /* JSON Viewer Wrapper */
@@ -28,6 +30,7 @@
   line-height: 1.5;
   overflow: auto;
   position: relative;
+  max-height: 70vh; /* Ensure it's scrollable */
 }
 
 /* Editor content container with line numbers */
@@ -35,6 +38,17 @@
   display: flex;
   position: relative;
   min-height: 100px;
+  overflow: hidden; /* Hide overflow for nested elements */
+  flex: 1; /* Take up available space */
+}
+
+/* Editor body - main content area */
+.json-editor-body {
+  flex: 1;
+  overflow: auto; /* Make scrollable */
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Line numbers gutter */
@@ -63,6 +77,8 @@
 .json-editor-textarea {
   flex: 1;
   min-width: 0;
+  width: 100%;
+  min-height: 300px; /* Ensure minimum height */
   border: none;
   background-color: transparent;
   font-family: var(--font-family-monospace);
@@ -73,10 +89,11 @@
   outline: none;
   tab-size: 2;
   white-space: pre;
-  overflow: auto;
+  overflow: auto !important; /* Force scrolling */
   color: var(--color-gray-900);
   caret-color: var(--color-primary);
   z-index: 1; /* Above the highlight layer */
+  height: 100%; /* Take full height */
 }
 
 /* For read-only mode */
@@ -104,11 +121,13 @@
   line-height: 1.5;
   pointer-events: none;
   white-space: pre;
-  overflow: auto;
+  overflow: hidden; /* Don't add scrollbars to this layer */
   tab-size: 2;
   background-color: transparent;
   color: transparent; /* Make text invisible */
   z-index: 0; /* Below the textarea */
+  width: calc(100% - 40px); /* Full width minus gutter */
+  height: 100%;
 }
 
 .with-line-numbers .json-editor-textarea {
@@ -179,6 +198,52 @@
 .json-status {
   flex: 1;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.status-indicator::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.status-indicator.valid {
+  color: var(--color-success);
+  background-color: rgba(25, 135, 84, 0.1);
+}
+
+.status-indicator.valid::before {
+  background-color: var(--color-success);
+}
+
+.status-indicator.invalid {
+  color: var(--color-danger);
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.status-indicator.invalid::before {
+  background-color: var(--color-danger);
+}
+
+.status-indicator.pending {
+  color: var(--color-warning);
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+.status-indicator.pending::before {
+  background-color: var(--color-warning);
 }
 
 .json-editor-actions {
@@ -324,18 +389,20 @@
 
 /* JSON Editor Help Panel */
 .json-editor-help {
-  position: absolute;
-  top: 50%;
+  position: fixed; /* Fixed to viewport instead of absolute */
+  top: 10%; /* Position from top instead of center */
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%); /* Center horizontally only */
   background: white;
   border: 1px solid var(--color-gray-300);
   border-radius: 4px;
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); /* Stronger shadow */
   z-index: 1000;
   max-width: 500px;
   width: 90%;
+  max-height: 80vh; /* Limit height */
+  overflow-y: auto; /* Allow scrolling if content is too long */
 }
 
 .json-editor-help h4 {

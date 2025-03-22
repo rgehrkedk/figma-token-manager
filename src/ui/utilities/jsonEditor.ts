@@ -42,12 +42,59 @@ export class JsonEditor {
     
     // Set the initial content
     this.updateContent();
+    
+    // Validate initial content
+    this.validate();
   }
 
   /**
    * Create the editor layout
    */
   private createEditorLayout(): void {
+    // Create header with controls
+    const header = document.createElement('div');
+    header.className = 'json-editor-header';
+    
+    // Add validation status indicator
+    const statusContainer = document.createElement('div');
+    statusContainer.className = 'json-status';
+    const statusIndicator = document.createElement('span');
+    statusIndicator.className = 'status-indicator pending';
+    statusIndicator.textContent = 'Validating...';
+    statusContainer.appendChild(statusIndicator);
+    
+    // Add action buttons
+    const actions = document.createElement('div');
+    actions.className = 'json-editor-actions';
+    
+    // Format button
+    const formatBtn = document.createElement('button');
+    formatBtn.className = 'json-format-btn';
+    formatBtn.textContent = 'Format';
+    formatBtn.title = 'Format JSON (Ctrl+Shift+F)';
+    formatBtn.addEventListener('click', () => this.format());
+    actions.appendChild(formatBtn);
+    
+    // Validate button
+    const validateBtn = document.createElement('button');
+    validateBtn.className = 'json-validate-btn';
+    validateBtn.textContent = 'Validate';
+    validateBtn.title = 'Validate JSON (Ctrl+Enter)';
+    validateBtn.addEventListener('click', () => this.validate());
+    actions.appendChild(validateBtn);
+    
+    // Help button
+    const helpBtn = document.createElement('button');
+    helpBtn.className = 'json-help-btn';
+    helpBtn.textContent = '?';
+    helpBtn.title = 'Show help';
+    helpBtn.addEventListener('click', () => this.showHelp());
+    actions.appendChild(helpBtn);
+    
+    header.appendChild(statusContainer);
+    header.appendChild(actions);
+    this.container.appendChild(header);
+    
     // Create the editor container with gutter for line numbers
     const editorContainer = document.createElement('div');
     editorContainer.className = 'json-editor-content';
@@ -119,7 +166,54 @@ export class JsonEditor {
     // Create message area for showing status messages
     this.messageArea = document.createElement('div');
     this.messageArea.className = 'json-editor-message';
-    this.container.appendChild(this.messageArea);
+    
+    // Create footer
+    const footer = document.createElement('div');
+    footer.className = 'json-editor-footer';
+    footer.appendChild(this.messageArea);
+    this.container.appendChild(footer);
+    
+    // Add help panel (hidden by default)
+    const helpPanel = document.createElement('div');
+    helpPanel.className = 'json-editor-help';
+    helpPanel.style.display = 'none';
+    helpPanel.innerHTML = `
+      <h4>JSON Editor Help</h4>
+      <p>This editor allows you to edit and add Figma variables.</p>
+      <ul>
+        <li><strong>Collection:</strong> Top-level object keys represent collections</li>
+        <li><strong>Mode:</strong> Second-level object keys represent modes</li>
+        <li><strong>Variables:</strong> Nested paths represent variables</li>
+        <li><strong>For tokens:</strong> Use <code>{"$value": "#fff", "$type": "color"}</code></li>
+        <li><strong>References:</strong> Use <code>{"$value": "{path/to/variable}", "$type": "color"}</code></li>
+      </ul>
+      <p>Keyboard shortcuts:</p>
+      <ul>
+        <li><strong>Ctrl+Shift+F:</strong> Format JSON</li>
+        <li><strong>Ctrl+Enter:</strong> Validate JSON</li>
+        <li><strong>Tab:</strong> Insert 2 spaces</li>
+      </ul>
+      <button class="json-help-close-btn">Close</button>
+    `;
+    
+    const closeHelpBtn = helpPanel.querySelector('.json-help-close-btn');
+    if (closeHelpBtn) {
+      closeHelpBtn.addEventListener('click', () => {
+        helpPanel.style.display = 'none';
+      });
+    }
+    
+    this.container.appendChild(helpPanel);
+  }
+  
+  /**
+   * Show the help panel
+   */
+  private showHelp(): void {
+    const helpPanel = this.container.querySelector('.json-editor-help') as HTMLElement;
+    if (helpPanel) {
+      helpPanel.style.display = 'block';
+    }
   }
 
   /**
@@ -374,11 +468,34 @@ export class JsonEditor {
       this.isValid = true;
       this.jsonData = parsed;
       
+      // Update the status indicator
+      const statusIndicator = this.container.querySelector('.status-indicator');
+      if (statusIndicator) {
+        statusIndicator.textContent = 'Valid JSON';
+        statusIndicator.className = 'status-indicator valid';
+      }
+      
       this.showMessage('JSON is valid', 'success');
+      
+      // Remove error class if present
+      this.editorElement.classList.remove('json-error');
     } catch (error) {
       // Invalid JSON
       this.isValid = false;
-      this.showMessage(`Error: ${error instanceof Error ? error.message : 'Invalid JSON format'}`, 'error');
+      
+      // Update the status indicator
+      const statusIndicator = this.container.querySelector('.status-indicator');
+      if (statusIndicator) {
+        statusIndicator.textContent = 'Invalid JSON';
+        statusIndicator.className = 'status-indicator invalid';
+      }
+      
+      // Show error message with details
+      const errorMessage = error instanceof Error ? error.message : 'Invalid JSON format';
+      this.showMessage(`Error: ${errorMessage}`, 'error');
+      
+      // Add error class
+      this.editorElement.classList.add('json-error');
     }
   }
 
