@@ -28,6 +28,7 @@ export interface SidebarInterface {
   getState: () => SidebarState;
   setReferenceCounts: (resolved: number, unresolved: number) => void;
   updateTokenData: (tokenData: any) => void;
+  addCollapseButton: () => void;
 }
 
 export function setupSidebarPanel(
@@ -188,6 +189,58 @@ export function setupSidebarPanel(
     }
   }
 
+  /**
+   * Add collapse toggle button to sidebar
+   */
+  function addCollapseButton(): void {
+    // Check if button already exists to avoid duplicates
+    if (container.querySelector('.sidebar-collapse')) return;
+    
+    const collapseBtn = document.createElement('button');
+    collapseBtn.className = 'sidebar-collapse';
+    collapseBtn.title = 'Collapse Sidebar';
+    collapseBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    
+    collapseBtn.addEventListener('click', () => {
+      // Get header interface and toggle collapse
+      const headerInterface = (window as any).headerInterface;
+      if (headerInterface && headerInterface.toggleSidebarCollapse) {
+        headerInterface.toggleSidebarCollapse();
+        
+        // Toggle direction of arrow based on collapsed state
+        const sidebar = document.getElementById('sidebar-container');
+        if (sidebar && sidebar.classList.contains('collapsed')) {
+          collapseBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          `;
+          collapseBtn.title = 'Expand Sidebar';
+        } else {
+          collapseBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          `;
+          collapseBtn.title = 'Collapse Sidebar';
+        }
+      }
+    });
+    
+    // Use absolute positioning to ensure visibility
+    collapseBtn.style.position = 'absolute';
+    collapseBtn.style.top = '8px';
+    collapseBtn.style.right = '8px';
+    collapseBtn.style.zIndex = '10';
+    
+    // Add to container
+    container.appendChild(collapseBtn);
+  }
+  
   // Return public interface
   return {
     getState: () => ({ ...state }),
@@ -200,7 +253,8 @@ export function setupSidebarPanel(
       // Update our state with the selection state
       state.activeCollection = selectionState.activeCollection;
       state.selectedModes = selectionState.selectedModes;
-    }
+    },
+    addCollapseButton
   };
 }
 
@@ -217,6 +271,7 @@ function createEmptySidebarInterface(): SidebarInterface {
       exportFormat: 'dtcg'
     }),
     setReferenceCounts: () => {},
-    updateTokenData: () => {}
+    updateTokenData: () => {},
+    addCollapseButton: () => {}
   };
 }

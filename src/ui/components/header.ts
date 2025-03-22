@@ -9,6 +9,7 @@ export function setupHeader(
     // Return interface for controlling the header
     setActiveView: (view: 'visual' | 'json') => void;
     toggleSidebar: () => void;
+    toggleSidebarCollapse: () => void;
   } {
     const container = document.getElementById(containerId);
     if (!container) {
@@ -16,7 +17,8 @@ export function setupHeader(
       // Return no-op methods if container not found
       return { 
         setActiveView: () => {},
-        toggleSidebar: () => {}
+        toggleSidebar: () => {},
+        toggleSidebarCollapse: () => {}
       };
     }
   
@@ -91,6 +93,7 @@ export function setupHeader(
   
     // Add sidebar toggle functionality
     let isSidebarVisible = true;
+    let isSidebarCollapsed = false;
     const sidebarToggleBtn = container.querySelector('.sidebar-toggle');
     
     function toggleSidebar() {
@@ -103,6 +106,22 @@ export function setupHeader(
         sidebar.classList.add('visible');
       } else {
         sidebar.classList.remove('visible');
+      }
+    }
+    
+    function toggleSidebarCollapse() {
+      const sidebar = document.getElementById('sidebar-container');
+      const pluginContainer = document.querySelector('.plugin-container');
+      if (!sidebar || !pluginContainer) return;
+      
+      isSidebarCollapsed = !isSidebarCollapsed;
+      
+      if (isSidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        pluginContainer.classList.add('sidebar-collapsed');
+      } else {
+        sidebar.classList.remove('collapsed');
+        pluginContainer.classList.remove('sidebar-collapsed');
       }
     }
     
@@ -120,6 +139,7 @@ export function setupHeader(
           (button as HTMLElement).click();
         }
       },
-      toggleSidebar
+      toggleSidebar,
+      toggleSidebarCollapse
     };
   }

@@ -101,22 +101,43 @@ document.addEventListener('DOMContentLoaded', () => {
     updateActiveView();
   });
   
+  // Make header interface globally accessible for the sidebar collapse button
+  (window as any).headerInterface = headerInterface;
+  
   // Initialize responsive sidebar
   function initResponsiveSidebar() {
     const sidebar = document.getElementById('sidebar-container');
-    if (!sidebar) return;
+    const pluginContainer = document.querySelector('.plugin-container');
+    if (!sidebar || !pluginContainer) return;
     
     // If we're in a small viewport, hide sidebar by default
     if (window.innerWidth <= 960) {
       sidebar.classList.remove('visible');
+      if (window.innerWidth <= 768) {
+        // Collapse sidebar by default on small screens
+        sidebar.classList.add('collapsed');
+        pluginContainer.classList.add('sidebar-collapsed');
+      }
     } else {
       sidebar.classList.add('visible');
+      // Expand sidebar by default on large screens
+      sidebar.classList.remove('collapsed');
+      pluginContainer.classList.remove('sidebar-collapsed');
     }
     
     // Respond to window resize events
     window.addEventListener('resize', () => {
       if (window.innerWidth > 960) {
         sidebar.classList.add('visible');
+      }
+      
+      // Auto collapse/expand based on width
+      if (window.innerWidth <= 768 && !sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+        pluginContainer.classList.add('sidebar-collapsed');
+      } else if (window.innerWidth > 960 && sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        pluginContainer.classList.remove('sidebar-collapsed');
       }
     });
   }
@@ -154,6 +175,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   
   sidebarInterface = setupSidebarPanel('sidebar-container', sidebarCallbacks);
+  
+  // Add collapse button to sidebar
+  if (sidebarInterface) {
+    sidebarInterface.addCollapseButton();
+  }
   
   // 3. Setup token grid - The updated createTokenGrid now handles category organization
   const tokenGridInterface = createTokenGrid({
