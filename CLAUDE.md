@@ -1,12 +1,11 @@
 # Figma Token Manager - Development Guidelines
 
 ## Commands
-- `npm run build` - Build the plugin for production
-- `npm run dev` - Run development server with hot-reloading
+- `npm run build` - Build the plugin
 
 ## Code Style Guidelines
 - **Imports**: Use path aliases (`@ui/`, `@code/`, `@components/`, `@utilities/`)
-- **Types**: Define interfaces with descriptive names in PascalCase (`TokenData`, `PluginSettings`)
+- **Types**: Define interfaces with descriptive names in PascalCase (`TokenData`, `DTCGToken`)
 - **Error Handling**: Always catch errors with type checking, use template for messages: `${error instanceof Error ? error.message : "Unknown error"}`
 - **Naming Conventions**:
   - Interfaces/Types: PascalCase (`VisualToken`, `ColorFormat`)
@@ -19,6 +18,31 @@
 
 ## Project Organization
 - `src/code/` - Plugin backend logic
+  - `extractors/` - Extracts tokens from Figma variables
+  - `formatters/` - Handles formatting of token values
+  - `styleDictionary/` - Style Dictionary integration
+  - `utilities/` - Backend helper functions
 - `src/ui/` - User interface components and logic
-- `src/ui/components/` - UI component modules
-- `src/ui/utilities/` - Helper functions
+  - `components/` - UI component modules
+  - `reference/` - Token reference resolution
+  - `styles/` - CSS styling including component styles
+  - `templates/` - UI templates for various views
+  - `utilities/` - Frontend helper functions
+
+## Core Features
+- Extract design tokens from Figma variables and collections
+- Handle DTCG-compliant tokens with proper type information
+- Support references between tokens with validation and resolution
+- Transform colors between formats (hex, RGB/RGBA, HSL/HSLA)
+- Provide visual and JSON editing interfaces
+- Update Figma variables from edited tokens
+- Export tokens in multiple formats (DTCG, legacy, Style Dictionary)
+
+## Token Types
+- Colors (with multiple format options)
+- Typography
+- Spacing/dimensions
+- Numbers
+- Strings
+- Boolean values
+- References between tokens
