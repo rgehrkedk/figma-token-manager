@@ -7,21 +7,12 @@
   transition: grid-template-columns 0.3s ease;
 }
 
-/* When sidebar is collapsed */
-.plugin-container.sidebar-collapsed {
-  grid-template-columns: 50px 1fr 0;
-}
-
-/* When sidebar is collapsed and details panel is shown */
-.plugin-container.sidebar-collapsed.show-details {
-  grid-template-columns: 50px 1fr 280px;
-}
-
 /* When details panel is active */
 .plugin-container.show-details {
   grid-template-columns: 280px 1fr 280px;
 }
 
+/* Full width header that spans all columns */
 .header {
   grid-column: 1 / -1;
   width: 100%;
@@ -44,6 +35,8 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  z-index: 150;
+  transition: transform 0.3s ease;
 }
 
 .main-panel {
@@ -96,13 +89,14 @@
   background-color: var(--color-gray-100);
 }
 
-/* For smaller screens, adjust layout */
+/* For medium screens (tablet-sized) */
 @media (max-width: 960px) {
-  .plugin-container.show-details {
-    grid-template-columns: 0 1fr 280px;
+  /* Hide sidebar by default */
+  .plugin-container {
+    grid-template-columns: 0 1fr 0;
   }
   
-  .plugin-container.sidebar-collapsed.show-details {
+  .plugin-container.show-details {
     grid-template-columns: 0 1fr 280px;
   }
   
@@ -112,9 +106,7 @@
     top: 56px;
     bottom: 0;
     width: 280px;
-    z-index: 100;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
   }
   
@@ -122,22 +114,14 @@
     transform: translateX(0);
   }
   
-  /* When visible and not collapsed, ensure full width */
-  .sidebar.visible:not(.collapsed) {
+  /* When visible, ensure full width */
+  .sidebar.visible {
     width: 280px;
   }
   
-  /* Even when visible, respect collapsed state */
-  .sidebar.collapsed.visible {
-    width: 50px;
-  }
-  
-  /* Show sidebar toggle button in responsive mode */
-  .sidebar-toggle {
-    display: flex !important;
-  }
 }
 
+/* For smaller screens (mobile-sized) */
 @media (max-width: 768px) {
   .plugin-container {
     grid-template-columns: 1fr;
@@ -153,7 +137,15 @@
     top: 56px;
     bottom: 0;
     width: 280px;
-    z-index: 100;
+    z-index: 150;
+  }
+  
+  .main-panel {
+    padding: 12px;
+  }
+  
+  .token-content-area {
+    padding: 12px;
   }
 }
 

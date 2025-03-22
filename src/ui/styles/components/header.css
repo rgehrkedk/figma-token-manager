@@ -25,7 +25,6 @@
   justify-content: center;
   border-radius: 4px;
   cursor: pointer;
-  display: none; /* Hidden by default, shown in responsive view */
 }
 
 .sidebar-toggle:hover {
@@ -39,61 +38,77 @@
   color: var(--color-gray-900);
 }
   
-  .header-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
   
-  .settings-button {
-    background: none;
-    border: none;
-    color: var(--color-gray-600);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    cursor: pointer;
-  }
+.settings-button {
+  background: none;
+  border: none;
+  color: var(--color-gray-600);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+}
   
-  .settings-button:hover {
-    background-color: var(--color-gray-200);
-    color: var(--color-gray-800);
-  }
+.settings-button:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-800);
+}
   
-  .view-toggle {
-    display: flex;
-    background-color: var(--color-gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-    height: 32px;
+.view-toggle {
+  display: flex;
+  background-color: var(--color-gray-200);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 32px;
+}
+  
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+  
+.view-toggle-btn:hover {
+  background-color: var(--color-gray-300);
+}
+  
+.view-toggle-btn.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+  
+.view-toggle-btn svg {
+  opacity: 0.8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .header-title {
+    font-size: 14px;
   }
   
   .view-toggle-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 12px;
-    background: none;
-    border: none;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-gray-700);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .view-toggle-btn:hover {
-    background-color: var(--color-gray-300);
-  }
-  
-  .view-toggle-btn.active {
-    background-color: var(--color-primary);
-    color: white;
+    padding: 0 8px;
+    font-size: 11px;
   }
   
   .view-toggle-btn svg {
-    opacity: 0.8;
+    display: none;
   }
+}

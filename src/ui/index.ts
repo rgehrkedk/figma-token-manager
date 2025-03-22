@@ -1,6 +1,6 @@
 /**
  * Figma Token Manager
- * Main UI entry point - Updated with enhanced JSON viewer functionality
+ * Main UI entry point - Updated with responsive layout improvements
  */
 
 import './styles/index.css';
@@ -83,7 +83,6 @@ let currentTokens: TokenData[] = [];
 let currentColorFormat = 'hex';
 let sidebarInterface: SidebarInterface | null = null;
 
-
 // Initialize components when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Initializing UI components');
@@ -107,37 +106,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize responsive sidebar
   function initResponsiveSidebar() {
     const sidebar = document.getElementById('sidebar-container');
-    const pluginContainer = document.querySelector('.plugin-container');
-    if (!sidebar || !pluginContainer) return;
+    if (!sidebar) return;
     
     // If we're in a small viewport, hide sidebar by default
     if (window.innerWidth <= 960) {
       sidebar.classList.remove('visible');
-      if (window.innerWidth <= 768) {
-        // Collapse sidebar by default on small screens
-        sidebar.classList.add('collapsed');
-        pluginContainer.classList.add('sidebar-collapsed');
-      }
     } else {
       sidebar.classList.add('visible');
-      // Expand sidebar by default on large screens
-      sidebar.classList.remove('collapsed');
-      pluginContainer.classList.remove('sidebar-collapsed');
     }
     
-    // Respond to window resize events
+    // Respond to window resize events for responsive layout
     window.addEventListener('resize', () => {
-      if (window.innerWidth > 960) {
-        sidebar.classList.add('visible');
-      }
-      
-      // Auto collapse/expand based on width
-      if (window.innerWidth <= 768 && !sidebar.classList.contains('collapsed')) {
-        sidebar.classList.add('collapsed');
-        pluginContainer.classList.add('sidebar-collapsed');
-      } else if (window.innerWidth > 960 && sidebar.classList.contains('collapsed')) {
-        sidebar.classList.remove('collapsed');
-        pluginContainer.classList.remove('sidebar-collapsed');
+      // Hide sidebar on smaller screens
+      if (window.innerWidth <= 960) {
+        sidebar.classList.remove('visible');
       }
     });
   }
@@ -176,10 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   sidebarInterface = setupSidebarPanel('sidebar-container', sidebarCallbacks);
   
-  // Add collapse button to sidebar
-  if (sidebarInterface) {
-    sidebarInterface.addCollapseButton();
-  }
   
   // 3. Setup token grid - The updated createTokenGrid now handles category organization
   const tokenGridInterface = createTokenGrid({

@@ -6,56 +6,6 @@
   height: 100%;
 }
 
-/* Sidebar Toggle Button for Collapse/Expand */
-.sidebar-collapse {
-  align-self: flex-end;
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  margin: 8px 8px 0 0;
-}
-
-.sidebar-collapse:hover {
-  color: var(--color-primary-dark);
-}
-
-/* Add transition for sidebar width changes */
-.sidebar.collapsed {
-  width: 50px;
-  overflow: hidden;
-}
-
-.sidebar.collapsed .sidebar-content,
-.sidebar.collapsed .sidebar-tabs,
-.sidebar.collapsed .sidebar-footer {
-  opacity: 0;
-  visibility: hidden;
-}
-
-/* Make sure collapse button is always visible */
-.sidebar-collapse {
-  position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  z-index: 10 !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  background-color: white !important;
-  border-radius: 4px !important;
-  box-shadow: 0px 1px 3px rgba(0,0,0,0.1) !important;
-}
-
-/* Adjust position when sidebar is collapsed */
-.sidebar.collapsed .sidebar-collapse {
-  left: 13px !important;
-  right: auto !important;
-}
 
 /* Sidebar Tabs */
 .sidebar-tabs {
@@ -191,4 +141,25 @@
 
 .export-btn:hover {
   background-color: var(--color-primary-dark);
+}
+
+/* Responsive adjustments for sidebar */
+@media (max-width: 960px) {
+  .sidebar.visible {
+    z-index: 150;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .sidebar.visible {
+    width: 240px;
+  }
+  
+  .sidebar-panel {
+    padding: 8px;
+  }
 }
