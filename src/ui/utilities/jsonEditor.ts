@@ -242,7 +242,7 @@ export class JsonEditor {
 
   /**
    * Format JSON with syntax highlighting
-   * Applies VS Code-like syntax highlighting colors
+   * Applies VS Code-like syntax highlighting colors for dark theme
    */
   private formatWithHighlighting(code: string): string {
     // Helper to escape HTML

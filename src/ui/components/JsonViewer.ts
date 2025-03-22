@@ -25,7 +25,7 @@ export function createLineNumbersGutter(lineCount: number): HTMLElement {
   return gutter;
 }
 
-// Basic JSON syntax highlighting with spans
+// Basic JSON syntax highlighting with spans - adapted for VSCode dark theme
 export function formatJSONWithHighlighting(code: string): string {
   // Replace with simple regex-based highlighting
   return code
@@ -34,6 +34,10 @@ export function formatJSONWithHighlighting(code: string): string {
       // Check if it's likely a key (followed by colon)
       if (/"([^"\\]|\\.)*"\s*:/.test(match)) {
         return `<span class="token property">${match}</span>`;
+      }
+      // Check if it's a color hex value
+      if (/"#[0-9a-fA-F]+"/i.test(match)) {
+        return `<span class="token color-hex">${match}</span>`;
       }
       return `<span class="token string">${match}</span>`;
     })

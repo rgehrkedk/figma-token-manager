@@ -41,24 +41,6 @@ export function setupJsonEditorPanel(containerId: string, initialData: any): voi
       }
     });
     
-    // Create help button
-    const helpButton = document.createElement('button');
-    helpButton.textContent = '?';
-    helpButton.className = 'json-editor-help';
-    helpButton.title = 'Show help';
-    helpButton.addEventListener('click', () => {
-      if (jsonEditor) {
-        jsonEditor.showMessage(
-          'This editor lets you modify variables and their values. ' +
-          'Use the "$value" property to set the variable value and "$type" for its type (color, number, string). ' +
-          'Use braces for references to other variables: {path/to/variable}. ' +
-          'Click "Save to Figma" when you\'re ready to update variables.',
-          'info',
-          10000
-        );
-      }
-    });
-    
     // Create format button
     const formatButton = document.createElement('button');
     formatButton.textContent = 'Format';
@@ -74,7 +56,6 @@ export function setupJsonEditorPanel(containerId: string, initialData: any): voi
     // Add buttons to toolbar
     toolbar.appendChild(saveButton);
     toolbar.appendChild(formatButton);
-    toolbar.appendChild(helpButton);
     
     // Create the editor container
     const editorContainer = document.createElement('div');

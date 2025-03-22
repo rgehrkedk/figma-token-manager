@@ -93,7 +93,7 @@
   tab-size: 2;
   white-space: pre;
   overflow: auto !important; /* Force scrolling */
-  color: transparent; /* Transparent text to show highlighting */
+  color: #d4d4d4; /* Light text color for dark theme */
   caret-color: #ffffff; /* Bright cursor */
   z-index: 2; /* Above the highlight layer */
   height: 100%; /* Take full height */
@@ -125,8 +125,8 @@
   white-space: pre;
   overflow: hidden; /* Don't add scrollbars to this layer */
   tab-size: 2;
-  background-color: #1e1e1e; /* Dark background */
-  color: #d4d4d4; /* Default text color */
+  background-color: transparent; /* Transparent background */
+  color: transparent; /* Make text invisible */
   z-index: 1; /* Below the textarea */
   width: calc(100% - 40px); /* Full width minus gutter */
   height: 100%;
