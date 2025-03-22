@@ -167,7 +167,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       
-      console.log('Saving JSON to Figma variables:', updatedJson);
+      // Create a deep copy of the JSON to avoid any modifications
+      const jsonCopy = JSON.parse(JSON.stringify(updatedJson));
+      
+      console.log('Saving JSON to Figma variables:', jsonCopy);
       
       // Show saving message
       const messageArea = document.querySelector('.json-editor-message') as HTMLElement;
@@ -177,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       // Send the updated JSON to Figma
-      await updateFigmaVariables(updatedJson);
+      await updateFigmaVariables(jsonCopy);
       
       // Show success message immediately, but don't wait for extraction
       if (messageArea) {

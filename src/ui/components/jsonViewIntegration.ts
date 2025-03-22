@@ -1,52 +1,100 @@
 /**
  * jsonViewIntegration.ts
  * 
- * Integrates the enhanced JSON editor with the main UI
- * Updated to support full variable management functionality
+ * Integrates the JSON viewer/editor with the rest of the plugin
  */
 
-import { createJsonEditor } from './JsonViewer';
 import { updateFigmaVariables } from '../utilities/updateFigmaVariables';
+import { JsonEditor } from '../utilities/jsonEditor';
 
-// Store the JSON editor instance
-let jsonEditor: any = null;
-
-/**
- * Update the JSON editor with new data
- */
-export function updateJsonViewer(json: any): void {
-  if (jsonEditor) {
-    jsonEditor.setJson(json);
-  }
-}
+// Track the JSON editor instance
+let jsonEditor: JsonEditor | null = null;
 
 /**
- * Get the current JSON from the editor
+ * Set up the JSON editor panel
+ * @param containerId The ID of the container element
+ * @param initialData The initial JSON data to display
  */
-export function getJsonFromViewer(): any {
-  if (jsonEditor) {
-    return jsonEditor.getJson();
-  }
-  return null;
-}
-
-/**
- * Setup the JSON editor panel with enhanced features
- * Provides full Figma variables editing capability
- */
-export function setupJsonEditorPanel(containerId: string, initialJson: any = {}): void {
+export function setupJsonEditorPanel(containerId: string, initialData: any): void {
   const container = document.getElementById(containerId);
   if (!container) {
-    console.error(`Container #${containerId} not found`);
+    console.error(`JSON editor container not found: ${containerId}`);
     return;
   }
   
-  // Create JSON editor
-  jsonEditor = createJsonEditor({
-    containerId,
-    initialJson,
-    onSave: saveJsonToFigma
-  });
+  try {
+    // Clear the container first
+    container.innerHTML = '';
+    
+    // Create the toolbar
+    const toolbar = document.createElement('div');
+    toolbar.className = 'json-editor-toolbar';
+    
+    // Create save button
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save to Figma';
+    saveButton.className = 'json-editor-save';
+    saveButton.addEventListener('click', () => {
+      if (jsonEditor) {
+        const currentJson = jsonEditor.getJson();
+        saveJsonToFigma(currentJson);
+      }
+    });
+    
+    // Create help button
+    const helpButton = document.createElement('button');
+    helpButton.textContent = '?';
+    helpButton.className = 'json-editor-help';
+    helpButton.title = 'Show help';
+    helpButton.addEventListener('click', () => {
+      if (jsonEditor) {
+        jsonEditor.showMessage(
+          'This editor lets you modify variables and their values. ' +
+          'Use the "$value" property to set the variable value and "$type" for its type (color, number, string). ' +
+          'Use braces for references to other variables: {path/to/variable}. ' +
+          'Click "Save to Figma" when you\'re ready to update variables.',
+          'info',
+          10000
+        );
+      }
+    });
+    
+    // Create format button
+    const formatButton = document.createElement('button');
+    formatButton.textContent = 'Format';
+    formatButton.className = 'json-editor-format';
+    formatButton.addEventListener('click', () => {
+      if (jsonEditor) jsonEditor.format();
+    });
+    
+    // Create message area
+    const messageArea = document.createElement('div');
+    messageArea.className = 'json-editor-message';
+    
+    // Add buttons to toolbar
+    toolbar.appendChild(saveButton);
+    toolbar.appendChild(formatButton);
+    toolbar.appendChild(helpButton);
+    
+    // Create the editor container
+    const editorContainer = document.createElement('div');
+    editorContainer.className = 'json-editor-container';
+    
+    // Add elements to main container
+    container.appendChild(toolbar);
+    container.appendChild(messageArea);
+    container.appendChild(editorContainer);
+    
+    // Create the JSON editor
+    jsonEditor = new JsonEditor(editorContainer, initialData);
+  } catch (error) {
+    console.error('Error setting up JSON editor panel:', error);
+    
+    // Show a fallback message
+    if (container) {
+      container.innerHTML = '<div class="error-message">Error initializing JSON editor. Please try reloading the plugin.</div>';
+    }
+  }
   
   // Display helpful intro message
   jsonEditor.showMessage(
@@ -65,9 +113,12 @@ async function saveJsonToFigma(json: any): Promise<void> {
   }
   
   try {
+    // Create a deep copy of the JSON to avoid modifying the original
+    const jsonCopy = JSON.parse(JSON.stringify(json));
+    
     // Check if the JSON is empty or has no meaningful content
-    const isEmpty = Object.keys(json).length === 0 || 
-                   !Object.values(json).some(val => typeof val === 'object' && Object.keys(val).length > 0);
+    const isEmpty = Object.keys(jsonCopy).length === 0 || 
+                   !Object.values(jsonCopy).some(val => typeof val === 'object' && Object.keys(val).length > 0);
     
     if (isEmpty) {
       jsonEditor.showMessage(
@@ -84,7 +135,7 @@ async function saveJsonToFigma(json: any): Promise<void> {
     );
     
     // Update Figma variables
-    await updateFigmaVariables(json);
+    await updateFigmaVariables(jsonCopy);
     
     // Show success message
     jsonEditor.showMessage(
@@ -111,41 +162,28 @@ async function saveJsonToFigma(json: any): Promise<void> {
   }
 }
 
-// Handle responses from the plugin
-window.addEventListener('message', (event) => {
-  const message = event.data.pluginMessage;
-  if (!message || !jsonEditor) return;
-  
-  // Handle variable update results
-  if (message.type === 'update-variables-result') {
-    if (message.success) {
-      // Format the success message with details
-      const counts = [];
-      if (message.created > 0) counts.push(`created ${message.created} variables`);
-      if (message.updated > 0) counts.push(`updated ${message.updated} variables`);
-      if (message.collections > 0) counts.push(`created ${message.collections} collections`);
-      if (message.modes > 0) counts.push(`created ${message.modes} modes`);
-      if (message.renamed > 0) counts.push(`renamed ${message.renamed} items`);
-      
-      const successDetails = counts.length > 0 
-        ? `Success! ${counts.join(', ')}.` 
-        : 'Success! No changes needed.';
-      
-      // Check for warnings
-      if (message.warnings && message.warnings.length > 0) {
-        jsonEditor.showMessage(
-          `${successDetails} With ${message.warnings.length} warning(s).`,
-          'warning'
-        );
-      } else {
-        jsonEditor.showMessage(successDetails, 'success');
-      }
-    } else {
-      // Show error message
-      jsonEditor.showMessage(
-        `Error: ${message.error || 'Unknown error updating variables'}`,
-        'error'
-      );
-    }
+/**
+ * Update the JSON viewer with new data
+ * @param data The JSON data to display
+ */
+export function updateJsonViewer(data: any): void {
+  if (jsonEditor) {
+    jsonEditor.updateJson(data);
+  } else {
+    console.warn('Cannot update JSON viewer: editor not initialized');
   }
-});
+}
+
+/**
+ * Get the current JSON from the viewer
+ * @returns The current JSON data
+ */
+export function getJsonFromViewer(): any {
+  if (jsonEditor) {
+    return jsonEditor.getJson();
+  }
+  return null;
+}
+
+// Export for use in other modules
+export { saveJsonToFigma };
