@@ -284,7 +284,7 @@ export function createJsonComponent(options: JsonComponentOptions): JsonComponen
       helpPanel.style.display = 'none';
       helpPanel.innerHTML = `
         <h4>JSON Editor Help</h4>
-        <p>This editor allows you to edit and add variables, collections, and modes.</p>
+        <p>This editor allows you to edit, add, and delete variables, collections, and modes.</p>
         <ul>
           <li><strong>Collection:</strong> Top-level object keys represent collections (e.g., "Colors", "Spacing")</li>
           <li><strong>Mode:</strong> Second-level object keys represent modes (e.g., "Light", "Dark")</li>
@@ -293,7 +293,7 @@ export function createJsonComponent(options: JsonComponentOptions): JsonComponen
           <li><strong>References:</strong> Reference other variables using <code>{"$value": "{path/to/variable}", "$type": "color"}</code></li>
         </ul>
         <p><strong>Name changes:</strong> To rename a variable, collection, group or mode, modify its key directly in the JSON editor.</p>
-        <p><strong>IMPORTANT:</strong> For safety, automatic variable deletion has been disabled. To delete a variable, you must remove it manually in Figma after saving your changes.</p>
+        <p><strong>Deletion:</strong> To delete a variable, simply remove it from the JSON structure and save.</p>
         <p>All changes will apply when you click "Save".</p>
         <button class="json-help-close-btn">Close</button>
       `;

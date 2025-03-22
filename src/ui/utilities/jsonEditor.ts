@@ -179,13 +179,14 @@ export class JsonEditor {
     helpPanel.style.display = 'none';
     helpPanel.innerHTML = `
       <h4>JSON Editor Help</h4>
-      <p>This editor allows you to edit and add Figma variables.</p>
+      <p>This editor allows you to edit, add, and delete Figma variables.</p>
       <ul>
         <li><strong>Collection:</strong> Top-level object keys represent collections</li>
         <li><strong>Mode:</strong> Second-level object keys represent modes</li>
         <li><strong>Variables:</strong> Nested paths represent variables</li>
         <li><strong>For tokens:</strong> Use <code>{"$value": "#fff", "$type": "color"}</code></li>
         <li><strong>References:</strong> Use <code>{"$value": "{path/to/variable}", "$type": "color"}</code></li>
+        <li><strong>Deletion:</strong> To delete a variable, remove it from the JSON</li>
       </ul>
       <p>Keyboard shortcuts:</p>
       <ul>

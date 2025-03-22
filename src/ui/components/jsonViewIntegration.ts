@@ -79,7 +79,7 @@ export function setupJsonEditorPanel(containerId: string, initialData: any): voi
   
   // Display helpful intro message
   jsonEditor.showMessage(
-    'This editor allows you to edit and add Figma variables. Click the "?" button for help.',
+    'This editor allows you to edit, add, and delete Figma variables. Click the "?" button for help.',
     'info'
   );
 }

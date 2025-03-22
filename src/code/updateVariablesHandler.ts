@@ -130,6 +130,23 @@ export async function handleUpdateVariables(jsonData: any): Promise<{success: bo
     renamedCount += renamed;
     warnings.push(...processingWarnings);
     
+    // Third Phase: Process Deletions
+    // Identify variables that exist in Figma but not in the JSON
+    // and delete them if they belong to collections present in the JSON
+    const {
+      deleted,
+      deletionWarnings
+    } = await processVariableDeletions(
+      jsonDataCopy,
+      allVariables,
+      jsonVariables,
+      collectionNameToIdMap
+    );
+    
+    // Update our metrics
+    deletedCount = deleted;
+    warnings.push(...deletionWarnings);
+    
     // Return the result
     return {
       success: true,
@@ -757,6 +774,61 @@ function parseHsla(hsl: string): RGBA {
     console.error(`Error parsing HSL color: ${hsl}`, error);
     return { r: 0, g: 0, b: 0, a: 1 }; // Default black on error
   }
+}
+
+/**
+ * Process variable deletions
+ * Deletes variables that exist in Figma but not in the JSON
+ * Only deletes variables within collections present in the JSON
+ */
+async function processVariableDeletions(
+  jsonData: any,
+  allVariables: Variable[],
+  jsonVariables: Set<string>,
+  collectionNameToIdMap: Map<string, string>
+): Promise<{
+  deleted: number,
+  deletionWarnings: string[]
+}> {
+  let deleted = 0;
+  const deletionWarnings: string[] = [];
+  
+  try {
+    // Get set of collection IDs from the JSON data
+    const jsonCollectionIds = new Set<string>();
+    for (const collectionName of Object.keys(jsonData)) {
+      const collectionId = collectionNameToIdMap.get(collectionName.toLowerCase());
+      if (collectionId) {
+        jsonCollectionIds.add(collectionId);
+      }
+    }
+    
+    // Process all variables in the document
+    for (const variable of allVariables) {
+      // Only consider variables in collections that are part of the JSON
+      if (jsonCollectionIds.has(variable.variableCollectionId)) {
+        // Check if this variable exists in the JSON
+        if (!jsonVariables.has(variable.name.toLowerCase())) {
+          try {
+            // This variable is not in the JSON, so delete it
+            variable.remove();
+            deleted++;
+            console.log(`Deleted variable: ${variable.name}`);
+          } catch (error) {
+            const errorMessage = `Failed to delete variable ${variable.name}: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(errorMessage);
+            deletionWarnings.push(errorMessage);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    const errorMessage = `Error processing variable deletions: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(errorMessage);
+    deletionWarnings.push(errorMessage);
+  }
+  
+  return { deleted, deletionWarnings };
 }
 
 /**
