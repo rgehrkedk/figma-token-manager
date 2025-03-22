@@ -8,12 +8,16 @@ export function setupHeader(
   ): {
     // Return interface for controlling the header
     setActiveView: (view: 'visual' | 'json') => void;
+    toggleSidebar: () => void;
   } {
     const container = document.getElementById(containerId);
     if (!container) {
       console.error(`Header container #${containerId} not found`);
       // Return no-op methods if container not found
-      return { setActiveView: () => {} };
+      return { 
+        setActiveView: () => {},
+        toggleSidebar: () => {}
+      };
     }
   
     // State
@@ -22,7 +26,14 @@ export function setupHeader(
     // Create header HTML
     container.innerHTML = `
       <div class="header-content">
-        <div class="header-title">Design Token Manager</div>
+        <div class="header-left">
+          <button class="sidebar-toggle" title="Toggle Sidebar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="header-title">Design Token Manager</div>
+        </div>
         <div class="header-controls">
           <button class="settings-button" title="Settings">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -78,6 +89,27 @@ export function setupHeader(
       });
     }
   
+    // Add sidebar toggle functionality
+    let isSidebarVisible = true;
+    const sidebarToggleBtn = container.querySelector('.sidebar-toggle');
+    
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar-container');
+      if (!sidebar) return;
+      
+      isSidebarVisible = !isSidebarVisible;
+      
+      if (isSidebarVisible) {
+        sidebar.classList.add('visible');
+      } else {
+        sidebar.classList.remove('visible');
+      }
+    }
+    
+    if (sidebarToggleBtn) {
+      sidebarToggleBtn.addEventListener('click', toggleSidebar);
+    }
+
     // Return control interface
     return {
       setActiveView: (view: 'visual' | 'json') => {
@@ -87,6 +119,7 @@ export function setupHeader(
         if (button) {
           (button as HTMLElement).click();
         }
-      }
+      },
+      toggleSidebar
     };
   }

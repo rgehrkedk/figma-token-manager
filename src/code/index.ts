@@ -16,6 +16,16 @@ let originalTokenData: any = null;
 figma.showUI(__html__, { width: 1080, height: 800 });
 console.log("Plugin UI shown with updated dimensions");
 
+// Restore previous window size from client storage
+figma.clientStorage.getAsync('window-size').then(size => {
+  if (size) {
+    figma.ui.resize(size.w, size.h);
+    console.log("Restored window size:", size);
+  }
+}).catch(err => {
+  console.error("Error restoring window size:", err);
+});
+
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
   console.log("Plugin received message from UI:", msg.type);
@@ -168,6 +178,17 @@ figma.ui.onmessage = async (msg) => {
         type: 'error',
         message: `Error exporting tokens: ${error instanceof Error ? error.message : "Unknown error"}`
       });
+    }
+  } else if (msg.type === 'resize') {
+    // Handle window resize
+    if (msg.size && typeof msg.size.w === 'number' && typeof msg.size.h === 'number') {
+      // Resize the plugin window
+      figma.ui.resize(msg.size.w, msg.size.h);
+      // Store the size in client storage
+      figma.clientStorage.setAsync('window-size', msg.size).catch(err => {
+        console.error("Error saving window size:", err);
+      });
+      console.log("Resized plugin window to:", msg.size);
     }
   } else if (msg.type === 'close') {
     figma.closePlugin();

@@ -87,6 +87,27 @@
   .plugin-container.show-details {
     grid-template-columns: 0 1fr 280px;
   }
+  
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 56px;
+    bottom: 0;
+    width: 280px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  }
+  
+  .sidebar.visible {
+    transform: translateX(0);
+  }
+  
+  /* Show sidebar toggle button in responsive mode */
+  .sidebar-toggle {
+    display: flex !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -98,10 +119,6 @@
     grid-template-columns: 1fr;
   }
   
-  .sidebar {
-    display: none;
-  }
-  
   .details-panel {
     position: fixed;
     right: 0;
@@ -109,5 +126,21 @@
     bottom: 0;
     width: 280px;
     z-index: 100;
+  }
+}
+
+/* Handle smaller height */
+@media (max-height: 600px) {
+  .header {
+    height: 48px;
+    padding: 8px 16px;
+  }
+  
+  .main-panel {
+    padding: 8px;
+  }
+  
+  .token-content-area {
+    padding: 8px;
   }
 }

@@ -26,6 +26,7 @@
 @import './components/categoryNavigation.css';
 @import './components/jsonEditor.css'; /* Combined JSON editor/viewer styles */
 @import './components/exportDialog.css'; /* Added export dialog styles */
+@import './components/resize.css'; /* Added resize handle styles */
 
 /* Add the import for reference tokens styles */
 /* @import './components/referenceTokens.css';*/

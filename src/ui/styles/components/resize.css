@@ -1,0 +1,27 @@
+/* Resize handle component */
+#resize-handle {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 1000;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+#resize-handle:hover {
+  opacity: 1;
+}
+
+/* For responsive layouts */
+@media (max-width: 768px) {
+  #resize-handle {
+    opacity: 0.6;
+  }
+}

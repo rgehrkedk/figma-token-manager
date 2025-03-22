@@ -5,6 +5,50 @@
 
 import './styles/index.css';
 
+// Initialize resize functionality
+function initResizeHandle() {
+  const resizeHandle = document.getElementById('resize-handle');
+  if (!resizeHandle) return;
+
+  let isResizing = false;
+
+  function startResize(e: PointerEvent) {
+    isResizing = true;
+    document.body.style.userSelect = 'none';
+    resizeHandle.setPointerCapture(e.pointerId);
+  }
+
+  function stopResize() {
+    isResizing = false;
+    document.body.style.userSelect = '';
+    resizeHandle.releasePointerCapture(0);
+  }
+
+  function resize(e: PointerEvent) {
+    if (!isResizing) return;
+    
+    // Calculate new size (min 400x300)
+    const size = {
+      w: Math.max(400, Math.floor(e.clientX + 16)),
+      h: Math.max(300, Math.floor(e.clientY + 16))
+    };
+    
+    // Send resize message to plugin
+    parent.postMessage({ 
+      pluginMessage: { 
+        type: 'resize', 
+        size 
+      }
+    }, '*');
+  }
+
+  // Add event listeners
+  resizeHandle.addEventListener('pointerdown', startResize);
+  resizeHandle.addEventListener('pointermove', resize);
+  resizeHandle.addEventListener('pointerup', stopResize);
+  resizeHandle.addEventListener('pointercancel', stopResize);
+}
+
 // Import components
 import { setupHeader } from './components/header';
 import { setupSidebarPanel, SidebarInterface, SidebarCallbacks } from './components/sidebarPanel';
@@ -44,15 +88,41 @@ let sidebarInterface: SidebarInterface | null = null;
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Initializing UI components');
   
+  // Initialize resize handle
+  initResizeHandle();
+  
   // Setup color format handlers
   setupColorFormatHandlers();
   
-  // 1. Setup header with view toggle
+  // 1. Setup header with view toggle and sidebar toggle
   const headerInterface = setupHeader('header-container', (view) => {
     // Handle view change
     activeView = view;
     updateActiveView();
   });
+  
+  // Initialize responsive sidebar
+  function initResponsiveSidebar() {
+    const sidebar = document.getElementById('sidebar-container');
+    if (!sidebar) return;
+    
+    // If we're in a small viewport, hide sidebar by default
+    if (window.innerWidth <= 960) {
+      sidebar.classList.remove('visible');
+    } else {
+      sidebar.classList.add('visible');
+    }
+    
+    // Respond to window resize events
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 960) {
+        sidebar.classList.add('visible');
+      }
+    });
+  }
+  
+  // Initialize responsive behavior
+  initResponsiveSidebar();
   
   // 2. Setup sidebar panel with callbacks
   const sidebarCallbacks: SidebarCallbacks = {
