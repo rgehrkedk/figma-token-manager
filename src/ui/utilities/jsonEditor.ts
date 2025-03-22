@@ -242,26 +242,135 @@ export class JsonEditor {
 
   /**
    * Format JSON with syntax highlighting
+   * Applies VS Code-like syntax highlighting colors
    */
   private formatWithHighlighting(code: string): string {
-    // Replace with regex-based highlighting
-    return code
-      // Strings (including keys)
-      .replace(/"([^"\\]|\\.)*"/g, (match) => {
-        // Check if it's likely a key (followed by colon)
-        if (/"([^"\\]|\\.)*"\s*:/.test(match)) {
-          return `<span class="token property">${match}</span>`;
+    // Helper to escape HTML
+    const escapeHtml = (str: string) => {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+    
+    let html = '';
+    const lines = code.split('\n');
+    
+    // Process each line individually
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let lineHtml = '';
+      let position = 0;
+      
+      // Process each token in the line
+      while (position < line.length) {
+        const char = line[position];
+        
+        // Process opening braces
+        if (char === '{' || char === '[') {
+          lineHtml += `<span class="token punctuation">${char}</span>`;
+          position++;
         }
-        return `<span class="token string">${match}</span>`;
-      })
-      // Numbers
-      .replace(/\b(-?\d+(\.\d+)?([eE][+-]?\d+)?)\b/g, '<span class="token number">$1</span>')
-      // Boolean
-      .replace(/\b(true|false)\b/g, '<span class="token boolean">$1</span>')
-      // Null
-      .replace(/\bnull\b/g, '<span class="token null">null</span>')
-      // Punctuation
-      .replace(/([{}[\]:,])/g, '<span class="token punctuation">$1</span>');
+        // Process closing braces
+        else if (char === '}' || char === ']') {
+          lineHtml += `<span class="token punctuation">${char}</span>`;
+          position++;
+        }
+        // Process commas
+        else if (char === ',') {
+          lineHtml += `<span class="token punctuation">${char}</span>`;
+          position++;
+        }
+        // Process strings (including property names and values)
+        else if (char === '"') {
+          // Find the end of the string
+          let end = position + 1;
+          while (end < line.length && line[end] !== '"') {
+            if (line[end] === '\\' && end + 1 < line.length) {
+              end++; // Skip escaped character
+            }
+            end++;
+          }
+          
+          if (end < line.length) {
+            // Extract the string including quotes
+            const strContent = escapeHtml(line.substring(position, end + 1));
+            
+            // Check if this is a property key (followed by colon)
+            let isPropertyKey = false;
+            let colonPos = end + 1;
+            while (colonPos < line.length && line[colonPos] === ' ') {
+              colonPos++;
+            }
+            if (colonPos < line.length && line[colonPos] === ':') {
+              isPropertyKey = true;
+            }
+            
+            if (isPropertyKey) {
+              // It's a property key
+              lineHtml += `<span class="token property">${strContent}</span>`;
+              
+              // Add the colon with the property
+              let colonEnd = colonPos + 1;
+              lineHtml += `<span class="token punctuation">:</span>`;
+              
+              position = colonEnd;
+            } else {
+              // Check if it's a color hex value
+              if (/^"#[0-9a-fA-F]+"/i.test(strContent)) {
+                lineHtml += `<span class="token color-hex">${strContent}</span>`;
+              } else {
+                // Regular string
+                lineHtml += `<span class="token string">${strContent}</span>`;
+              }
+              position = end + 1;
+            }
+          } else {
+            // Unterminated string, just add the quote
+            lineHtml += `<span class="token string">"</span>`;
+            position++;
+          }
+        }
+        // Process numbers
+        else if (/[0-9]/.test(char)) {
+          let numStr = '';
+          let j = position;
+          
+          // Collect the number characters
+          while (j < line.length && /[0-9.eE+-]/.test(line[j])) {
+            numStr += line[j];
+            j++;
+          }
+          
+          lineHtml += `<span class="token number">${numStr}</span>`;
+          position = j;
+        }
+        // Process true/false
+        else if (line.substring(position, position + 4) === 'true' || 
+                 line.substring(position, position + 5) === 'false') {
+          const boolVal = line.substring(position).match(/^(true|false)/)[0];
+          lineHtml += `<span class="token boolean">${boolVal}</span>`;
+          position += boolVal.length;
+        }
+        // Process null
+        else if (line.substring(position, position + 4) === 'null') {
+          lineHtml += `<span class="token null">null</span>`;
+          position += 4;
+        }
+        // Process whitespace and other characters
+        else {
+          lineHtml += escapeHtml(char);
+          position++;
+        }
+      }
+      
+      // Add the processed line to the full HTML
+      html += lineHtml + (i < lines.length - 1 ? '\n' : '');
+    }
+    
+    return html;
   }
 
   /**

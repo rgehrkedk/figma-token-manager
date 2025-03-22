@@ -21,6 +21,8 @@
   position: relative; /* For absolute positioned help panel */
   max-height: 70vh; /* Limit height and ensure it's scrollable */
   overflow: hidden; /* Hide overflow to prevent double scrollbars */
+  background-color: #1e1e1e; /* Dark background for VSCode-like theme */
+  color: #d4d4d4; /* Light text for dark theme */
 }
 
 /* JSON Viewer Wrapper */
@@ -40,6 +42,7 @@
   min-height: 100px;
   overflow: hidden; /* Hide overflow for nested elements */
   flex: 1; /* Take up available space */
+  background-color: #1e1e1e; /* Dark background for editor */
 }
 
 /* Editor body - main content area */
@@ -56,20 +59,20 @@
 .line-numbers {
   flex: 0 0 auto;
   width: 40px;
-  background-color: var(--color-gray-200);
-  border-right: 1px solid var(--color-gray-300);
+  background-color: #1e1e1e; /* Match editor background */
+  border-right: 1px solid #333333; /* Darker border for dark theme */
   padding: 10px 0;
   user-select: none;
   overflow: hidden;
   text-align: right;
-  color: var(--color-gray-600);
+  color: #858585; /* Muted color for line numbers */
   font-size: var(--font-size-xs);
   font-family: var(--font-family-monospace);
 }
 
 .line-number {
   padding: 0 8px 0 0;
-  color: var(--color-gray-600);
+  color: #858585; /* Muted color for line numbers */
   font-size: var(--font-size-xs);
 }
 
@@ -80,7 +83,7 @@
   width: 100%;
   min-height: 300px; /* Ensure minimum height */
   border: none;
-  background-color: transparent;
+  background-color: transparent; /* Transparent to show highlight layer */
   font-family: var(--font-family-monospace);
   font-size: var(--font-size-xs);
   line-height: 1.5;
@@ -90,21 +93,20 @@
   tab-size: 2;
   white-space: pre;
   overflow: auto !important; /* Force scrolling */
-  color: var(--color-gray-900);
-  caret-color: var(--color-primary);
-  z-index: 1; /* Above the highlight layer */
+  color: transparent; /* Transparent text to show highlighting */
+  caret-color: #ffffff; /* Bright cursor */
+  z-index: 2; /* Above the highlight layer */
   height: 100%; /* Take full height */
+  position: relative; /* Ensure proper z-index handling */
 }
 
 /* For read-only mode */
 .json-editor-textarea[readonly] {
   cursor: default;
-  color: var(--color-gray-800);
 }
 
 /* When there's an error */
 .json-editor-textarea.json-error {
-  color: var(--color-danger);
   background-color: rgba(220, 53, 69, 0.1);
 }
 
@@ -123,9 +125,9 @@
   white-space: pre;
   overflow: hidden; /* Don't add scrollbars to this layer */
   tab-size: 2;
-  background-color: transparent;
-  color: transparent; /* Make text invisible */
-  z-index: 0; /* Below the textarea */
+  background-color: #1e1e1e; /* Dark background */
+  color: #d4d4d4; /* Default text color */
+  z-index: 1; /* Below the textarea */
   width: calc(100% - 40px); /* Full width minus gutter */
   height: 100%;
 }
@@ -135,33 +137,41 @@
   border-left: none;
 }
 
-/* Token styles for syntax highlighting */
+/* Token styles for syntax highlighting - VSCode-like dark theme */
+.token.text {
+  color: #d4d4d4; /* Default light gray for plain text */
+}
+
 .token.property {
-  color: #0066cc;
-  font-weight: 500;
+  color: #9cdcfe; /* Light blue for property names */
+  font-weight: normal;
 }
 
 .token.string {
-  color: #009900;
+  color: #ce9178; /* Coral/pink for string values */
+}
+
+.token.color-hex {
+  color: #f2f2f2; /* White for hex color values */
 }
 
 .token.number {
-  color: #cc6600;
+  color: #b5cea8; /* Light green for numbers */
 }
 
 .token.boolean {
-  color: #0099cc;
+  color: #569cd6; /* Blue for booleans */
 }
 
 .token.null {
-  color: #cc0000;
+  color: #569cd6; /* Blue for null */
 }
 
 .token.punctuation {
-  color: #555555;
+  color: #d4d4d4; /* Light gray for punctuation */
 }
 
-/* Enhanced scrollbar for better UX */
+/* Enhanced scrollbar for better UX - dark theme */
 .json-viewer-wrapper::-webkit-scrollbar,
 .json-editor-textarea::-webkit-scrollbar {
   width: 8px;
@@ -170,19 +180,19 @@
 
 .json-viewer-wrapper::-webkit-scrollbar-track,
 .json-editor-textarea::-webkit-scrollbar-track {
-  background: var(--color-gray-200);
+  background: #1e1e1e; /* Match editor background */
   border-radius: 4px;
 }
 
 .json-viewer-wrapper::-webkit-scrollbar-thumb,
 .json-editor-textarea::-webkit-scrollbar-thumb {
-  background: var(--color-gray-400);
+  background: #424242; /* Darker gray for scrollbar */
   border-radius: 4px;
 }
 
 .json-viewer-wrapper::-webkit-scrollbar-thumb:hover,
 .json-editor-textarea::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-500);
+  background: #555555; /* Lighter on hover */
 }
 
 /* JSON editor header */
@@ -191,8 +201,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background-color: var(--color-gray-100);
-  border-bottom: 1px solid var(--color-gray-300);
+  background-color: #252526; /* Slightly lighter than main background */
+  border-bottom: 1px solid #333333; /* Dark border */
+  color: #d4d4d4; /* Light text */
 }
 
 .json-status {
@@ -220,30 +231,30 @@
 }
 
 .status-indicator.valid {
-  color: var(--color-success);
-  background-color: rgba(25, 135, 84, 0.1);
+  color: #89d185; /* VSCode green */
+  background-color: rgba(137, 209, 133, 0.1);
 }
 
 .status-indicator.valid::before {
-  background-color: var(--color-success);
+  background-color: #89d185; /* VSCode green */
 }
 
 .status-indicator.invalid {
-  color: var(--color-danger);
-  background-color: rgba(220, 53, 69, 0.1);
+  color: #f14c4c; /* VSCode red */
+  background-color: rgba(241, 76, 76, 0.1);
 }
 
 .status-indicator.invalid::before {
-  background-color: var(--color-danger);
+  background-color: #f14c4c; /* VSCode red */
 }
 
 .status-indicator.pending {
-  color: var(--color-warning);
-  background-color: rgba(255, 193, 7, 0.1);
+  color: #cca700; /* VSCode yellow */
+  background-color: rgba(204, 167, 0, 0.1);
 }
 
 .status-indicator.pending::before {
-  background-color: var(--color-warning);
+  background-color: #cca700; /* VSCode yellow */
 }
 
 .json-editor-actions {
@@ -251,7 +262,7 @@
   gap: 8px;
 }
 
-/* Button styling */
+/* Button styling - dark theme */
 .json-validate-btn,
 .json-save-btn,
 .json-format-btn,
@@ -267,32 +278,32 @@
 
 .json-validate-btn,
 .json-format-btn {
-  background-color: var(--color-gray-200);
-  color: var(--color-gray-700);
+  background-color: #3a3d41; /* Dark button background */
+  color: #cccccc; /* Light button text */
 }
 
 .json-validate-btn:hover,
 .json-format-btn:hover {
-  background-color: var(--color-gray-300);
+  background-color: #494d51; /* Slightly lighter on hover */
 }
 
 .json-save-btn {
-  background-color: var(--color-primary);
+  background-color: #0e639c; /* VS Code blue */
   color: white;
 }
 
 .json-save-btn:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  background-color: #1177bb; /* Lighter blue on hover */
 }
 
 .json-save-btn:active {
-  background-color: var(--color-primary-dark);
+  background-color: #1177bb;
   transform: translateY(1px);
 }
 
 .json-save-btn:disabled {
-  background-color: var(--color-gray-400);
-  color: var(--color-gray-200);
+  background-color: #3a3d41;
+  color: #848484;
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -304,22 +315,22 @@
   padding: 0;
   font-weight: bold;
   margin-right: 8px;
-  background-color: var(--color-gray-300);
-  color: var(--color-gray-700);
+  background-color: #3a3d41; /* Dark button background */
+  color: #cccccc; /* Light button text */
 }
 
 .json-help-btn:hover {
-  background-color: var(--color-gray-400);
+  background-color: #494d51; /* Slightly lighter on hover */
 }
 
 .json-help-close-btn {
-  background-color: var(--color-gray-300);
-  color: var(--color-gray-700);
+  background-color: #3a3d41; /* Dark button background */
+  color: #cccccc; /* Light button text */
   margin-top: 12px;
 }
 
 .json-help-close-btn:hover {
-  background-color: var(--color-gray-400);
+  background-color: #494d51; /* Slightly lighter on hover */
 }
 
 /* Add a visual animation when validating */
@@ -353,30 +364,31 @@
 /* JSON editor footer and messages */
 .json-editor-footer {
   padding: 8px 12px;
-  border-top: 1px solid var(--color-gray-300);
-  background-color: var(--color-gray-100);
+  border-top: 1px solid #333333; /* Dark border */
+  background-color: #252526; /* Slightly lighter than main background */
+  color: #d4d4d4; /* Light text */
 }
 
 .json-editor-message {
   font-size: 12px;
-  color: var(--color-gray-600);
+  color: #cccccc; /* Light gray text */
   line-height: 1.4;
 }
 
 .json-editor-message.success {
-  color: var(--color-success);
+  color: #89d185; /* VSCode green */
 }
 
 .json-editor-message.error {
-  color: var(--color-danger);
+  color: #f14c4c; /* VSCode red */
 }
 
 .json-editor-message.pending {
-  color: var(--color-warning);
+  color: #cca700; /* VSCode yellow */
 }
 
 .json-editor-message.warning {
-  color: var(--color-warning);
+  color: #cca700; /* VSCode yellow */
 }
 
 .message-details {
@@ -387,29 +399,30 @@
   opacity: 0.9;
 }
 
-/* JSON Editor Help Panel */
+/* JSON Editor Help Panel - dark theme */
 .json-editor-help {
   position: fixed; /* Fixed to viewport instead of absolute */
   top: 10%; /* Position from top instead of center */
   left: 50%;
   transform: translateX(-50%); /* Center horizontally only */
-  background: white;
-  border: 1px solid var(--color-gray-300);
+  background: #252526; /* Match editor header/footer */
+  border: 1px solid #3c3c3c; /* Dark border */
   border-radius: 4px;
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); /* Stronger shadow */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Stronger shadow for dark theme */
   z-index: 1000;
   max-width: 500px;
   width: 90%;
   max-height: 80vh; /* Limit height */
   overflow-y: auto; /* Allow scrolling if content is too long */
+  color: #d4d4d4; /* Light text */
 }
 
 .json-editor-help h4 {
   margin-top: 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-gray-200);
-  color: var(--color-gray-800);
+  border-bottom: 1px solid #3c3c3c; /* Dark border */
+  color: #ffffff; /* Bright text for heading */
 }
 
 .json-editor-help ul {
@@ -421,20 +434,20 @@
   margin-bottom: 6px;
   font-size: 12px;
   line-height: 1.4;
-  color: var(--color-gray-700);
+  color: #cccccc; /* Light text */
 }
 
 .json-editor-help li strong {
-  color: var(--color-gray-900);
+  color: #ffffff; /* Brighter text for emphasis */
 }
 
 .json-editor-help code {
-  background: var(--color-gray-100);
+  background: #1e1e1e; /* Match main editor background */
   padding: 2px 4px;
   border-radius: 3px;
   font-family: var(--font-family-monospace);
   font-size: 0.9em;
-  color: var(--color-primary);
+  color: #9cdcfe; /* Light blue for code */
   word-break: break-all;
 }
 
@@ -442,7 +455,7 @@
   margin: 8px 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--color-gray-700);
+  color: #cccccc; /* Light text */
 }
 
 /* JSON Preview Section */
