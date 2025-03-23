@@ -1,0 +1,175 @@
+/* Settings Modal Styles */
+
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.settings-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.settings-modal-content {
+  position: relative;
+  width: 360px;
+  max-width: 90%;
+  max-height: 80vh;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.settings-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-gray-300);
+}
+
+.settings-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.settings-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-gray-600);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal-close:hover {
+  color: var(--color-gray-900);
+}
+
+.settings-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(80vh - 60px);
+}
+
+/* Settings Sections */
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-heading {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-gray-800);
+}
+
+.settings-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-option label {
+  font-size: 13px;
+  color: var(--color-gray-700);
+  cursor: pointer;
+}
+
+/* Reference Status */
+.references-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.references-section .settings-heading {
+  margin-bottom: 0;
+}
+
+.reference-counter {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-success);
+}
+
+.reference-counter.has-unresolved {
+  color: var(--color-warning);
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.extract-btn, .export-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.extract-btn {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.extract-btn:hover {
+  background-color: var(--color-gray-300);
+}
+
+.export-btn {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.export-btn:hover {
+  background-color: var(--color-primary-dark);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .settings-modal-content {
+    width: 320px;
+  }
+}

@@ -50,7 +50,7 @@ function initResizeHandle() {
 }
 
 // Import components
-import { setupHeader } from './components/header';
+import { setupHeader, HeaderCallbacks } from './components/header';
 import { setupSidebarPanel, SidebarInterface, SidebarCallbacks } from './components/sidebarPanel';
 import { TokenData } from './reference/ReferenceResolver';
 import { createTokenGrid } from './components/TokenGrid';
@@ -93,15 +93,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup color format handlers
   setupColorFormatHandlers();
   
-  // 1. Setup header with view toggle and sidebar toggle
-  const headerInterface = setupHeader('header-container', (view) => {
-    // Handle view change
-    activeView = view;
-    updateActiveView();
-  });
+  // 1. Setup header with view toggle, settings modal, and sidebar toggle
+  const headerCallbacks: HeaderCallbacks = {
+    onViewChange: (view) => {
+      // Handle view change
+      activeView = view;
+      updateActiveView();
+    },
+    onSettingsChange: (setting, value) => {
+      console.log(`Setting ${setting} changed to ${value}`);
+      
+      // Handle specific settings
+      if (setting === 'colorFormat') {
+        currentColorFormat = value;
+        applyColorFormat(value);
+      }
+    },
+    onExtract: () => {
+      console.log('Extract tokens requested');
+      requestTokenExtraction();
+    },
+    onExport: () => {
+      console.log('Export tokens requested');
+      exportTokens();
+    }
+  };
+  
+  const headerInterface = setupHeader('header-container', headerCallbacks);
   
   // Make header interface globally accessible for the sidebar collapse button
   (window as any).headerInterface = headerInterface;
+  
+  // Move view toggle and settings button to main panel header
+  const mainPanelActions = document.querySelector('.main-panel-actions');
+  if (mainPanelActions) {
+    mainPanelActions.appendChild(headerInterface.viewToggleElement);
+    mainPanelActions.appendChild(headerInterface.settingsButtonElement);
+  }
   
   // Initialize responsive sidebar
   function initResponsiveSidebar() {
@@ -358,8 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const resolvedRefs = allTokens.filter(t => t.reference && t.resolvedValue).length;
     const unresolvedRefs = allTokens.filter(t => t.reference && !t.resolvedValue).length;
     
-    // Update reference status in sidebar
+    // Update reference count in both header and sidebar
     sidebarInterface.setReferenceCounts(resolvedRefs, unresolvedRefs);
+    headerInterface.setReferenceCounts(resolvedRefs, unresolvedRefs);
     
     // Update reference warning if needed
     updateReferenceWarning(unresolvedRefs);

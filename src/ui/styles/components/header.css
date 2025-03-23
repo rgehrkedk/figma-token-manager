@@ -28,6 +28,25 @@
   gap: 12px;
 }
   
+.header-action-btn {
+  background: none;
+  border: none;
+  color: var(--color-gray-600);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+  
+.header-action-btn:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-800);
+}
+
 .settings-button {
   background: none;
   border: none;
@@ -45,6 +64,8 @@
   background-color: var(--color-gray-200);
   color: var(--color-gray-800);
 }
+
+/* Button styles moved to actionButtons.css */
   
 .view-toggle {
   display: flex;

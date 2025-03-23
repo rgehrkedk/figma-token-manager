@@ -23,11 +23,12 @@
 @import './components/forms.css';
 @import './components/collectionSelector.css';
 @import './components/status.css';
-@import './components/actionButtons.css';
+@import './components/actionButtons.css'; /* Combined action buttons styles */
 @import './components/categoryNavigation.css';
 @import './components/jsonEditor.css'; /* Combined JSON editor/viewer styles */
 @import './components/exportDialog.css'; /* Added export dialog styles */
 @import './components/resize.css'; /* Added resize handle styles */
+@import './components/settingsModal.css'; /* Added settings modal styles */
 
 /* Add the import for reference tokens styles */
 /* @import './components/referenceTokens.css';*/

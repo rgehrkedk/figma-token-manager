@@ -2,12 +2,14 @@
  * Styles for action buttons
  */
 
+/* Button containers */
 .button-container {
   display: flex;
   gap: var(--space-2);
   margin-top: var(--space-4);
 }
 
+/* Standard buttons */
 .button-primary,
 .button-secondary {
   border: none;
@@ -47,4 +49,79 @@
   background-color: var(--color-gray-400);
   color: var(--color-gray-200);
   cursor: not-allowed;
+}
+
+/* Header action buttons */
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast) var(--transition-timing);
+}
+
+.action-button-icon {
+  display: flex;
+  align-items: center;
+}
+
+.action-button-text {
+  white-space: nowrap;
+}
+
+/* Extract button */
+.extract-button {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.extract-button:hover {
+  background-color: var(--color-gray-300);
+  color: var(--color-gray-900);
+}
+
+/* Export button */
+.export-button {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.export-button:hover {
+  background-color: var(--color-primary-dark);
+  color: var(--color-white);
+}
+
+
+.settings-button {
+  background-color: transparent;
+  color: var(--color-gray-600);
+  width: 32px;
+  height: 32px;
+  padding: 0px;
+}
+  
+.settings-button:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-800);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .action-button {
+    padding: 6px 10px;
+  }
+  
+  .action-button-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .action-button-text {
+    font-size: var(--font-size-xs);
+  }
 }

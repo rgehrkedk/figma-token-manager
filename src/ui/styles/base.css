@@ -273,7 +273,8 @@ pre {
 
 .main-panel-actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Grouping select removed as requested */
