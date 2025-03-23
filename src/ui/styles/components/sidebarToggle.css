@@ -1,16 +1,11 @@
 /* Sidebar Toggle Button Styles */
 
 .sidebar-toggle {
-  background: none;
-  border: none;
-  color: var(--color-gray-600);
   width: 32px;
+  color: var(--color-gray-600);
   height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 0px;
+  background-color: transparent;
 }
 
 .sidebar-toggle:hover {

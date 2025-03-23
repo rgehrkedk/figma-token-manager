@@ -92,7 +92,11 @@
   padding: 12px;
   background-color: var(--color-gray-100);
 }
-
+@media (min-width: 960px) {
+button.sidebar-toggle {
+  display: none;
+}
+}
 /* For medium screens (tablet-sized) */
 @media (max-width: 960px) {
   /* Hide sidebar by default */
