@@ -131,15 +131,19 @@ button.sidebar-toggle {
 
 /* For smaller screens (mobile-sized) */
 @media (max-width: 768px) {
-
+  .plugin-container {
+    grid-template-columns: 0 1fr 0;
+  }
 
   .plugin-container.show-details {
-    grid-template-columns: 1fr;
+    grid-template-columns: 0 1fr 0;
   }
   
   .header {
     width: 100%;
     max-width: 100vw;
+    position: fixed;
+    z-index: 250;
   }
   
   .details-panel {
@@ -148,11 +152,12 @@ button.sidebar-toggle {
     top: 56px;
     bottom: 0;
     width: 280px;
-    z-index: 150;
+    z-index: 100;
   }
   
   .main-panel {
     padding: 12px;
+    margin-top: 56px;
   }
   
   .token-content-area {
