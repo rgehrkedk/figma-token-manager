@@ -12,6 +12,7 @@
 
 /* Component styles */
 @import './components/header.css';
+@import './components/sidebarToggle.css'; /* Added sidebar toggle component styles */
 @import './components/sidebarPanel.css';
 @import './components/tokenGrid.css';
 @import './components/tokenDetailsPanel.css';
