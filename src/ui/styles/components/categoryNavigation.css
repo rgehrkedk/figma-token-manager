@@ -5,36 +5,36 @@
 
 /* Navigation bar */
 .category-navigation {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px 0;
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--color-gray-300);
-    position: sticky;
-    top: -18px;
-    background-color: var(--color-gray-100);
-    z-index: 10;
-  }
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-gray-300);
+  position: sticky;
+  top: -18px;
+  background-color: white;
+  z-index: 10;
+}
   
-  .category-link {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 16px;
-    background-color: var(--color-white);
-    color: var(--color-gray-700);
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    border: 1px solid var(--color-gray-300);
-    transition: all 0.2s ease;
-  }
+.category-link {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid var(--color-gray-300);
+  transition: all 0.1s ease;
+}
   
-  .category-link:hover {
-    background-color: var(--color-primary-50);
-    color: var(--color-primary);
-    border-color: var(--color-primary-light);
-  }
+.category-link:hover {
+  background-color: var(--color-primary-50);
+  color: var(--color-primary);
+  border-color: var(--color-primary-light);
+}
   
   .category-link:active {
     background-color: var(--color-primary);
@@ -65,13 +65,13 @@
     margin-bottom: 16px;
   }
   
-  .token-subcategory-heading {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--color-gray-700);
-    margin-bottom: 10px;
-    padding-left: 8px;
-    border-left: 3px solid var(--color-primary-200);
+  .token-category-heading {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-primary-light);
   }
   
   /* Make sure the token grid maintains its existing styles */

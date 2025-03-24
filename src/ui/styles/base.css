@@ -6,36 +6,38 @@
 
  :root {
   /* Color system */
-  --color-primary: #0066FF;
-  --color-primary-light: #4D94FF;
-  --color-primary-dark: #0047B3;
-  --color-primary-50: #E5F0FF; /* Added from main.css */
+  --color-primary: #0d99ff;
+  --color-primary-light: #66c4ff;
+  --color-primary-dark: #007be0;
+  --color-primary-50: #e9f5ff;
   
-  --color-secondary: #6C757D;
-  --color-secondary-light: #A1A8AE;
-  --color-secondary-dark: #494F54;
+  --color-secondary: #6F6F6F;
+  --color-secondary-light: #9E9E9E;
+  --color-secondary-dark: #444444;
   
-  --color-success: #28A745;
-  --color-info: #17A2B8;
-  --color-warning: #FFC107;
-  --color-danger: #DC3545;
+  --color-success: #14ae5c;
+  --color-info: #0d99ff;
+  --color-warning: #ffb800;
+  --color-danger: #f24822;
   
-  --color-gray-100: #F8F9FA;
-  --color-gray-200: #E9ECEF;
-  --color-gray-300: #DEE2E6;
-  --color-gray-400: #CED4DA;
-  --color-gray-500: #ADB5BD;
-  --color-gray-600: #6C757D;
-  --color-gray-700: #495057;
-  --color-gray-800: #343A40;
-  --color-gray-900: #212529;
+  --color-gray-100: #f9f9f9;
+  --color-gray-200: #f2f2f2;
+  --color-gray-300: #e5e5e5;
+  --color-gray-400: #d9d9d9;
+  --color-gray-500: #bdbdbd;
+  --color-gray-600: #8c8c8c;
+  --color-gray-700: #5e5e5e;
+  --color-gray-800: #333333;
+  --color-gray-900: #0f0f0f;
   
   --color-white: #FFFFFF;
   --color-black: #000000;
   
   /* Typography */
-  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-monospace: 'SFMono-Regular', Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Keep the rest of your variables the same */
   
   --font-size-xs: 0.75rem;   /* 12px */
   --font-size-sm: 0.875rem;  /* 14px */

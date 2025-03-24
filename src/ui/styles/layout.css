@@ -46,8 +46,34 @@
 .main-panel {
   grid-column: 2;
   overflow-y: auto;
-  background-color: var(--color-gray-100);
+  background-color: white;
   padding: 16px;
+}
+
+.main-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.main-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.reference-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: rgba(255, 184, 0, 0.1);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border-left: 3px solid var(--color-warning);
+  color: var(--color-warning);
+  font-size: 12px;
 }
 
 .details-panel {

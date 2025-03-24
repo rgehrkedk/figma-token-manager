@@ -685,35 +685,6 @@ export function showExportDialog(options: ExportDialogOptions): void {
     formatsSection.appendChild(formatCards);
     container.appendChild(formatsSection);
     
-    // Common Export Options
-    const commonOptionsSection = document.createElement('div');
-    commonOptionsSection.className = 'export-dialog-section';
-    commonOptionsSection.innerHTML = `
-      <h3>File Structure Options</h3>
-      <div class="options-grid">
-        <div class="option-card">
-          <div class="option-card-header">
-            <input type="checkbox" id="include-complete-file" checked>
-            <label for="include-complete-file">Include Complete File</label>
-          </div>
-          <div class="option-card-content">
-            <p>Create a single file with all selected tokens.</p>
-          </div>
-        </div>
-        
-        <div class="option-card">
-          <div class="option-card-header">
-            <input type="checkbox" id="flatten-structure">
-            <label for="flatten-structure">Flatten File Structure</label>
-          </div>
-          <div class="option-card-content">
-            <p>Export all files to a single directory instead of using nested folders.</p>
-          </div>
-        </div>
-      </div>
-    `;
-    container.appendChild(commonOptionsSection);
-    
     // Add event listeners for format selection
     const formatRadios = container.querySelectorAll('input[name="format"]');
     formatRadios.forEach(radio => {
@@ -732,6 +703,12 @@ export function showExportDialog(options: ExportDialogOptions): void {
           // Update the export options
           const format = formatCard?.getAttribute('data-format') as 'dtcg' | 'legacy' | 'style-dictionary';
           exportOptions.format = format;
+          
+          // Immediately update options visibility to ensure we have the right display state
+          const optionsTabContent = optionsTab as any;
+          if (optionsTabContent.updateOptionsVisibility) {
+            optionsTabContent.updateOptionsVisibility();
+          }
         }
       });
     });
@@ -744,19 +721,6 @@ export function showExportDialog(options: ExportDialogOptions): void {
       const radioInput = initialCard.querySelector('input[type="radio"]') as HTMLInputElement;
       radioInput.checked = true;
     }
-    
-    // Add event listeners for common options
-    const includeCompleteFileCheckbox = container.querySelector('#include-complete-file') as HTMLInputElement;
-    includeCompleteFileCheckbox.checked = exportOptions.includeCompleteFile;
-    includeCompleteFileCheckbox.addEventListener('change', () => {
-      exportOptions.includeCompleteFile = includeCompleteFileCheckbox.checked;
-    });
-    
-    const flattenStructureCheckbox = container.querySelector('#flatten-structure') as HTMLInputElement;
-    flattenStructureCheckbox.checked = exportOptions.flattenStructure;
-    flattenStructureCheckbox.addEventListener('change', () => {
-      exportOptions.flattenStructure = flattenStructureCheckbox.checked;
-    });
     
     // Add event listeners for format cards (to make the whole card clickable)
     formatCards.querySelectorAll('.format-card').forEach(card => {
@@ -948,15 +912,49 @@ export function showExportDialog(options: ExportDialogOptions): void {
     // Add default content for non-Style-Dictionary formats
     const defaultContent = document.createElement('div');
     defaultContent.className = 'export-tab-content default-options-content';
-    defaultContent.style.display = exportOptions.format !== 'style-dictionary' ? 'flex' : 'none';
-    defaultContent.innerHTML = `
-      <div class="no-options-message">
-        <div class="message-icon">ℹ️</div>
-        <h3>No Additional Options</h3>
-        <p>The selected format doesn't have any additional configuration options.</p>
-        <p>Click the "Export" button to proceed with the export.</p>
+    defaultContent.style.display = exportOptions.format !== 'style-dictionary' ? 'block' : 'none';
+
+    const infoMessage = document.createElement('div');
+    infoMessage.className = 'no-options-message';
+    infoMessage.innerHTML = `
+      <div class="message-icon">ℹ️</div>
+      <h3>Basic Export Options</h3>
+      <p>Configure how your token files will be structured.</p>
+    `;
+    defaultContent.appendChild(infoMessage);
+    
+    // File Structure Options for all formats
+    const fileStructureOptions = document.createElement('div');
+    fileStructureOptions.className = 'export-dialog-section';
+    fileStructureOptions.innerHTML = `
+      <h3>File Structure Options</h3>
+      <div class="options-grid">
+        <div class="option-card">
+          <div class="option-card-header">
+            <input type="checkbox" id="include-complete-file" ${exportOptions.includeCompleteFile ? 'checked' : ''}>
+            <label for="include-complete-file">Include Complete File</label>
+          </div>
+          <div class="option-card-content">
+            <p>Create a single file with all selected tokens.</p>
+          </div>
+        </div>
+        
+        <div class="option-card">
+          <div class="option-card-header">
+            <input type="checkbox" id="flatten-structure" ${exportOptions.flattenStructure ? 'checked' : ''}>
+            <label for="flatten-structure">Flatten File Structure</label>
+          </div>
+          <div class="option-card-content">
+            <p>Export all files to a single directory instead of using nested folders.</p>
+          </div>
+        </div>
       </div>
     `;
+    
+    // Add file structure options to both sections
+    defaultContent.appendChild(fileStructureOptions.cloneNode(true));
+    sdSection.appendChild(fileStructureOptions);
+    
     container.appendChild(defaultContent);
     
     // Add event listeners for platform selection
@@ -1095,8 +1093,32 @@ export function showExportDialog(options: ExportDialogOptions): void {
       };
     });
     
+    // Add event listeners for file structure options in both places
+    setTimeout(() => {
+      const includeFileCheckboxes = container.querySelectorAll('#include-complete-file');
+      includeFileCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          exportOptions.includeCompleteFile = (e.target as HTMLInputElement).checked;
+          // Update all checkboxes with the same ID
+          includeFileCheckboxes.forEach(cb => {
+            (cb as HTMLInputElement).checked = exportOptions.includeCompleteFile;
+          });
+        });
+      });
+      
+      const flattenCheckboxes = container.querySelectorAll('#flatten-structure');
+      flattenCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+          exportOptions.flattenStructure = (e.target as HTMLInputElement).checked;
+          // Update all checkboxes with the same ID
+          flattenCheckboxes.forEach(cb => {
+            (cb as HTMLInputElement).checked = exportOptions.flattenStructure;
+          });
+        });
+      });
+    }, 0);
+    
     // Event listener for format change to show/hide appropriate options
-    // This will be connected from the main code
     function updateOptionsVisibility() {
       // Show/hide sections based on the selected format
       if (exportOptions.format === 'style-dictionary') {
@@ -1104,7 +1126,7 @@ export function showExportDialog(options: ExportDialogOptions): void {
         defaultContent.style.display = 'none';
       } else {
         sdSection.style.display = 'none';
-        defaultContent.style.display = 'flex';
+        defaultContent.style.display = 'block';
       }
     }
     
