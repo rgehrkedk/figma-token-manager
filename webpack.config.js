@@ -17,11 +17,24 @@ module.exports = (env, argv) => {
           let html = fs.readFileSync(htmlFile, 'utf8');
           const js = fs.readFileSync(jsFile, 'utf8');
           
-          // Replace the script tag with an inline script
-          html = html.replace(
-            /<script.*src=["']ui\.js["'].*><\/script>/,
-            `<script>${js}</script>`
-          );
+          // Instead of using string replacement, create a proper structure
+          // First, find the end of the body tag
+          const bodyEndIndex = html.lastIndexOf('</body>');
+          
+          if (bodyEndIndex !== -1) {
+            // Split the HTML at the body end
+            const beforeBody = html.substring(0, bodyEndIndex);
+            const afterBody = html.substring(bodyEndIndex);
+            
+            // Create a new HTML with the inlined script
+            html = beforeBody + `<script>\n${js}\n</script>\n` + afterBody;
+          } else {
+            // Fallback if body end tag not found
+            html = html.replace(
+              /<script.*src=["']ui\.js["'].*><\/script>/,
+              `<script>\n${js}\n</script>`
+            );
+          }
           
           // Extra optimization: Look for any remaining CSS files and inline them too
           const linkCssRegex = /<link.*href=["'](.+\.css)["'].*>/g;
@@ -35,7 +48,7 @@ module.exports = (env, argv) => {
               const cssContent = fs.readFileSync(cssFilePath, 'utf8');
               html = html.replace(
                 match[0],
-                `<style>${cssContent}</style>`
+                `<style>\n${cssContent}\n</style>`
               );
               // Optionally remove the CSS file if we're inlining it
               fs.unlinkSync(cssFilePath);

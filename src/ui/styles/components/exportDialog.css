@@ -1,7 +1,7 @@
 /* Export Dialog Redesign Styles */
 
 /* Base Overlay and Dialog */
-.export-dialog-overlay {
+.ftm-export-dialog-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -15,7 +15,7 @@
   backdrop-filter: blur(4px);
 }
 
-.export-dialog {
+.ftm-export-dialog {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -41,7 +41,7 @@
 }
 
 /* Dialog Header */
-.export-dialog-header {
+.ftm-export-dialog-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -50,14 +50,14 @@
   background-color: var(--color-gray-200);
 }
 
-.export-dialog-header h2 {
+.ftm-export-dialog-header h2 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-gray-800);
 }
 
-.close-button {
+.ftm-export-close-button {
   background: none;
   border: none;
   font-size: 22px;
@@ -72,27 +72,27 @@
   transition: all 0.2s;
 }
 
-.close-button:hover {
+.ftm-export-close-button:hover {
   color: #333;
   background-color: rgba(0, 0, 0, 0.05);
 }
 
 /* Tabs Navigation */
-.export-dialog-content-container {
+.ftm-export-dialog-content-container {
   display: flex;
   flex-direction: column;
   flex: 1;
   overflow: hidden;
 }
 
-.export-dialog-tabs {
+.ftm-export-dialog-tabs {
   display: flex;
   border-bottom: 1px solid #e6e6e6;
   background-color: #f8f9fa;
   padding: 0 24px;
 }
 
-.export-tab {
+.ftm-export-tab {
   padding: 12px 20px;
   font-size: 13px;
   font-weight: 500;
@@ -105,168 +105,178 @@
   position: relative;
 }
 
-.export-tab:hover {
+.ftm-export-tab:hover {
   color: #333;
 }
 
-.export-tab.active {
+.ftm-export-tab.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
 }
 
 /* Tab Content */
-.export-dialog-content {
+.ftm-export-dialog-content {
   padding: 0;
   overflow-y: auto;
   max-height: 60vh;
   flex: 1;
 }
 
-.export-tab-content {
+.ftm-export-tab-content {
   padding: 24px;
   display: block;
 }
 
-.export-tab-intro {
+.ftm-export-tab-intro {
   margin-bottom: 20px;
 }
 
-.export-tab-intro p {
+.ftm-export-tab-intro p {
   margin: 0 0 12px 0;
   color: #555;
   font-size: 14px;
 }
 
 /* Sections */
-.export-dialog-section {
+.ftm-export-dialog-section {
   margin-bottom: 24px;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
   overflow: hidden;
 }
 
-.export-dialog-section h3 {
+.ftm-export-dialog-section h3 {
   margin: 0;
   padding: 16px 20px;
   font-size: 16px;
   font-weight: 600;
   color: #333;
   background-color: #f8f9fa;
-  border-bottom: 1px solid #e6e6e6;
 }
 
-.section-header-with-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e6e6e6;
-}
-
-.section-header-with-controls h3,
-.section-header-with-controls h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.section-header-with-controls h4 {
-  font-size: 15px;
-}
-
-.header-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.section-description {
-  margin: 6px 0 0 0;
-  font-size: 13px;
-  color: #666;
-}
-
-/* Search */
-.search-container {
-  position: relative;
-  padding: 12px 20px;
-  border-bottom: 1px solid #e6e6e6;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px 12px 8px 30px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #333;
-}
-
-.search-input:focus {
-  border-color: #0d99ff;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(13, 153, 255, 0.15);
-}
-
-.search-icon {
-  position: absolute;
-  left: 30px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #999;
-  font-size: 14px;
-}
-
-/* Selection Lists */
-.export-selection-list {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-/* Collection Cards */
-.selection-card {
-  border: 1px solid #e6e6e6;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  transition: all 0.2s;
-  overflow: hidden;
-}
-
-.selection-card:hover {
-  border-color: #ccc;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.card-header {
+.ftm-section-header-with-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #e6e6e6;
-  cursor: pointer;
 }
 
-.card-checkbox-container {
-  display: flex;
-  align-items: center;
-}
-
-.card-title {
-  margin-left: 8px;
+.ftm-section-header-with-controls h3,
+.ftm-section-header-with-controls h4 {
+  margin: 0;
   font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+  font-weight: 600;
   color: #333;
 }
 
-.toggle-button {
+.ftm-section-header-with-controls h4 {
+  font-size: 14px;
+}
+
+.ftm-header-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.ftm-section-description {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Search */
+.ftm-export-search-container {
+  position: relative;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.ftm-export-search-input {
+  width: 100%;
+  padding: 6px 10px 6px 26px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #333;
+}
+
+.ftm-export-search-input:focus {
+  border-color: #0d99ff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 153, 255, 0.15);
+}
+
+.ftm-export-search-icon {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 12px;
+}
+
+/* Selection Lists */
+.ftm-export-selection-list {
+  max-height: 450px;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+/* Collection Cards */
+.ftm-export-selection-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  padding: 0px;
+  transition: all 0.2s;
+  overflow: hidden;
+  display: block;
+}
+
+.ftm-export-selection-card:hover {
+  border-color: #ccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ftm-export-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 12px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e6e6e6;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.ftm-export-card-checkbox-container {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 40px);
+}
+
+.ftm-export-card-title {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ftm-export-toggle-button {
   background: none;
   border: none;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -274,100 +284,118 @@
   cursor: pointer;
   color: #666;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-.toggle-button:hover {
+.ftm-export-toggle-button:hover {
   background-color: rgba(0, 0, 0, 0.05);
   color: #333;
 }
 
-.toggle-icon {
-  font-size: 12px;
+.ftm-export-toggle-icon {
+  font-size: 10px;
 }
 
-.card-content {
-  padding: 12px 16px;
+.ftm-export-mode-summary {
+  font-size: 11px;
+  color: #666;
+  margin-right: 4px;
+  display: inline-block;
+}
+
+.ftm-export-card-content {
+  padding: 8px 12px;
   background-color: white;
   display: none;
 }
 
-.modes-container.expanded {
+.ftm-export-modes-container.expanded {
   display: block;
 }
 
-.modes-counter {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 8px;
-}
-
-.modes-controls {
+.ftm-export-modes-header {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
 }
 
-.select-all-button,
-.deselect-all-button {
+.ftm-export-modes-counter {
+  font-size: 12px;
+  color: #666;
+}
+
+.ftm-export-modes-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.ftm-export-select-all-button,
+.ftm-export-deselect-all-button {
   background: none;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.select-all-button {
+.ftm-export-select-all-button {
   color: #0d99ff;
   background-color: rgba(13, 153, 255, 0.05);
   border-color: rgba(13, 153, 255, 0.2);
 }
 
-.select-all-button:hover {
+.ftm-export-select-all-button:hover {
   background-color: rgba(13, 153, 255, 0.1);
   border-color: rgba(13, 153, 255, 0.3);
 }
 
-.deselect-all-button {
+.ftm-export-deselect-all-button {
   color: #666;
 }
 
-.deselect-all-button:hover {
+.ftm-export-deselect-all-button:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
 
 /* Modes Grid */
-.modes-grid {
+.ftm-export-modes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 4px;
 }
 
-.mode-item {
-  padding: 8px;
+.ftm-export-mode-item {
+  padding: 4px 6px;
   border: 1px solid #eee;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: all 0.2s;
 }
 
-.mode-item:hover {
+.ftm-export-mode-item:hover {
   background-color: #f9f9f9;
 }
 
-.mode-checkbox-container {
+.ftm-export-mode-checkbox-container {
   display: flex;
   align-items: center;
+  overflow: hidden;
+  padding: 4px 2px;
 }
 
-.mode-label {
-  margin-left: 8px;
-  font-size: 13px;
+.ftm-export-mode-label {
+  margin-left: 6px;
+  font-size: 12px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* No Search Results */
-.no-results {
+.ftm-export-no-results {
   padding: 24px;
   text-align: center;
   color: #666;
@@ -375,14 +403,14 @@
 }
 
 /* Format Cards */
-.format-cards {
-  padding: 16px;
+.ftm-export-format-cards {
+  padding: 12px;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
-.format-card {
+.ftm-export-format-card {
   border: 1px solid #e6e6e6;
   border-radius: 6px;
   overflow: hidden;
@@ -390,73 +418,74 @@
   cursor: pointer;
 }
 
-.format-card:hover {
+.ftm-export-format-card:hover {
   border-color: #ccc;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.format-card.active {
+.ftm-export-format-card.active {
   border-color: #0d99ff;
   box-shadow: 0 0 0 1px #0d99ff;
 }
 
-.format-card-header {
+.ftm-export-format-card-header {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #e6e6e6;
 }
 
-.format-card-header label {
-  margin-left: 8px;
-  font-size: 14px;
+.ftm-export-format-card-header label {
+  margin-left: 6px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 
-.format-card-content {
-  padding: 16px;
+.ftm-export-format-card-content {
+  padding: 10px 12px;
   background-color: white;
 }
 
-.format-card-content p {
-  margin: 0 0 12px 0;
-  font-size: 13px;
+.ftm-export-format-card-content p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
   color: #555;
 }
 
-.format-example {
-  margin-bottom: 16px;
+.ftm-export-format-example {
+  margin-bottom: 8px;
   overflow: hidden;
 }
 
-.format-example pre {
+.ftm-export-format-example pre {
   margin: 0;
-  padding: 12px;
+  padding: 8px;
   background-color: #f5f5f5;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: #333;
   overflow-x: auto;
+  max-height: 120px;
 }
 
-.format-benefits {
+.ftm-export-format-benefits {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.benefit-tag {
+.ftm-export-benefit-tag {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 3px 6px;
   background-color: #edf8ff;
   color: #0d99ff;
-  font-size: 12px;
-  border-radius: 4px;
+  font-size: 11px;
+  border-radius: 3px;
 }
 
-.format-note {
+.ftm-export-format-note {
   margin-top: 12px;
   padding: 8px 12px;
   background-color: #fff9e6;
@@ -467,25 +496,25 @@
 }
 
 /* Options Grid */
-.options-grid {
+.ftm-export-options-grid {
   padding: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
 }
 
-.option-card {
+.ftm-export-option-card {
   border: 1px solid #e6e6e6;
   border-radius: 6px;
   overflow: hidden;
   transition: all 0.2s;
 }
 
-.option-card:hover {
+.ftm-export-option-card:hover {
   border-color: #ccc;
 }
 
-.option-card-header {
+.ftm-export-option-card-header {
   display: flex;
   align-items: center;
   padding: 12px 16px;
@@ -493,45 +522,45 @@
   border-bottom: 1px solid #e6e6e6;
 }
 
-.option-card-header label {
+.ftm-export-option-card-header label {
   margin-left: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
-.option-card-content {
+.ftm-export-option-card-content {
   padding: 12px 16px;
   background-color: white;
 }
 
-.option-card-content p {
+.ftm-export-option-card-content p {
   margin: 0;
   font-size: 13px;
   color: #555;
 }
 
 /* Style Dictionary Options */
-.options-subsection {
+.ftm-export-options-subsection {
   padding-bottom: 20px;
   margin-bottom: 20px;
   border-bottom: 1px solid #e6e6e6;
 }
 
-.options-subsection:last-child {
+.ftm-export-options-subsection:last-child {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
 }
 
-.platforms-grid {
+.ftm-export-platforms-grid {
   padding: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
 }
 
-.platform-card {
+.ftm-export-platform-card {
   border: 1px solid #e6e6e6;
   border-radius: 6px;
   overflow: hidden;
@@ -539,17 +568,17 @@
   cursor: pointer;
 }
 
-.platform-card:hover {
+.ftm-export-platform-card:hover {
   border-color: #ccc;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.platform-card.active {
+.ftm-export-platform-card.active {
   border-color: #0d99ff;
   box-shadow: 0 0 0 1px #0d99ff;
 }
 
-.platform-card-header {
+.ftm-export-platform-card-header {
   display: flex;
   align-items: center;
   padding: 12px 16px;
@@ -557,37 +586,44 @@
   border-bottom: 1px solid #e6e6e6;
 }
 
-.platform-card-header label {
+.ftm-export-platform-card-header label {
   margin-left: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
 
-.platform-card-content {
+.ftm-export-platform-card-content {
   padding: 16px;
   text-align: center;
 }
 
-.platform-icon {
+.ftm-export-platform-icon {
   font-size: 24px;
   margin-bottom: 8px;
 }
 
-.platform-card-content p {
+.ftm-export-platform-card-content p {
   margin: 0;
   font-size: 13px;
   color: #555;
 }
 
-.formats-grid {
+.ftm-export-formats-grid {
   padding: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
 }
 
-.format-option {
+/* Ensure smooth transition when showing/hiding web formats section */
+.ftm-export-dialog-section.web-formats-section {
+  transition: all 0.3s ease;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.ftm-export-format-option {
   display: flex;
   align-items: flex-start;
   padding: 12px;
@@ -597,78 +633,78 @@
   cursor: pointer;
 }
 
-.format-option:hover {
+.ftm-export-format-option:hover {
   border-color: #ccc;
   background-color: #f8f9fa;
 }
 
-.format-option.active {
+.ftm-export-format-option.active {
   border-color: #0d99ff;
   background-color: #edf8ff;
 }
 
-.format-option label {
+.ftm-export-format-option label {
   margin-left: 8px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
 }
 
-.format-name {
+.ftm-export-format-name {
   font-weight: 500;
   font-size: 14px;
   margin-bottom: 4px;
 }
 
-.format-description {
+.ftm-export-format-description {
   font-size: 12px;
   color: #666;
 }
 
-.transformations-grid {
+.ftm-export-transformations-grid {
   padding: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
 }
 
-.transformation-group {
+.ftm-export-transformation-group {
   padding: 16px;
   border: 1px solid #e6e6e6;
   border-radius: 6px;
 }
 
-.transformation-group h5 {
+.ftm-export-transformation-group h5 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 500;
   color: #333;
 }
 
-.transformation-option {
+.ftm-export-transformation-option {
   margin-bottom: 12px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
 }
 
-.transformation-option:last-child {
+.ftm-export-transformation-option:last-child {
   margin-bottom: 0;
 }
 
-.transformation-option label {
+.ftm-export-transformation-option label {
   margin-left: 8px;
   font-size: 13px;
   cursor: pointer;
 }
 
-.number-input-container {
+.ftm-export-number-input-container {
   display: flex;
   align-items: center;
   margin-left: 8px;
 }
 
-.number-input-container input {
+.ftm-export-number-input-container input {
   width: 50px;
   padding: 4px 8px;
   border: 1px solid #ddd;
@@ -677,20 +713,20 @@
   text-align: right;
 }
 
-.unit {
+.ftm-export-unit {
   margin-left: 4px;
   font-size: 13px;
   color: #666;
 }
 
-.option-description {
+.ftm-export-option-description {
   width: 100%;
   margin: 4px 0 0 24px;
   font-size: 12px;
   color: #666;
 }
 
-select {
+.ftm-export-select {
   padding: 6px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -701,7 +737,7 @@ select {
 }
 
 /* No Options Message */
-.default-options-content {
+.ftm-export-default-options-content {
   height: 100%;
   display: flex;
   align-items: center;
@@ -709,31 +745,31 @@ select {
   padding: 40px;
 }
 
-.no-options-message {
+.ftm-export-no-options-message {
   text-align: center;
   max-width: 300px;
 }
 
-.message-icon {
+.ftm-export-message-icon {
   font-size: 32px;
   margin-bottom: 16px;
 }
 
-.no-options-message h3 {
+.ftm-export-no-options-message h3 {
   margin: 0 0 12px 0;
   font-size: 18px;
   font-weight: 500;
   color: #333;
 }
 
-.no-options-message p {
+.ftm-export-no-options-message p {
   margin: 0 0 8px 0;
   font-size: 14px;
   color: #666;
 }
 
 /* Footer */
-.export-dialog-footer {
+.ftm-export-dialog-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -742,21 +778,21 @@ select {
   background-color: #f8f9fa;
 }
 
-.export-dialog-footer-info {
+.ftm-export-dialog-footer-info {
   font-size: 14px;
   color: #666;
 }
 
-.token-count {
+.ftm-export-token-count {
   font-weight: 500;
 }
 
-.export-dialog-footer-buttons {
+.ftm-export-dialog-footer-buttons {
   display: flex;
   gap: 12px;
 }
 
-.primary-button {
+.ftm-export-primary-button {
   background-color: var(--color-primary);
   color: white;
   border: none;
@@ -768,11 +804,11 @@ select {
   transition: all 0.1s ease;
 }
 
-.primary-button:hover {
+.ftm-export-primary-button:hover {
   background-color: var(--color-primary-dark);
 }
 
-.secondary-button {
+.ftm-export-secondary-button {
   background-color: var(--color-gray-200);
   color: var(--color-gray-800);
   border: 1px solid var(--color-gray-300);
@@ -784,13 +820,13 @@ select {
   transition: all 0.1s ease;
 }
 
-.secondary-button:hover {
+.ftm-export-secondary-button:hover {
   background-color: var(--color-gray-300);
 }
 
 /* Checkboxes and Radio Buttons */
-input[type="checkbox"],
-input[type="radio"] {
+.ftm-export-dialog input[type="checkbox"],
+.ftm-export-dialog input[type="radio"] {
   appearance: none;
   background-color: #fff;
   margin: 0;
@@ -805,12 +841,12 @@ input[type="radio"] {
   cursor: pointer;
 }
 
-input[type="radio"] {
+.ftm-export-dialog input[type="radio"] {
   border-radius: 50%;
 }
 
-input[type="checkbox"]::before,
-input[type="radio"]::before {
+.ftm-export-dialog input[type="checkbox"]::before,
+.ftm-export-dialog input[type="radio"]::before {
   content: "";
   width: 8px;
   height: 8px;
@@ -819,62 +855,78 @@ input[type="radio"]::before {
   box-shadow: inset 1em 1em #0d99ff;
 }
 
-input[type="checkbox"]::before {
+.ftm-export-dialog input[type="checkbox"]::before {
   transform-origin: center;
   clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
 }
 
-input[type="radio"]::before {
+.ftm-export-dialog input[type="radio"]::before {
   border-radius: 50%;
 }
 
-input[type="checkbox"]:checked::before,
-input[type="radio"]:checked::before {
+.ftm-export-dialog input[type="checkbox"]:checked::before,
+.ftm-export-dialog input[type="radio"]:checked::before {
   transform: scale(1);
 }
 
-input[type="checkbox"]:checked,
-input[type="radio"]:checked {
+.ftm-export-dialog input[type="checkbox"]:checked,
+.ftm-export-dialog input[type="radio"]:checked {
   border-color: #0d99ff;
   background-color: white;
 }
 
-input[type="checkbox"]:focus,
-input[type="radio"]:focus {
+.ftm-export-dialog input[type="checkbox"]:focus,
+.ftm-export-dialog input[type="radio"]:focus {
   outline: 2px solid rgba(13, 153, 255, 0.3);
   outline-offset: 2px;
 }
 
-input[type="checkbox"]:disabled,
-input[type="radio"]:disabled {
+.ftm-export-dialog input[type="checkbox"]:disabled,
+.ftm-export-dialog input[type="radio"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* Responsive Adjustments */
 @media (max-width: 640px) {
-  .export-dialog {
+  .ftm-export-dialog {
     width: 95%;
     max-height: 85vh;
   }
   
-  .export-dialog-header h2 {
+  .ftm-export-dialog-header h2 {
     font-size: 18px;
   }
   
-  .export-tab {
+  .ftm-export-tab {
     padding: 10px 12px;
     font-size: 13px;
   }
   
-  .platforms-grid,
-  .formats-grid,
-  .transformations-grid,
-  .options-grid {
+  .ftm-export-platforms-grid,
+  .ftm-export-formats-grid,
+  .ftm-export-transformations-grid,
+  .ftm-export-options-grid {
     grid-template-columns: 1fr;
   }
   
-  .modes-grid {
+  .ftm-export-modes-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  /* Keep format cards in 2 columns even on mobile */
+  .ftm-export-format-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+  
+  /* Make the format cards even more compact on mobile */
+  .ftm-export-format-card-header {
+    padding: 6px 10px;
+  }
+  
+  .ftm-export-format-card-content {
+    padding: 8px 10px;
   }
 }

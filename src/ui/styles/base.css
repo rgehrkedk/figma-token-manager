@@ -33,9 +33,9 @@
   --color-white: #FFFFFF;
   --color-black: #000000;
   
-  /* Typography */
-  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-family-monospace: 'SFMono-Regular', Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* Typography - using system fonts only due to Figma CSP restrictions */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-monospace: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   
   /* Keep the rest of your variables the same */
   

@@ -1,7 +1,8 @@
 # Figma Token Manager - Development Guidelines
 
 ## Commands
-- `npm run build` - Build the plugin
+- `npm run build` - Build the plugin for production
+
 
 ## Code Style Guidelines
 - **Imports**: Use path aliases (`@ui/`, `@code/`, `@components/`, `@utilities/`)
@@ -15,6 +16,7 @@
 - **Console Messages**: Use descriptive console.log/error messages for debugging
 - **Component Structure**: Follow component-based organization in UI code
 - **CSS**: Use separate CSS files for components in `styles/components/`
+- **TypeScript**: Use type annotations for parameters, return values, and variables
 
 ## Project Organization
 - `src/code/` - Plugin backend logic
